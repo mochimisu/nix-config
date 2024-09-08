@@ -22,6 +22,17 @@
           ./common-gui.nix
         ];
       };
+      whitesun = nixpkgs.lib.nixosSystem {
+        specialArgs = { inherit inputs; };
+        system = "x86_64-linux";
+        modules = [
+          #./machines/whitesun/hardware-configuration.nix
+          #./machines/whitesun/configuration.nix
+          ./boot-efi.nix
+          ./common.nix
+          ./common-gui.nix
+        ];
+      };
     };
     homeConfigurations = {
       "brandon" = home-manager.lib.homeManagerConfiguration {
