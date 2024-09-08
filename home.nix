@@ -9,8 +9,17 @@ in
     git
     oh-my-zsh
   ];
+  
+
+  home.dconf.settings = {
+    "org.gnome.desktop.interface" = {
+      "gtk-theme" = "Adwaita-dark";
+      "color-scheme" = "dark";
+    };
+  };
 
   programs = {
+    dconf.enable = true;
     git = {
       enable = true;
       userName = "mochimisu";
@@ -35,6 +44,7 @@ in
       defaultEditor = true;
     };
   };
+  services.xdg-desktop-portal-gtk.enable = true;
 
   home.file = {
 

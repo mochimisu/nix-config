@@ -11,11 +11,15 @@
   outputs = { self, nixpkgs, home-manager, ... } @inputs: {
     defaultPackage.x86_64-linux = home-manager.defaultPackage.x86_64-linux;
     nixosConfigurations = {
-      nixos = nixpkgs.lib.nixosSystem {
+      glasscastle = nixpkgs.lib.nixosSystem {
         specialArgs = { inherit inputs; };
         system = "x86_64-linux";
         modules = [
-          ./configuration.nix
+          ./machines/glasscastle/hardware-configuration.nix
+          ./machines/glasscastle/configuration.nix
+          ./boot-efi.nix
+          ./common.nix
+          ./common-gui.nix
         ];
       };
     };

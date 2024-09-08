@@ -35,4 +35,6 @@ in
     languages = ["eng"];
     symbolsFile = custom_symbols;
   };
+
+  services.xserver.xkb.layout = "custom";
 }
