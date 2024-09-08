@@ -11,10 +11,7 @@
     bluez
 
     mesa
-    sddm
-    (catppuccin-sddm.override {
-      flavor = "mocha";
-    })
+    greetd.tuigreet
     hyprland
     waybar
     networkmanagerapplet
@@ -57,12 +54,15 @@
     pulse.enable = true;
   };
 
-  # SDDM
-  services.displayManager.sddm = {
+  # Greetd
+  services.greetd = {
     enable = true;
-    wayland.enable = true;
-    theme = "catppuccin-mocha";
-    package = pkgs.kdePackages.sddm;
+    settings = {
+      default_session = {
+        command = "${pkgs.greetd.tuigreet}/bin/tuigreet --time --time-format '%I:%M %p | %a - %h | %F' --cmd Hyprland";
+        user = "greeter";
+      };
+    };
   };
 
 }
