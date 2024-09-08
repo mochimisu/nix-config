@@ -34,8 +34,6 @@
     heroic
     xivlauncher
     parsec-bin
-
-    framework-tool
   ];
 
   programs = {
