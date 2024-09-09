@@ -13,6 +13,7 @@
     mesa
     greetd.tuigreet
     hyprland
+    hyprpaper
     waybar
     networkmanagerapplet
     blueman

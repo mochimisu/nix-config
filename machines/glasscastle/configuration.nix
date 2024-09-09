@@ -5,4 +5,6 @@
   environment.systemPackages = with pkgs; [
     framework-tool
   ];
+
+  system.stateVersion = "24.11";
 }

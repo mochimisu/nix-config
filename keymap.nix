@@ -37,5 +37,5 @@ in
   };
 
   services.xserver.xkb.layout = "custom";
-  i18n.consoleUseXkbConfig = true;
+  console.useXkbConfig = true;
 }
