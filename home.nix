@@ -36,6 +36,7 @@ in
         plugins = [
           "sudo"
           "git"
+          "ssh-agent"
         ];
       };
     };
