@@ -4,7 +4,7 @@ let
   configsDir = "${config.home.homeDirectory}/stuff/configs";
 in
 {
-  home.stateVersion = "24.05";
+  home.stateVersion = "24.11";
   home.packages = with pkgs; [ 
     git
     oh-my-zsh
