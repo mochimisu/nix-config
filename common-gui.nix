@@ -9,7 +9,6 @@
   # Packages
   environment.systemPackages = with pkgs; [
     bluez
-
     mesa
     greetd.tuigreet
     hyprland
@@ -22,7 +21,6 @@
     chromium
     copyq
     inputs.rose-pine-hyprcursor.packages.${pkgs.system}.default
-    dconf
     xdg-desktop-portal-hyprland
 
     discord
@@ -65,5 +63,4 @@
       };
     };
   };
-
 }
