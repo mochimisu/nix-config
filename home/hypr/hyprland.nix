@@ -3,6 +3,9 @@
     enable = true;
     settings = {
       "$mod" = "SUPER";
+      "$terminal" = "kitty";
+      "$menu" = "wofi --show drun";
+      "$menuAll" = "wofi --show run";
 
       "exec-once" = [
         "sleep 1 && waybar"
