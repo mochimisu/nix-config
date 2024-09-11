@@ -9,6 +9,10 @@ in
     git
     oh-my-zsh
   ];
+
+  imports = [
+    ./hypr/hyprland.nix
+  ];
   
 
   programs = {
@@ -68,7 +72,6 @@ in
     else
       ${pkgs.git}/bin/git clone https://github.com/mochimisu/configs.git ${configsDir}
     fi
-    ln -sfn ${configsDir}/.config/hypr ${config.home.homeDirectory}/.config/hypr
     ln -sfn ${configsDir}/.config/nvim ${config.home.homeDirectory}/.config/nvim
     ln -sfn ${configsDir}/.config/waybar ${config.home.homeDirectory}/.config/waybar
     ln -sfn ${configsDir}/.tmux.conf ${config.home.homeDirectory}/.tmux.conf

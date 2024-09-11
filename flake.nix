@@ -24,7 +24,7 @@
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
             home-manager.users.brandon = {
-              imports = [ ./home.nix ];
+              imports = [ ./home/home.nix ];
             };
           }
         ];
