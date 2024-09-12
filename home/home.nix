@@ -11,7 +11,9 @@ in
   ];
 
   imports = [
-    ./hypr/hyprland.nix
+    ./apps/hypr/hyprland.nix
+    ./apps/tmux.nix
+    ./apps/waybar.nix
   ];
   
 
@@ -73,8 +75,6 @@ in
       ${pkgs.git}/bin/git clone https://github.com/mochimisu/configs.git ${configsDir}
     fi
     ln -sfn ${configsDir}/.config/nvim ${config.home.homeDirectory}/.config/nvim
-    ln -sfn ${configsDir}/.config/waybar ${config.home.homeDirectory}/.config/waybar
-    ln -sfn ${configsDir}/.tmux.conf ${config.home.homeDirectory}/.tmux.conf
 
     '';
   };
