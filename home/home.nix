@@ -63,17 +63,17 @@ in
     #".config/waybar".source = "${configsDir}/.config/waybar";
     #".tmux.conf".source = "${configsDir}/.tmux.conf";
   };
-
-  home.activation = {
-    cloneRepo = lib.hm.dag.entryAfter ["writeBoundary"] ''
-    if [ -d ${configsDir} ]; then
-      echo "configs exist"
-    else
-      ${pkgs.git}/bin/git clone https://github.com/mochimisu/configs.git ${configsDir}
-    fi
-    ln -sfn ${configsDir}/.config/nvim ${config.home.homeDirectory}/.config/nvim
-
-    '';
-  };
+  #
+  # home.activation = {
+  #   cloneRepo = lib.hm.dag.entryAfter ["writeBoundary"] ''
+  #   if [ -d ${configsDir} ]; then
+  #     echo "configs exist"
+  #   else
+  #     ${pkgs.git}/bin/git clone https://github.com/mochimisu/configs.git ${configsDir}
+  #   fi
+  #   ln -sfn ${configsDir}/.config/nvim ${config.home.homeDirectory}/.config/nvim
+  #
+  #   '';
+  # };
 }
 
