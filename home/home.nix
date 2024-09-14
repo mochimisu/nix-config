@@ -1,4 +1,4 @@
-{ config, pkgs, lib, ...}:
+{ config, pkgs, lib, inputs, ...}:
 
 let
   configsDir = "${config.home.homeDirectory}/stuff/configs";
@@ -14,6 +14,7 @@ in
     ./apps/hypr/hyprland.nix
     ./apps/tmux.nix
     ./apps/waybar.nix
+    ./apps/nixvim
   ];
   
 
@@ -34,10 +35,6 @@ in
           "ssh-agent"
         ];
       };
-    };
-    neovim = {
-      enable = true;
-      defaultEditor = true;
     };
   };
 

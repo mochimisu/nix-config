@@ -7,6 +7,10 @@
         inputs.nixpkgs.follows = "nixpkgs";
     };
     rose-pine-hyprcursor.url = "github:ndom91/rose-pine-hyprcursor";
+    nixvim = {
+      url = "github:nix-community/nixvim";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
   outputs = { self, nixpkgs, home-manager, ... } @inputs: {
     defaultPackage.x86_64-linux = home-manager.defaultPackage.x86_64-linux;
@@ -24,7 +28,11 @@
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
             home-manager.users.brandon = {
-              imports = [ ./home/home.nix ];
+              imports = [ 
+              # nixvim must be here, or we hit inf recursion
+              # https://github.com/gmodena/nix-flatpak/issues/25
+              inputs.nixvim.homeManagerModules.nixvim
+              ./home/home.nix ];
             };
           }
         ];
