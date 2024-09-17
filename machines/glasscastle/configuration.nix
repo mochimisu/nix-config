@@ -4,6 +4,8 @@
   networking.hostName = "glasscastle";
   environment.systemPackages = with pkgs; [
     framework-tool
+
+    brightnessctl
   ];
 
   system.stateVersion = "24.11";

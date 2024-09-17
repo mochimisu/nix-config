@@ -26,6 +26,8 @@
     tree
     nodejs
     openssh
+
+    protonvpn-cli
   ];
 
   programs = {

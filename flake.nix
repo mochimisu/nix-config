@@ -32,7 +32,7 @@
               # nixvim must be here, or we hit inf recursion
               # https://github.com/gmodena/nix-flatpak/issues/25
               inputs.nixvim.homeManagerModules.nixvim
-              ./home/home.nix ];
+              ./home ];
             };
           }
         ];
