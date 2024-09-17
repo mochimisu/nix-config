@@ -11,6 +11,7 @@
         "sleep 1 && waybar"
         "hyprpaper"
         "nm-applet"
+        "blueman-applet"
         #"/usr/lib/polkit-kde-authentication-agent-1"
         #"swaync"
       ];

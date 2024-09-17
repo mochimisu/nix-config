@@ -16,7 +16,7 @@
       ";" = ":";
       ":" = ";";
       "Q" = "<nop>";
-      ",cd" = ":cd %:p:h<CR>:pwd<CR";
+      ",cd" = ":cd %:p:h<CR>:pwd<CR>";
       "<leader>c" = "\"+y";
       "<leader>v" = "\"+p";
     };

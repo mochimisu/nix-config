@@ -27,6 +27,7 @@
     nodejs
     openssh
 
+    gobject-introspection
     protonvpn-cli
   ];
 

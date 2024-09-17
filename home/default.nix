@@ -12,6 +12,7 @@ in
 
   imports = [
     ./apps/hypr/hyprland.nix
+    ./apps/hypr/hyprpaper.nix
     ./apps/tmux.nix
     ./apps/waybar.nix
     ./apps/nixvim

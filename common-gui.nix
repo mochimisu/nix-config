@@ -33,6 +33,8 @@
     parsec-bin
   ];
 
+  environment.sessionVariables.NIXOS_OZONE_WL = "1";
+
   programs = {
     steam.enable = true;
     hyprland.enable = true;
