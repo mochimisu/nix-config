@@ -11,6 +11,7 @@
       url = "github:nix-community/nixvim";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    nixos-hardware.url = "github:NixOS/nixos-hardware/master";
   };
   outputs = { self, nixpkgs, home-manager, ... } @inputs: {
     defaultPackage.x86_64-linux = home-manager.defaultPackage.x86_64-linux;
