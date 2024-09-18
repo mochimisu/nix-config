@@ -24,6 +24,9 @@
     inputs.rose-pine-hyprcursor.packages.${pkgs.system}.default
     xdg-desktop-portal-hyprland
 
+    polkit-kde-agent
+    swaynotificationcenter
+
     discord
     proton-pass
 
@@ -66,4 +69,6 @@
       };
     };
   };
+
+  security.polkit.enable = true;
 }

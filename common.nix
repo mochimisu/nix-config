@@ -26,9 +26,6 @@
     tree
     nodejs
     openssh
-
-    gobject-introspection
-    protonvpn-cli
   ];
 
   programs = {

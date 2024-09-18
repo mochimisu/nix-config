@@ -1,3 +1,4 @@
+{ pkgs, ... }:
 {
   wayland.windowManager.hyprland = {
     enable = true;
@@ -12,8 +13,8 @@
         "hyprpaper"
         "nm-applet"
         "blueman-applet"
-        #"/usr/lib/polkit-kde-authentication-agent-1"
-        #"swaync"
+        "${pkgs.polkit-kde-agent}/libexec//polkit-kde-authentication-agent-1"
+        "swaync"
       ];
 
       monitors = {
