@@ -13,8 +13,9 @@
         "hyprpaper"
         "nm-applet"
         "blueman-applet"
-        "${pkgs.polkit-kde-agent}/libexec//polkit-kde-authentication-agent-1"
+        "${pkgs.polkit-kde-agent}/libexec/polkit-kde-authentication-agent-1"
         "swaync"
+        "hypridle"
       ];
 
       monitors = {
