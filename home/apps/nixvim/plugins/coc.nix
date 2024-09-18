@@ -73,8 +73,8 @@
       }) {
         "<CR>" = "coc#pum#visible() ? coc#pum#confirm() : \"\\<C-g>u\\<CR>\\<c-r>=coc#on_enter()\\<CR>\"";
         "<C-x><C-z>" = "coc#pum#visible() ? coc#pum#stop() : \"\\<C-x><C-z>\"";
-        "<TAB>" = "coc#pum#visible() ? coc#pum#next(1) : coc#refresh()";
-        "<S-TAB>" = "coc#pum#visible() ? coc#pum#prev(1) : \"\\<C-h>\"";
+        # "<TAB>" = "coc#pum#visible() ? coc#pum#next(1) : <SID>check_back_space() ? \"\\<Tab>\" : coc#refresh()";
+        # "<S-TAB>" = "coc#pum#visible() ? coc#pum#prev(1) : \"\\<C-h>\"";
         "<C-Space>" = "coc#refresh()";
       }
     );
