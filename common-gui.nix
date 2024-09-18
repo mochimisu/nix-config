@@ -11,7 +11,6 @@
     bluez
     mesa
     greetd.tuigreet
-    hyprland
     hyprpaper
     waybar
     networkmanagerapplet
@@ -42,6 +41,7 @@
   programs = {
     steam.enable = true;
     hyprland.enable = true;
+    hyprlock.enable = true;
   };
 
   # Fonts
@@ -71,5 +71,8 @@
     };
   };
 
-  security.polkit.enable = true;
+  security = {
+    polkit.enable = true;
+    pam.services.hyprlock = {};
+  };
 }

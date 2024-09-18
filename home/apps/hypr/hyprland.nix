@@ -128,6 +128,9 @@
         # float
         "$mod, f, togglefloating"
 
+        #lock
+        "$mod, L, exec, hyprlock"
+
         # will switch to a submap called resize
         # bind = $mod CONTROL, R, submap, resize
 

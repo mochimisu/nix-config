@@ -15,7 +15,7 @@
 
   programs.nixvim = {
     enable = true;
-    options = {
+    opts = {
       encoding = "utf-8";  # Set encoding to utf-8
       hidden = true;       # Enable hidden buffers
       cmdheight = 2;       # Give more space for messages

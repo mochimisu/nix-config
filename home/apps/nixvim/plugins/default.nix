@@ -12,11 +12,10 @@
 
     plugins = {
       indent-blankline.enable = true;
-      # how to configure this?
+      treesitter.enable = true;
       rainbow-delimiters = {
         enable = true;
       };
-      # todo easymotion
       # todo camelcase motion
       # todo grep
       commentary = {
