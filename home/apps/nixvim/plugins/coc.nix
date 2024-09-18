@@ -66,11 +66,15 @@
       lib.mapAttrsToList (key: action: {
         mode = "i";
         inherit action key;
+        options = {
+          silent = true;
+          expr = true;
+        };
       }) {
-        "<CR>" = "coc#pum#visible() ? coc#pum#confirm() : '\\<C-g>u\\<CR>\\<c-r>=coc#on_enter()\\<CR>'";
-        "<C-x><C-z>" = "coc#pum#visible() ? coc#pum#stop() : '\\<C-x><C-z>'";
+        "<CR>" = "coc#pum#visible() ? coc#pum#confirm() : \"\\<C-g>u\\<CR>\\<c-r>=coc#on_enter()\\<CR>\"";
+        "<C-x><C-z>" = "coc#pum#visible() ? coc#pum#stop() : \"\\<C-x><C-z>\"";
         "<TAB>" = "coc#pum#visible() ? coc#pum#next(1) : coc#refresh()";
-        "<S-TAB>" = "coc#pum#visible() ? coc#pum#prev(1) : '\\<C-h>'";
+        "<S-TAB>" = "coc#pum#visible() ? coc#pum#prev(1) : \"\\<C-h>\"";
         "<C-Space>" = "coc#refresh()";
       }
     );
