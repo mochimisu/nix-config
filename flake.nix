@@ -15,6 +15,23 @@
   };
   outputs = { self, nixpkgs, home-manager, ... } @inputs: {
     defaultPackage.x86_64-linux = home-manager.defaultPackage.x86_64-linux;
+
+    homeManagerModules.home = {
+      imports = [
+        inputs.nixvim.homeManagerModules.nixvim
+        ./home
+      ];
+    };
+
+    homeConfigurations = {
+      brandon = home-manager.lib.homeManagerConfiguration {
+        pkgs = nixpkgs;
+        modules = [ 
+          self.homeManagerModules.home
+        ];
+      };
+    };
+
     nixosConfigurations = {
       glasscastle = nixpkgs.lib.nixosSystem {
         specialArgs = { inherit inputs; };
@@ -28,13 +45,7 @@
           home-manager.nixosModules.home-manager {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
-            home-manager.users.brandon = {
-              imports = [ 
-              # nixvim must be here, or we hit inf recursion
-              # https://github.com/gmodena/nix-flatpak/issues/25
-              inputs.nixvim.homeManagerModules.nixvim
-              ./home ];
-            };
+            home-manager.users.brandon = self.homeManagerModules.home;
           }
         ];
       };
