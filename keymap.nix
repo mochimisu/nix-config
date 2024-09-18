@@ -12,12 +12,12 @@ xkb_symbols "dvorak-custom" {
     key <RALT> {[ ISO_Level3_Shift] };
     key <CAPS> {[ Control_L ]};
     key <AD01> {[ apostrophe,    quotedbl,         Home,  dead_diaeresis ]};
-    key <AD02> {[      comma,    less,            KP_Up,  dead_caron ]};
+    key <AD02> {[      comma,    less,               Up,  dead_caron ]};
     key <AD03> {[     period,    greater,           End,  periodcentered ]};
     key <AD04> {[          p,    P,               Prior ]};
-    key <AC01> {[          a,    A,             KP_Left ]};
-    key <AC02> {[          o,    O,             KP_Down ]};
-    key <AC03> {[          e,    E,            KP_Right ]};
+    key <AC01> {[          a,    A,                Left ]};
+    key <AC02> {[          o,    O,                Down ]};
+    key <AC03> {[          e,    E,               Right ]};
     key <AC04> {[          u,    U,                Next ]};
 
     key <BKSL> {[ BackSpace, BackSpace,          Delete ]};

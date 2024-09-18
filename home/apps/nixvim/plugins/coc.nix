@@ -69,6 +69,7 @@
         options = {
           silent = true;
           expr = true;
+          noremap = true;
         };
       }) {
         "<CR>" = "coc#pum#visible() ? coc#pum#confirm() : \"\\<C-g>u\\<CR>\\<c-r>=coc#on_enter()\\<CR>\"";
@@ -105,22 +106,5 @@
         command = "call CocActionAsync('runCommand', 'editor.action.organizeImport')";
       };
     };
-
-    # autocommands = {
-    #   "CursorHold" = "silent call CocActionAsync('highlight')";
-    #   "FileType" = {
-    #     typescript = "setl formatexpr=CocAction('formatSelected')";
-    #     json = "setl formatexpr=CocAction('formatSelected')";
-    #   };
-    #   "User" = {
-    #     CocJumpPlaceholder = "call CocActionAsync('showSignatureHelp')";
-    #   };
-    # };
-
-    # commands = {
-    #   "Format" = "CocActionAsync('format')";
-    #   "Fold" = "CocAction('fold')";
-    #   "OR" = "CocActionAsync('runCommand', 'editor.action.organizeImport')";
-    # };
   };
 }
