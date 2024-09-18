@@ -29,6 +29,7 @@
 
     discord
     proton-pass
+    caprine
 
     steam
     heroic

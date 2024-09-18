@@ -1,17 +1,122 @@
-{ pkgs, ...}:
+{ config, pkgs, lib, ... }:
 {
   home.packages = with pkgs; [
     nodejs
   ];
   programs.nixvim.extraPlugins = [
     pkgs.vimPlugins.coc-nvim
+    pkgs.vimPlugins.coc-tsserver
+    pkgs.vimPlugins.coc-json
+    pkgs.vimPlugins.coc-css
+    pkgs.vimPlugins.coc-eslint
+    pkgs.vimPlugins.coc-prettier
+    pkgs.vimPlugins.coc-html
   ];
 
-  #programs.nixvim.extraPlugins = [
-  #  (pkgs.vimUtils.buildVimPlugin {
-  #    name = "coc.nvim";
-  #    src = builtins.fetchTarball "https://github.com/neoclide/coc.nvim/archive/master.tar.gz";
-  #    build = "npm ci";
-  #  })
-  #];
+  programs.nixvim = {
+    enable = true;
+    options = {
+      encoding = "utf-8";  # Set encoding to utf-8
+      hidden = true;       # Enable hidden buffers
+      cmdheight = 2;       # Give more space for messages
+      updatetime = 300;    # Faster update time
+      shortmess = "c";     # Don't pass messages to completion menu
+      signcolumn = "yes";  # Always show signcolumn
+      statusline = "%{coc#status()}%{get(b:, 'coc_current_function', '')}";  # Statusline
+    };
+
+    keymaps = config.lib.nixvim.keymaps.mkKeymaps
+    {}
+    (
+      lib.mapAttrsToList (key: action: {
+        mode = "n";
+        inherit action key;
+      }) {
+        "[g" = "<Plug>(coc-diagnostic-prev)";
+        "]g" = "<Plug>(coc-diagnostic-nexs)";
+        "gd" = "<Plug>(coc-definition)";
+        "gy" = "<Plug>(coc-type-definition)";
+        "gi" = "<Plug>(coc-implementation)";
+        "gr" = "<Plug>(coc-references)";
+        "<leader>rn" = "<Plug>(coc-rename)";
+        "<leader>f" = "<Plug>(coc-format-selected)";
+        "<leader>ac" = "<Plug>(coc-codeaction)";
+        "<leader>qf" = "<Plug>(coc-fix-current)";
+        "<leader>cl" = "<Plug>(coc-codelens-action)";
+        "<F2>" = ":bprevious<CR>";
+        "<F3>" = ":bnext<CR>";
+        "<space>a" = ":<C-u>CocList diagnostics<CR>";
+        "<space>e" = ":<C-u>CocList extensions<CR>";
+        "<space>c" = ":<C-u>CocList commands<CR>";
+        "<space>o" = ":<C-u>CocList outline<CR>";
+        "<space>s" = ":<C-u>CocList -I symbols<CR>";
+        "<space>j" = ":<C-u>CocNext<CR>";
+        "<space>k" = ":<C-u>CocPrev<CR>";
+        "<space>p" = ":<C-u>CocListResume<CR>";
+      }
+      ++
+      lib.mapAttrsToList (key: action: {
+        mode = "v";
+        inherit action key;
+      }) {
+        "<leader>f" = "<Plug>(coc-format-selected)";
+        "<leader>a" = "<Plug>(coc-codeaction-selected)";
+      }
+      ++
+      lib.mapAttrsToList (key: action: {
+        mode = "i";
+        inherit action key;
+      }) {
+        "<CR>" = "coc#pum#visible() ? coc#pum#confirm() : '\\<C-g>u\\<CR>\\<c-r>=coc#on_enter()\\<CR>'";
+        "<C-x><C-z>" = "coc#pum#visible() ? coc#pum#stop() : '\\<C-x><C-z>'";
+        "<TAB>" = "coc#pum#visible() ? coc#pum#next(1) : coc#refresh()";
+        "<S-TAB>" = "coc#pum#visible() ? coc#pum#prev(1) : '\\<C-h>'";
+        "<C-Space>" = "coc#refresh()";
+      }
+    );
+    autoCmd = [
+    {
+      event = [ "CursorHold" ];
+      command = "silent call CocActionAsync('highlight')";
+    }
+    {
+      event = [ "FileType" ];
+      pattern = [ "typescript" "json" ];
+      command = "setl formatexpr=CocAction('formatSelected')";
+    }
+    {
+      event = [ "User" ];
+      pattern = [ "CocJumpPlaceholder" ];
+      command = "call CocActionAsync('showSignatureHelp')";
+    }
+    ];
+    userCommands = {
+      Format = {
+        command = "call CocActionAsync('format')";
+      };
+      Fold = {
+        command = "call CocAction('fold')";
+      };
+      OR = {
+        command = "call CocActionAsync('runCommand', 'editor.action.organizeImport')";
+      };
+    };
+
+    # autocommands = {
+    #   "CursorHold" = "silent call CocActionAsync('highlight')";
+    #   "FileType" = {
+    #     typescript = "setl formatexpr=CocAction('formatSelected')";
+    #     json = "setl formatexpr=CocAction('formatSelected')";
+    #   };
+    #   "User" = {
+    #     CocJumpPlaceholder = "call CocActionAsync('showSignatureHelp')";
+    #   };
+    # };
+
+    # commands = {
+    #   "Format" = "CocActionAsync('format')";
+    #   "Fold" = "CocAction('fold')";
+    #   "OR" = "CocActionAsync('runCommand', 'editor.action.organizeImport')";
+    # };
+  };
 }

@@ -4,6 +4,7 @@
   networking.hostName = "glasscastle";
   environment.systemPackages = with pkgs; [
     framework-tool
+    fw-ectool
 
     brightnessctl
   ];
