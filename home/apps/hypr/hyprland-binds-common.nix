@@ -1,4 +1,4 @@
-{
+{ home, pkgs, ...}: {
   wayland.windowManager.hyprland.settings = {
     bind = [
       # Switch workspaces with mod + [0-9]
@@ -62,6 +62,9 @@
 
       # keybinds further down will be global again...
 
+      "$mod, F1, exec, ~/.config/hypr/gamemode.sh"
+      
+
       ",XF86MonBrightnessDown,exec,brightnessctl set 5%-"
       ",XF86MonBrightnessUp,exec,brightnessctl set +5%"
       ",XF86AudioLowerVolume,exec,wpctl set-volume @DEFAULT_SINK@ 5%-"
@@ -75,5 +78,26 @@
       "$mod, mouse:273, resizewindow"
     ];
   };
+
+  home.file.".config/hypr/gamemode.sh" = {
+    executable = true;
+    text = ''
+#!/usr/bin/env sh
+HYPRGAMEMODE=$(hyprctl getoption animations:enabled | awk 'NR==1{print $2}')
+if [ "$HYPRGAMEMODE" = 1 ] ; then
+    hyprctl --batch "\
+        keyword animations:enabled 0;\
+        keyword decoration:drop_shadow 0;\
+        keyword decoration:blur:enabled 0;\
+        keyword general:gaps_in 0;\
+        keyword general:gaps_out 0;\
+        keyword general:border_size 1;\
+        keyword decoration:rounding 0"
+    exit
+fi
+hyprctl reload
+'';
+  };
+  
 }
         

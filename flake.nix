@@ -67,7 +67,7 @@
             home-manager.useUserPackages = true;
             home-manager.users.brandon = {
               imports = [
-                ./home/machines/glasscastle.nix
+                ./machines/glasscastle/home.nix
                 self.homeManagerModules.home
               ];
             };

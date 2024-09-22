@@ -12,7 +12,7 @@
         "sleep 1 && waybar"
         "hyprpaper"
         "nm-applet"
-        "blueman-applet"
+        "blueman-tray"
         "${pkgs.polkit-kde-agent}/libexec/polkit-kde-authentication-agent-1"
         "swaync"
         "hypridle"
