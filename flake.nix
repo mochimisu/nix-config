@@ -3,8 +3,8 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     home-manager = {
-        url = "github:nix-community/home-manager";
-        inputs.nixpkgs.follows = "nixpkgs";
+      url = "github:nix-community/home-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
     rose-pine-hyprcursor.url = "github:ndom91/rose-pine-hyprcursor";
     nixvim = {
@@ -12,8 +12,12 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
+    nix-darwin = {
+      url = "github:LnL7/nix-darwin";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
-  outputs = { self, nixpkgs, home-manager, ... } @inputs: {
+  outputs = { self, nixpkgs, home-manager, nix-darwin, ... } @inputs: {
     defaultPackage.x86_64-linux = home-manager.defaultPackage.x86_64-linux;
 
     homeManagerModules.home = {
@@ -27,7 +31,22 @@
       brandon = home-manager.lib.homeManagerConfiguration {
         pkgs = nixpkgs;
         modules = [ 
-          self.homeManagerModules.home
+          self.homeManagerModules.home 
+        ];
+      };
+    };
+
+    darwinConfigurations = {
+      mba = nix-darwin.lib.darwinSystem {
+        system = "aarch64-darwin";
+        modules = [
+          # ./machines/mba/configuration.nix
+          # ./machines/mba/hardware-configuration.nix
+          home-manager.darwinModules.home-manager {
+            home-manager.useGlobalPkgs = true;
+            home-manager.useUserPackages = true;
+            home-manager.users.brandon = self.homeManagerModules.home;
+          }
         ];
       };
     };

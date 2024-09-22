@@ -15,15 +15,10 @@
     networkmanager
     neovim
     wget
-    zsh
-    tmux
     git
     neofetch
-    btop
 
     fzf
-    silver-searcher
-    tree
     nodejs
     openssh
   ];

@@ -1,11 +1,11 @@
 {
-  programs.nixvim.files = {
-    "ftdetect/nix.lua".autoCmd = [
-      {
-        event = "FileType";
-        pattern = "*.nix";
-        command = "setlocal tabstop=2 shiftwidth=2 expandtab";
-      }
-    ];
+  programs.nixvim.extraFiles = {
+    "ftdetect/nix.lua" = {
+      text = ''
+        vim.opt.tabstop = 2
+        vim.opt.shiftwidth = 2
+        vim.opt.expandtab = true
+        '';
+    };
   };
 }

@@ -1,4 +1,4 @@
-{ config, pkgs, lib, inputs, ...}:
+{ config, pkgs, lib, inputs, keyboardLayout, ...}:
 
 let
   configsDir = "${config.home.homeDirectory}/stuff/configs";
@@ -8,6 +8,10 @@ in
   home.packages = with pkgs; [ 
     git
     oh-my-zsh
+    tmux
+    btop
+    silver-searcher
+    tree
   ];
 
   imports = [
