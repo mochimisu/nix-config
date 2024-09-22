@@ -18,10 +18,6 @@
         "hypridle"
       ];
 
-      monitors = {
-        monitor = "eDP-1,2880x1920x120,0x0,1.5";
-      };
-
       input = {
         follow_mouse = "1";
         sensitivity = "0";

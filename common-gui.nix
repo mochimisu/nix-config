@@ -14,7 +14,6 @@
     hyprpaper
     waybar
     networkmanagerapplet
-    blueman
     wofi
     kitty
     chromium
@@ -44,6 +43,11 @@
     hyprlock.enable = true;
   };
   services.hypridle.enable = true;
+  hardware.bluetooth = {
+    enable = true;
+    powerOnBoot = true;
+  };
+  services.blueman.enable = true; 
 
   # Fonts
   fonts.packages = with pkgs; [

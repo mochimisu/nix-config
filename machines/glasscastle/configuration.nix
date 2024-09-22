@@ -1,4 +1,4 @@
-{ config, lib, pkgs, specialArgs, inputs, ... }:
+{ config, lib, pkgs, specialArgs, variables, inputs, ... }:
 
 {
   networking.hostName = "glasscastle";

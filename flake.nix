@@ -56,6 +56,7 @@
         specialArgs = { inherit inputs; };
         system = "x86_64-linux";
         modules = [
+          ./vars.nix
           ./machines/glasscastle/hardware-configuration.nix
           ./machines/glasscastle/configuration.nix
           ./boot-efi.nix
@@ -64,7 +65,12 @@
           home-manager.nixosModules.home-manager {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
-            home-manager.users.brandon = self.homeManagerModules.home;
+            home-manager.users.brandon = {
+              imports = [
+                ./home/machines/glasscastle.nix
+                self.homeManagerModules.home
+              ];
+            };
           }
         ];
       };

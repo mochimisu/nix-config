@@ -1,5 +1,5 @@
 { lib, config, ... }: {
-  options = {
+  options.me = {
     keyboardLayout = lib.mkEnableOption "keyboard layout";
   };
   imports = [
