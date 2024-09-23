@@ -31,12 +31,12 @@ in
     zsh = {
       enable = true;
       oh-my-zsh = {
-        enable = true;
-        theme = "agnoster";
+        # enable = true;
+        # theme = "agnoster";
         plugins = [
-          "sudo"
-          "git"
-          "ssh-agent"
+          # "sudo"
+          # "git"
+          # "ssh-agent"
         ];
       };
     };
