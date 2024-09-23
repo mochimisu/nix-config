@@ -9,5 +9,16 @@
     brightnessctl
   ];
 
+  systemd.services.fprintd = {
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig.Type = "simple";
+  };
+
+  services.fprintd.enable = true;
+  security.pam.services.hyprlock.fprintAuth = true;
+  security.pam.services.sudo.fprintAuth = true;
+  security.pam.services.login.fprintAuth = true;
+
+
   system.stateVersion = "24.11";
 }
