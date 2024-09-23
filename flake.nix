@@ -37,15 +37,20 @@
     };
 
     darwinConfigurations = {
-      mba = nix-darwin.lib.darwinSystem {
+      oai-dev = nix-darwin.lib.darwinSystem {
         system = "aarch64-darwin";
         modules = [
-          # ./machines/mba/configuration.nix
-          # ./machines/mba/hardware-configuration.nix
+          ./vars.nix
+          ./machines/oai-dev/configuration.nix
           home-manager.darwinModules.home-manager {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
-            home-manager.users.brandon = self.homeManagerModules.home;
+            home-manager.users.brandonw = {
+              imports = [
+                ./machines/oai-dev/home.nix
+                self.homeManagerModules.home
+              ];
+            };
           }
         ];
       };
