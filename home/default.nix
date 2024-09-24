@@ -1,7 +1,7 @@
 { config, pkgs, lib, inputs, keyboardLayout, ...}:
 
 let
-  configsDir = "${config.home.homeDirectory}/stuff/configs";
+  configsDir = "${config.home.homeDirectory}/stuff/nix-confis";
 in
 {
   home.stateVersion = "24.11";
@@ -30,16 +30,28 @@ in
     };
     zsh = {
       enable = true;
-      oh-my-zsh = {
-        # enable = true;
-        # theme = "agnoster";
-        plugins = [
-          # "sudo"
-          # "git"
-          # "ssh-agent"
-        ];
+      enableCompletion = true;
+      autosuggestion.enable = true;
+      syntaxHighlighting.enable = true;
+      zplug = {
+        enable = true;
+          plugins = [
+            {
+              name = "romkatv/powerlevel10k";
+              tags = [ as:theme depth:1 ];
+            }
+            {
+              name = "zsh-users/zsh-history-substring-search";
+              tags = [ as:plugin depth:1 ];
+            }
+          ];
       };
     };
+  };
+
+  home.shellAliases = {
+    "nix-rs" = "sudo nixos-rebuild switch --flake ${configsDir}/flake.nix";
+    "nix-up" = "cd ${configsDir} && nix flake update && cd -";
   };
 
   # Dark mode
@@ -61,23 +73,16 @@ in
   };
 
   home.file = {
-
-    #".config/hypr".source = "${configsDir}/.config/hypr";
-    #".config/nvim".source = "${configsDir}/.config/nvim";
-    #".config/waybar".source = "${configsDir}/.config/waybar";
-    #".tmux.conf".source = "${configsDir}/.tmux.conf";
   };
   #
-  # home.activation = {
-  #   cloneRepo = lib.hm.dag.entryAfter ["writeBoundary"] ''
-  #   if [ -d ${configsDir} ]; then
-  #     echo "configs exist"
-  #   else
-  #     ${pkgs.git}/bin/git clone https://github.com/mochimisu/configs.git ${configsDir}
-  #   fi
-  #   ln -sfn ${configsDir}/.config/nvim ${config.home.homeDirectory}/.config/nvim
-  #
-  #   '';
-  # };
+   home.activation = {
+     cloneRepo = lib.hm.dag.entryAfter ["writeBoundary"] ''
+     if [ -d ${configsDir} ]; then
+       echo "skipping clone, nix-config exist"
+     else
+       ${pkgs.git}/bin/git clone https://github.com/mochimisu/nix-config.git ${configsDir}
+     fi
+     '';
+   };
 }
 
