@@ -107,4 +107,23 @@
       };
     };
   };
+
+  home.file.".config/nvim/coc-settings.json".text = ''
+{
+"eslint.autoFixOnSave": true,
+"tslint.autoFixOnSave": true,
+"eslint.filetypes": ["javascript", "javascriptreact", "typescript", "typescriptreact"],
+"tslint.filetypes": ["typescript", "typescriptreact"],
+"pyright.inlayHints.functionReturnTypes": false,
+"pyright.inlayHints.variableTypes": false,
+"pyright.inlayHints.parameterTypes": false,
+"pyright.disableDiagnostics": true,
+"[javascript][javascriptreact][typescript][typescriptreact][python]": {
+  "coc.preferences.formatOnSave": true
+},
+"tsserver.formatOnType": true,
+"coc.preferences.formatOnType": true,
+"typescript.autoClosingTags": false
+}
+  '';
 }
