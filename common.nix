@@ -4,6 +4,10 @@
   nix = {
     package = pkgs.nixFlakes;
     extraOptions = "experimental-features = nix-command flakes";
+    settings = {
+      cores = 4;
+      max-jobs = 4;
+    };
   };
   nixpkgs.config = {
     allowUnfree = true;

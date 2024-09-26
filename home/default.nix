@@ -31,6 +31,7 @@ in
 
   home.shellAliases = {
     "nix-rs" = "sudo nixos-rebuild switch --flake ${configsDir}";
+    "nix-rsf" = "sudo nixos-rebuild switch --flake ${configsDir} --fast";
     "nix-up" = "cd ${configsDir} && nix flake update && cd -";
   };
 
