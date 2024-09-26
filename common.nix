@@ -16,7 +16,7 @@
     neovim
     wget
     git
-    neofetch
+    nerdfetch
 
     fzf
     nodejs
