@@ -57,6 +57,11 @@
         vfr = "true";
       };
 
+      render = {
+        explicit_sync = 0;
+        explicit_sync_kms = 0;
+      };
+
       animations = {
         enabled = "true";
         bezier = "myBezier, 0.05, 0.9, 0.1, 1.05";

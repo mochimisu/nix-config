@@ -7,6 +7,8 @@
     fw-ectool
 
     brightnessctl
+
+    bolt
   ];
 
   systemd.services.fprintd = {
@@ -19,6 +21,12 @@
   security.pam.services.sudo.fprintAuth = true;
   security.pam.services.login.fprintAuth = true;
 
+  services.hardware.bolt.enable = true;
+
+  boot.kernelParams = [
+    "video=eDP-1,2880x1920@120"
+    "video=DP-2,3440x1440@144"
+  ];
 
   system.stateVersion = "24.11";
 }
