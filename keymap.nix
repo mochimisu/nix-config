@@ -1,4 +1,4 @@
-{ lib, config, pkgs, ... }:
+{ lib, config, pkgs, variables, ... }:
 
 let
   custom_symbols = pkgs.writeText "custom" ''
@@ -30,12 +30,15 @@ xkb_symbols "dvorak-custom" {
   '';
 in
 {
+  imports = [ ./vars.nix ];
+
   services.xserver.xkb.extraLayouts.custom = {
     description ="Custom layout";
     languages = ["eng"];
     symbolsFile = custom_symbols;
   };
 
-  services.xserver.xkb.layout = "custom";
+
+  services.xserver.xkb.layout = lib.mkIf (variables.keyboardLayout == "dvorak") "custom";
   console.useXkbConfig = true;
 }

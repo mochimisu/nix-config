@@ -57,10 +57,11 @@ in
   };
   home.activation = {
     cloneRepo = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      set -e
       if [ -d ${configsDir} ]; then
         echo "skipping clone, nix-config exists"
       else
-        ${pkgs.git}/bin/git clone https://github.com/mochimisu/nix-config.git ${configsDir}
+        ${pkgs.git}/bin/git clone https://github.com/mochimisu/nix-config.git ${configsDir} || true
       fi
     '';
   };
