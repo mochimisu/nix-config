@@ -2,6 +2,11 @@
 {
   imports = [ ../../../vars.nix ];
   wayland.windowManager.hyprland.settings = lib.mkIf (variables.keyboardLayout == "dvorak") {
+    input = {
+      kb_layout = "custom";
+      kb_variant = "dvorak-custom";
+    };
+
     bind = [
       "$mod, apostrophe, exec, $terminal"
       "$mod, C, killactive,"
