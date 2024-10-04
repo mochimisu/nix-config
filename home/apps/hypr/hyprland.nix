@@ -22,8 +22,6 @@
         sensitivity = "0";
         accel_profile = "flat";
 
-        kb_layout = "custom";
-        kb_variant = "dvorak-custom";
         touchpad = {
           natural_scroll = "true";
         };
