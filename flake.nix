@@ -79,6 +79,28 @@
           }
         ];
       };
+      espresso = nixpkgs.lib.nixosSystem {
+        specialArgs = { inherit inputs; };
+        system = "x86_64-linux";
+        modules = [
+          ./vars.nix
+          ./machines/espresso/hardware-configuration.nix
+          ./machines/espresso/configuration.nix
+          ./boot-efi.nix
+          ./common.nix
+          ./common-gui.nix
+          home-manager.nixosModules.home-manager {
+            home-manager.useGlobalPkgs = true;
+            home-manager.useUserPackages = true;
+            home-manager.users.brandon = {
+              imports = [
+                ./machines/espresso/home.nix
+                self.homeManagerModules.home
+              ];
+            };
+          }
+        ];
+      };
       whitesun = nixpkgs.lib.nixosSystem {
         specialArgs = { inherit inputs; };
         system = "x86_64-linux";
