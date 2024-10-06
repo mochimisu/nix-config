@@ -25,14 +25,19 @@
     polkit-kde-agent
     swaynotificationcenter
 
+    # Apps
     discord
     proton-pass
     caprine
 
+    # Games
     steam
     heroic
     xivlauncher
     parsec-bin
+    
+    # 3D Printing
+    bambu-studio
   ];
 
   environment.sessionVariables.NIXOS_OZONE_WL = "1";

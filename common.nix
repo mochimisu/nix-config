@@ -20,7 +20,7 @@
     neovim
     wget
     git
-    nerdfetch
+    fastfetch
 
     fzf
     nodejs

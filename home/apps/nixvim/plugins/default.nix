@@ -6,6 +6,7 @@
     ./commentary.nix
     ./flash.nix
     ./hop.nix
+    ./avante.nix
   ];
   programs.nixvim = {
     colorschemes.ayu.enable = true;
@@ -17,7 +18,6 @@
         enable = true;
       };
       # todo camelcase motion
-      # todo grep
       commentary = {
         enable = true;
       };
