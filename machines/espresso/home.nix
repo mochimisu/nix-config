@@ -11,12 +11,6 @@
         transform = 3;
       };
     };
-    general = {
-      allow_tearing = "true";
-    };
-    misc = {
-      vfr = "true";
-    };
   };
   imports = [
     ../../home/common-linux.nix
