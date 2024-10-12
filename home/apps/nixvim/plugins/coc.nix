@@ -26,6 +26,16 @@
       signcolumn = "yes";  # Always show signcolumn
       statusline = "%{coc#status()}%{get(b:, 'coc_current_function', '')}";  # Statusline
     };
+    plugins = {
+      lsp = {
+        enable = true;
+        servers = {
+          jedi_language_server = {
+            enable = true;
+          };
+        };
+      };
+    };
 
     keymaps = config.lib.nixvim.keymaps.mkKeymaps
     {}
@@ -125,7 +135,7 @@
 },
 "tsserver.formatOnType": true,
 "coc.preferences.formatOnType": true,
-"typescript.autoClosingTags": false
+"typescript.autoClosingTags": false,
 }
   '';
 }
