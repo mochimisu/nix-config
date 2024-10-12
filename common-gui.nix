@@ -35,9 +35,11 @@
     heroic
     xivlauncher
     parsec-bin
+    itch
     
     # 3D Printing
     bambu-studio
+    blender
   ];
 
   environment.sessionVariables.NIXOS_OZONE_WL = "1";

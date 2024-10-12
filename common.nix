@@ -25,6 +25,8 @@
     fzf
     nodejs
     openssh
+
+    unzip
   ];
 
   programs = {
