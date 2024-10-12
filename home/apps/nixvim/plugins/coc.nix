@@ -11,6 +11,8 @@
     pkgs.vimPlugins.coc-eslint
     pkgs.vimPlugins.coc-prettier
     pkgs.vimPlugins.coc-html
+    pkgs.vimPlugins.coc-python
+    pkgs.vimPlugins.coc-pyright
   ];
 
   programs.nixvim = {

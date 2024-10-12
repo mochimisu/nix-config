@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, lib, config, ... }:
 {
   home.packages = with pkgs; [
     # FZF replacement
@@ -15,5 +15,9 @@
         git_icons = false;
       };
     };
+  };
+
+  home.shellAliases = {
+    "nix-rs" = lib.mkForce "nix run nix-darwin -- switch --flake ${config.home.homeDirectory}/stuff/nix-config";
   };
 }
