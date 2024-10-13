@@ -36,6 +36,8 @@
     xivlauncher
     parsec-bin
     itch
+    lutris
+    wine
     
     # 3D Printing
     bambu-studio
