@@ -11,7 +11,7 @@
         "sleep 1 && waybar"
         "hyprpaper"
         "nm-applet"
-        "blueman-tray"
+        "blueman-applet"
         "${pkgs.polkit-kde-agent}/libexec/polkit-kde-authentication-agent-1"
         "swaync"
         "hypridle"
@@ -50,6 +50,10 @@
         shadow_render_power = "3";
         "col.shadow" = "rgba(1a1a1aee)";
       };
+
+      env = [
+        "WLR_NO_HARDWARE_CURSORS=1"
+      ];
 
       misc = {
         vfr = "true";
