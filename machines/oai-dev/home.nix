@@ -29,7 +29,7 @@
       "pyright.inlayHints.variableTypes": false,
       "pyright.inlayHints.parameterTypes": false,
       "pyright.disableDiagnostics": true,
-      "[javascript][javascriptreact][typescript][typescriptreact][python]": {
+      "[javascript][javascriptreact][typescript][typescriptreact]": {
         "coc.preferences.formatOnSave": true
       },
       "tsserver.formatOnType": true,

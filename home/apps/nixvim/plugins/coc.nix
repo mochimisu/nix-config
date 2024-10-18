@@ -11,7 +11,7 @@
     pkgs.vimPlugins.coc-eslint
     pkgs.vimPlugins.coc-prettier
     pkgs.vimPlugins.coc-html
-    pkgs.vimPlugins.coc-python
+    #pkgs.vimPlugins.coc-python
     pkgs.vimPlugins.coc-pyright
   ];
 
@@ -130,7 +130,7 @@
 "pyright.inlayHints.variableTypes": false,
 "pyright.inlayHints.parameterTypes": false,
 "pyright.disableDiagnostics": true,
-"[javascript][javascriptreact][typescript][typescriptreact][python]": {
+"[javascript][javascriptreact][typescript][typescriptreact]": {
   "coc.preferences.formatOnSave": true
 },
 "tsserver.formatOnType": true,
