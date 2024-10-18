@@ -17,7 +17,11 @@
     wofi
     kitty
     chromium
-    cliphist
+    # error building with tests
+    (cliphist.overrideAttrs (oldAttrs: {
+      doCheck = false;
+    }))
+
     wl-clipboard
     inputs.rose-pine-hyprcursor.packages.${pkgs.system}.default
     xdg-desktop-portal-hyprland
