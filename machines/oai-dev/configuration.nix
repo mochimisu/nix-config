@@ -1,3 +1,4 @@
+{ pkgs, ... }:
 {
   nixpkgs.config = {
     allowUnfree = true;
@@ -9,5 +10,6 @@
 
   users.users.brandonw = {
     home = "/Users/brandonw";
+    shell = pkgs.zsh;
   };
 }

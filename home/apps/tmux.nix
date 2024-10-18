@@ -2,6 +2,8 @@
 {
   programs.tmux = {
     enable = true;
+    shell = "/run/current-system/sw/bin/zsh";
+    sensibleOnTop = false;
     extraConfig = ''
       bind s split-window -c "#{pane_current_path}"
       bind v split-window -h -c "#{pane_current_path}"
@@ -18,10 +20,6 @@
 # add load information to the right
       set -g status-right '#[fg=gray]#(uptime | cut -d "," -f 2-)'
       set -g history-limit 100000
-
-# use zsh as startup shell
-# set-option -g default-shell /data/data/com.termux/files/usr/bin/zsh
-#set-option -g default-shell /bin/zsh
 
 # remove delay when hitting esc in vim
       set -sg escape-time 0
