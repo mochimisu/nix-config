@@ -35,6 +35,7 @@
     caprine
 
     # Games
+    mangohud
     steam
     heroic
     xivlauncher
