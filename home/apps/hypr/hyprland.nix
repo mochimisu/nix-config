@@ -77,6 +77,10 @@
         ];
       };
 
+      xwayland = {
+        force_zero_scaling = "true";
+      };
+
       dwindle = {
 # See https://wiki.hyprland.org/Configuring/Dwindle-Layout/ for more
         pseudotile = "true"; # master switch for pseudotiling. Enabling is bound to mod + P in the keybinds section below
