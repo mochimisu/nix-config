@@ -49,7 +49,14 @@
     blender
   ];
 
-  environment.sessionVariables.NIXOS_OZONE_WL = "1";
+  environment.sessionVariables = {
+    NIXOS_OZONE_WL = "1";
+
+    # steam and other electron apps to use wayland for better perf
+    ELECTRON_OZONE_PLATFORM_HINT = "wayland";
+    # fullscreen render bug
+    WLR_DRM_NO_ATOMIC = "1";
+  };
 
   programs = {
     steam.enable = true;
