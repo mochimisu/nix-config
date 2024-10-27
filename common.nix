@@ -25,6 +25,7 @@
     fzf
     nodejs
     openssh
+    lm_sensors
 
     unzip
   ];

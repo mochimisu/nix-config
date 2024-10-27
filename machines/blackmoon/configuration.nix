@@ -3,24 +3,22 @@
 {
   imports = [
     ../../nvidia.nix
+    ./uni-sync.nix
   ];
     
   networking.hostName = "blackmoon";
   environment.systemPackages = with pkgs; [
-    uni-sync
     bolt
   ];
 
-  systemd.services.fprintd = {
-    wantedBy = [ "multi-user.target" ];
-    serviceConfig.Type = "simple";
-  };
   services.hardware.bolt.enable = true;
 
   services.xserver.xkb = {
     layout = "us";
     variant = "dvorak";
   };
+
+  services.hardware.openrgb.enable = true;
 
   system.stateVersion = "24.11";
 }

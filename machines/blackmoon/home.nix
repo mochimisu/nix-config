@@ -18,11 +18,16 @@
         "10, monitor:HDMI-A-1, default:true"
       ];
     };
-        
 
     input = {
       kb_layout = "us";
       kb_variant = "dvorak";
     };
+
+    "exec-once" = [
+      "discord"
+      # todo moon profile
+      "openrgb --profile moon"
+    ];
   };
 }
