@@ -36,5 +36,21 @@
       # todo moon profile
       "openrgb --profile /home/brandon/.config/OpenRGB/moon.orp"
     ];
+
+    # nvidia stuff, move to shared
+    nvidia = {
+      env = [
+        "LIBVA_DRIVER_NAME,nvidia"
+        "XDG_SESSION_TYPE,wayland"
+        "GBM_BACKEND,nvidia-drm"
+        "WLR_NO_HARDWARE_CURSORS,1"
+      ];
+    };
+    misc = {
+      vrr = "0";
+    };
+    cursor = {
+      no_hardware_cursors = true;
+    };
   };
 }
