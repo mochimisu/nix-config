@@ -17,6 +17,12 @@
         "3, monitor:DP-3, default:true"
         "10, monitor:HDMI-A-1, default:true"
       ];
+      defaultwindows = {
+        windowrulev2 = [
+          "workspace 2 silent, class:^(steam)$"
+          "workspace 2 silent, class:^(discord)$"
+        ];
+      };
     };
 
     input = {
@@ -26,8 +32,9 @@
 
     "exec-once" = [
       "discord"
+      "steam"
       # todo moon profile
-      "openrgb --profile moon"
+      "openrgb --profile /home/brandon/.config/OpenRGB/moon.orp"
     ];
   };
 }
