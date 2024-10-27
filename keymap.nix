@@ -1,5 +1,5 @@
 { lib, config, pkgs, variables, ... }:
-
+# Custom fully remapped keyboard, for like laptops
 let
   custom_symbols = pkgs.writeText "custom" ''
 partial alphanumeric_keys
@@ -38,7 +38,5 @@ in
     symbolsFile = custom_symbols;
   };
 
-
-  services.xserver.xkb.layout = lib.mkIf (variables.keyboardLayout == "dvorak") "custom";
   console.useXkbConfig = true;
 }

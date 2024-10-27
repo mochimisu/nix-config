@@ -27,5 +27,10 @@
     "video=eDP-1,2880x1920@120"
   ];
 
+  services.xserver.xkb = {
+    layout = "custom";
+    variant = "dvorak-custom";
+  };
+
   system.stateVersion = "24.11";
 }

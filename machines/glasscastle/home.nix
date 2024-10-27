@@ -15,4 +15,11 @@
     "fw-fan" = "sudo ectool fanduty";
     "fw-fan-auto" = "sudo ectool autofanctrl";
   };
+
+  # custom full remapped keyboard
+  
+  wayland.windowManager.hyprland.settings.input = {
+    kb_layout = "custom";
+    kb_variant = "dvorak-custom";
+  };
 }
