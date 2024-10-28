@@ -274,6 +274,26 @@
         "type": "github"
       }
     },
+    "nixos-xivlauncher-rb": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1730030746,
+        "narHash": "sha256-LoCPilsAbKBzeYs0GgST6pBILrqnwkpyAgYKMdW7uas=",
+        "owner": "drakon64",
+        "repo": "nixos-xivlauncher-rb",
+        "rev": "e2b03c19742f1b0a979e46094711a0d3e3ea10db",
+        "type": "github"
+      },
+      "original": {
+        "owner": "drakon64",
+        "repo": "nixos-xivlauncher-rb",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1729880355,
@@ -362,6 +382,7 @@
         "home-manager": "home-manager",
         "nix-darwin": "nix-darwin",
         "nixos-hardware": "nixos-hardware",
+        "nixos-xivlauncher-rb": "nixos-xivlauncher-rb",
         "nixpkgs": "nixpkgs",
         "nixvim": "nixvim",
         "rose-pine-hyprcursor": "rose-pine-hyprcursor"

@@ -38,7 +38,7 @@
     mangohud
     steam
     heroic
-    xivlauncher
+    inputs.nixos-xivlauncher-rb.packages.${pkgs.system}.default
     parsec-bin
     itch
     lutris

@@ -1,3 +1,4 @@
+{ pkgs, ... }:
 {
   hardware.uni-sync = {
     enable = true;
@@ -34,10 +35,7 @@
     serviceConfig = {
       User = "root";
       Group = "root";
-      script = ''
-        #!/bin/sh
-        exec /run/current-system/sw/bin/uni-sync
-      '';
+      ExecStart = "${pkgs.uni-sync}/bin/uni-sync";
     };
   };
 }

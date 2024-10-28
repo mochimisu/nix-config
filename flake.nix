@@ -16,6 +16,10 @@
       url = "github:LnL7/nix-darwin";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    nixos-xivlauncher-rb = {
+      url = "github:drakon64/nixos-xivlauncher-rb";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
   outputs = { self, nixpkgs, home-manager, nix-darwin, ... } @inputs: {
     defaultPackage.x86_64-linux = home-manager.defaultPackage.x86_64-linux;
