@@ -6,6 +6,12 @@
       ./keymap.nix
     ];
 
+  nixpkgs.config = {
+    chromium = {
+      enableWideVine = true;
+    };
+  };
+
   # Packages
   environment.systemPackages = with pkgs; [
     bluez
@@ -43,6 +49,9 @@
     itch
     lutris
     wine
+
+    # Etc
+    transmission-remote-gtk
     
     # 3D Printing
     bambu-studio
