@@ -52,6 +52,7 @@
 
     # Etc
     transmission-remote-gtk
+    ledger-live-desktop
     
     # 3D Printing
     bambu-studio

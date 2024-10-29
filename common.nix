@@ -28,6 +28,8 @@
     lm_sensors
 
     unzip
+
+    pulsemixer
   ];
 
   programs = {
