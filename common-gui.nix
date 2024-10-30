@@ -4,6 +4,7 @@
   imports =
     [
       ./keymap.nix
+      inputs.catppuccin.nixosModules.catppuccin
     ];
 
   nixpkgs.config = {
@@ -112,5 +113,11 @@
   security = {
     polkit.enable = true;
     pam.services.hyprlock = {};
+  };
+
+  # catppuccin
+  catppuccin = {
+    enable = true;
+    flavor = "mocha";
   };
 }
