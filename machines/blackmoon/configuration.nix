@@ -20,5 +20,8 @@
 
   services.hardware.openrgb.enable = true;
 
+  boot.kernelModules= [ "nct6775" ];
+  boot.kernelParams = [ "acpi_enforce_resources=lax" ];
+
   system.stateVersion = "24.11";
 }

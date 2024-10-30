@@ -30,6 +30,7 @@
     unzip
 
     pulsemixer
+    conky
   ];
 
   programs = {

@@ -1,7 +1,8 @@
 {
   variables.keyboardLayout = "dvorak";
   imports = [
-    ../../home/common-linux.nix
+    ../../../home/common-linux.nix
+    ./conky.nix
   ];
 
   wayland.windowManager.hyprland.settings = {

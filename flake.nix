@@ -110,22 +110,22 @@
         specialArgs = { inherit inputs; };
         system = "x86_64-linux";
         modules = [
-	  ./vars.nix
+          ./vars.nix
           ./machines/blackmoon/hardware-configuration.nix
           ./machines/blackmoon/configuration.nix
           ./boot-efi.nix
           ./common.nix
           ./common-gui.nix
-	  home-manager.nixosModules.home-manager {
-	    home-manager.useGlobalPkgs = true;
-	    home-manager.useUserPackages = true;
-	    home-manager.users.brandon = {
-	      imports = [
-		./machines/blackmoon/home.nix
-		self.homeManagerModules.home
-	      ];
-	    };
-	  }
+          home-manager.nixosModules.home-manager {
+            home-manager.useGlobalPkgs = true;
+            home-manager.useUserPackages = true;
+            home-manager.users.brandon = {
+              imports = [
+                ./machines/blackmoon/home
+                  self.homeManagerModules.home
+              ];
+            };
+          }
         ];
       };
     };

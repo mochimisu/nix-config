@@ -44,7 +44,6 @@
 
     # Games
     mangohud
-    steam
     heroic
     inputs.nixos-xivlauncher-rb.packages.${pkgs.system}.default
     parsec-bin
