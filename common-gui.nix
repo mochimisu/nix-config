@@ -40,6 +40,7 @@
     discord
     proton-pass
     caprine
+    hyprpicker
 
     # Games
     mangohud
