@@ -2,6 +2,7 @@
 {
   home.packages = with pkgs; [
     nodejs
+    nixd
   ];
   programs.nixvim.extraPlugins = [
     pkgs.vimPlugins.coc-nvim
@@ -75,8 +76,9 @@
       }) {
         "<CR>" = "coc#pum#visible() ? coc#pum#confirm() : \"\\<C-g>u\\<CR>\\<c-r>=coc#on_enter()\\<CR>\"";
         "<C-x><C-z>" = "coc#pum#visible() ? coc#pum#stop() : \"\\<C-x><C-z>\"";
-        # "<TAB>" = "coc#pum#visible() ? coc#pum#next(1) : <SID>check_back_space() ? \"\\<Tab>\" : coc#refresh()";
-        # "<S-TAB>" = "coc#pum#visible() ? coc#pum#prev(1) : \"\\<C-h>\"";
+        "<S-TAB>" = "coc#pum#visible() ? coc#pum#next(1) : v:lua.check_back_space() ? \"\\<S-TAB>\" : coc#refresh()";
+        # c-tab hard to bind, find something else for this
+        #"<C-TAB>" = "coc#pum#visible() ? coc#pum#prev(1) : \"\\<C-h>\"";
         "<C-Space>" = "coc#refresh()";
       }
     );
@@ -106,6 +108,9 @@
       OR = {
         command = "call CocActionAsync('runCommand', 'editor.action.organizeImport')";
       };
+      Doc = {
+        command = "call CocActionAsync('doHover')";
+      };
     };
   };
 
@@ -125,5 +130,11 @@
 "tsserver.formatOnType": true,
 "coc.preferences.formatOnType": true,
 "typescript.autoClosingTags": false,
+"languageserver": {
+  "nix": {
+    "command": "nixd",
+    "filetypes": ["nix"]
+  }
+}
   '';
 }
