@@ -1,4 +1,4 @@
-{pkgs, ...}: {
+{
   imports = [
     ./airline.nix
     ./coc.nix

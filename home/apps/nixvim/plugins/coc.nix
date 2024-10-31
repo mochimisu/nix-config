@@ -11,7 +11,6 @@
     pkgs.vimPlugins.coc-eslint
     pkgs.vimPlugins.coc-prettier
     pkgs.vimPlugins.coc-html
-    #pkgs.vimPlugins.coc-python
     pkgs.vimPlugins.coc-pyright
   ];
 
@@ -25,16 +24,6 @@
       shortmess = "c";     # Don't pass messages to completion menu
       signcolumn = "yes";  # Always show signcolumn
       statusline = "%{coc#status()}%{get(b:, 'coc_current_function', '')}";  # Statusline
-    };
-    plugins = {
-      lsp = {
-        enable = true;
-        servers = {
-          jedi_language_server = {
-            enable = true;
-          };
-        };
-      };
     };
 
     keymaps = config.lib.nixvim.keymaps.mkKeymaps
@@ -136,6 +125,5 @@
 "tsserver.formatOnType": true,
 "coc.preferences.formatOnType": true,
 "typescript.autoClosingTags": false,
-}
   '';
 }

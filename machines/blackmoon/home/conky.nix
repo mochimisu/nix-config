@@ -73,9 +73,9 @@ config-file = pkgs.writeTextFile {
 };
 in
 {
-  services.conky = {
-    enable = true;
-  };
+  home.packages = with pkgs; [
+    conky
+  ];
   wayland.windowManager.hyprland.settings = {
     "exec-once" = [
       "conky -c ${config-file}"

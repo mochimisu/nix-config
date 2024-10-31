@@ -33,7 +33,6 @@
 
     "exec-once" = [
       "discord"
-      "steam"
       # todo moon profile
       "openrgb --profile /home/brandon/.config/OpenRGB/moon.orp"
     ];
