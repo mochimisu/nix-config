@@ -1,8 +1,13 @@
+{ pkgs, ... }:
 {
   variables.keyboardLayout = "dvorak";
   imports = [
     ../../../home/common-linux.nix
     ./conky.nix
+  ];
+
+  home.packages = with pkgs; [
+    wlr-randr
   ];
 
   wayland.windowManager.hyprland.settings = {
@@ -33,6 +38,8 @@
 
     "exec-once" = [
       "discord"
+      # set DP-1 as primary
+      "wlr-randr --output DP-1 --primary"
       # todo moon profile
       "openrgb --profile /home/brandon/.config/OpenRGB/moon.orp"
     ];

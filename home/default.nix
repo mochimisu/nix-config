@@ -27,6 +27,7 @@ in
       userName = "mochimisu";
       userEmail = "brandonwang@me.com";
     };
+    spotify-player.enable = true;
   };
 
   home.shellAliases = {
