@@ -58,6 +58,7 @@
     };
     cursor = {
       no_hardware_cursors = true;
+      default_monitor = "DP-1";
     };
   };
 }
