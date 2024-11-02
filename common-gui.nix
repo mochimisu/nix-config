@@ -29,6 +29,8 @@
       doCheck = false;
     }))
 
+    grim
+    slurp
     wl-clipboard
     inputs.rose-pine-hyprcursor.packages.${pkgs.system}.default
     xdg-desktop-portal-hyprland
