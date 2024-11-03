@@ -52,6 +52,7 @@
     itch
     lutris
     wine
+    gamescope
 
     # Etc
     transmission-remote-gtk

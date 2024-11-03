@@ -52,10 +52,6 @@
         "col.shadow" = "rgba(1a1a1aee)";
       };
 
-      env = [
-        "WLR_NO_HARDWARE_CURSORS=1"
-      ];
-
       misc = {
         vfr = "true";
       };

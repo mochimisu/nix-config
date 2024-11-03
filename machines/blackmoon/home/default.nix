@@ -8,6 +8,7 @@
 
   home.packages = with pkgs; [
     wlr-randr
+    nvidia-vaapi-driver
   ];
 
   wayland.windowManager.hyprland.settings = {
@@ -50,7 +51,9 @@
         "LIBVA_DRIVER_NAME,nvidia"
         "XDG_SESSION_TYPE,wayland"
         "GBM_BACKEND,nvidia-drm"
-        "WLR_NO_HARDWARE_CURSORS,1"
+        "__GLX_VENDOR_LIBRARY_NAME,nvidia"
+        "NVD_BACKEND,direct"
+        "NIXOS_OZONE_WL=1"
       ];
     };
     misc = {

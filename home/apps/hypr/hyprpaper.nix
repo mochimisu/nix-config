@@ -10,7 +10,7 @@ let
   };
 in
 {
-  home.file.".config/hypr/turqouiseTree.jpg".source = turquoiseTree;
+  home.file.".config/hypr/turquoiseTree.jpg".source = turquoiseTree;
   home.file.".config/hypr/dusk.jpg".source = dusk;
   home.file.".config/hypr/hyprpaper.conf".source = pkgs.writeText "hyprpaper.conf" ''
     preload = ${config.home.homeDirectory}/.config/hypr/turquoiseTree.jpg
