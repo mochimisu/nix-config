@@ -54,11 +54,20 @@
 
       misc = {
         vfr = "true";
+        # vrr = "0";
+      };
+      env = [
+        "XDG_SESSION_TYPE,wayland"
+        "NIXOS_OZONE_WL=1"
+        "WLR_NO_HARDWARE_CURSORS=1"
+      ];
+      cursor = {
+        no_hardware_cursors = "true";
       };
 
       render = {
-        explicit_sync = 0;
-        explicit_sync_kms = 0;
+        # explicit_sync = 0;
+        # explicit_sync_kms = 0;
       };
 
       animations = {
