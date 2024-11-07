@@ -14,8 +14,8 @@
   wayland.windowManager.hyprland.settings = {
     monitors = {
       monitor = [
-        "DP-1,2560x1440@144,-2560x0,1"
-        "DP-3,3440x1440@144,0x0,1"
+        "DP-1,2560x1440@120,-2560x0,1"
+        "DP-3,3440x1440@120,0x0,1"
         "HDMI-A-1,480x1920@60,3440x1200,2,transform,1"
       ];
       workspace = [
@@ -60,7 +60,6 @@
       vrr = "0";
     };
     cursor = {
-      no_hardware_cursors = true;
       default_monitor = "DP-1";
     };
   };
