@@ -59,8 +59,9 @@
     ledger-live-desktop
     
     # 3D Printing
-    bambu-studio
-    blender
+    # bambu-studio
+    # i barely use blender now
+    # blender
   ];
 
   environment.sessionVariables = {
