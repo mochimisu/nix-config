@@ -57,6 +57,7 @@
     # Etc
     transmission-remote-gtk
     ledger-live-desktop
+    ani-cli
     
     # 3D Printing
     # bambu-studio
