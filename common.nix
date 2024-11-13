@@ -31,6 +31,7 @@
 
     pulsemixer
     conky
+    spotify-player
   ];
 
   programs = {
