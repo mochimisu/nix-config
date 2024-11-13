@@ -62,7 +62,7 @@
     ani-cli
     
     # 3D Printing
-    # bambu-studio
+    bambu-studio
   ];
 
   environment.sessionVariables = {
