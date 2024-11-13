@@ -25,6 +25,13 @@
       "$mod CONTROL, d, movewindow, r"
       "$mod CONTROL, w, movewindow, u"
       "$mod CONTROL, s, movewindow, d"
+      "$mod, up, movefocus, u"
+      "$mod, left, movefocus, l"
+      "$mod, right, movefocus, r"
+      "$mod, down, movefocus, d"
       ];
+    input = {
+      kb_options = "ctrl:nocaps";
+    };
   };
 }

@@ -43,6 +43,7 @@
     proton-pass
     caprine
     hyprpicker
+    vlc
 
     # Games
     mangohud

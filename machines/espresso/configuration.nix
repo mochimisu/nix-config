@@ -3,6 +3,7 @@
 {
   networking.hostName = "espresso";
   environment.systemPackages = with pkgs; [
+    brightnessctl
     bolt
   ];
   services.hardware.bolt.enable = true;
