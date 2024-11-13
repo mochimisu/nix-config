@@ -44,6 +44,7 @@
     caprine
     hyprpicker
     vlc
+    signal-desktop
 
     # Games
     mangohud
@@ -62,8 +63,6 @@
     
     # 3D Printing
     # bambu-studio
-    # i barely use blender now
-    # blender
   ];
 
   environment.sessionVariables = {
