@@ -56,8 +56,10 @@
         "NIXOS_OZONE_WL=1"
       ];
     };
-    misc = {
-      vrr = "0";
+
+    render = {
+      explicit_sync = 0;
+      explicit_sync_kms = 0;
     };
     cursor = {
       default_monitor = "DP-1";

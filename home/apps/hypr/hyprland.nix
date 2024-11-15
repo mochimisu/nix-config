@@ -53,7 +53,7 @@
       };
 
       misc = {
-        vfr = "true";
+        # vfr = "true";
         # vrr = "0";
       };
       env = [
@@ -63,11 +63,6 @@
       ];
       cursor = {
         no_hardware_cursors = "true";
-      };
-
-      render = {
-        # explicit_sync = 0;
-        # explicit_sync_kms = 0;
       };
 
       animations = {
