@@ -31,6 +31,7 @@
 
     grim
     slurp
+    wf-recorder
     wl-clipboard
     inputs.rose-pine-hyprcursor.packages.${pkgs.system}.default
     xdg-desktop-portal-hyprland
@@ -45,6 +46,9 @@
     hyprpicker
     vlc
     signal-desktop
+    ani-cli
+    transmission-remote-gtk
+    ledger-live-desktop
 
     # Games
     mangohud
@@ -56,11 +60,6 @@
     wine
     gamescope
 
-    # Etc
-    transmission-remote-gtk
-    ledger-live-desktop
-    ani-cli
-    
     # 3D Printing
     bambu-studio
   ];
