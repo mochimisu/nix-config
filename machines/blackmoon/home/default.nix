@@ -58,8 +58,13 @@
     };
 
     render = {
+      # both needed to prevent stutter frames in ff14
       explicit_sync = 0;
       explicit_sync_kms = 0;
+    };
+    misc = {
+      # potentially reducing flicker in electron apps
+      vrr = "0";
     };
     cursor = {
       default_monitor = "DP-1";
