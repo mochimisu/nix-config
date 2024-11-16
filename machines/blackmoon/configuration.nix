@@ -21,7 +21,11 @@
   services.hardware.openrgb.enable = true;
 
   boot.kernelModules= [ "nct6775" ];
-  boot.kernelParams = [ "acpi_enforce_resources=lax" ];
+  boot.kernelParams = [
+    "acpi_enforce_resources=lax" 
+    # disable GSP for frame stuttering
+    "NVreg_EnableGpuFirmware=0"
+  ];
 
   system.stateVersion = "24.11";
 }

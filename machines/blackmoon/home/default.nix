@@ -57,14 +57,26 @@
       ];
     };
 
+    debug = {
+      # whole screen is re-rendered every frame, but reduces flickering
+      damage_tracking = 0;
+    };
+
+    opengl = {
+      nvidia_anti_flicker = 0;
+      force_introspection = 2;
+    };
     render = {
-      # both needed to prevent stutter frames in ff14
+      # both needed to be disabled to prevent stutter frames in ff14
       explicit_sync = 0;
       explicit_sync_kms = 0;
     };
     misc = {
       # potentially reducing flicker in electron apps
-      vrr = "0";
+      # vrr = "0";
+      # vfr = "0" means every single frame is rendered, not great
+      # but allows nvidia_anti_flicker to be set to 0
+      vfr = 0;
     };
     cursor = {
       default_monitor = "DP-1";
