@@ -18,6 +18,8 @@
       };
     };
   };
+  programs.wofi.enable = lib.mkForce false;
+  programs.spotify-player.enable = lib.mkForce false;
 
   home.file.".config/nvim/coc-settings.json".text = lib.mkForce ''
   {
