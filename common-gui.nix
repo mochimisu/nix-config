@@ -35,12 +35,14 @@
     wl-clipboard
     inputs.rose-pine-hyprcursor.packages.${pkgs.system}.default
     xdg-desktop-portal-hyprland
+    xwaylandvideobridge
 
     polkit-kde-agent
     swaynotificationcenter
 
     # Apps
-    discord
+    # discord
+    vesktop
     proton-pass
     caprine
     hyprpicker

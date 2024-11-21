@@ -46,6 +46,9 @@
   # Networking
   networking.networkmanager.enable = true;
 
+  # Ledger
+  hardware.ledger.enable = true;
+
   # User
   users.users.brandon = {
     isNormalUser = true;
