@@ -20,7 +20,8 @@ in
     ./apps/zsh
     ./apps/wofi.nix
   ];
-  
+
+  home.sessionPath = ["$HOME/bin"];
 
   programs = {
     git = {

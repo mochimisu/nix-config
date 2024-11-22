@@ -27,7 +27,7 @@
       defaultwindows = {
         windowrulev2 = [
           "workspace 2 silent, class:^(steam)$"
-          "workspace 2 silent, class:^(discord)$"
+          "workspace 2 silent, class:^(vesktop)$"
         ];
       };
     };
@@ -38,7 +38,7 @@
     };
 
     "exec-once" = [
-      "discord"
+      "vesktop"
       # set DP-1 as primary
       "wlr-randr --output DP-1 --primary"
       # todo moon profile
