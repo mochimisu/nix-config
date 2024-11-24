@@ -1,3 +1,4 @@
+{ pkgs, ... }:
 {
   imports = [
     ./p10k.nix
@@ -13,7 +14,11 @@
       plugins = [
       {
         name = "zsh-users/zsh-history-substring-search";
-        tags = [ as:plugin depth:1 ];
+        tags = [ "as:plugin" "depth:1" ];
+      }
+      {
+        name = "chisui/zsh-nix-shell";
+        tags = [ "as:plugin" "depth:1" ];
       }
       ];
     };

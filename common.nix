@@ -49,6 +49,9 @@
   # Ledger
   hardware.ledger.enable = true;
 
+  # QMK dev
+  hardware.keyboard.qmk.enable = true;
+
   # User
   users.users.brandon = {
     isNormalUser = true;
