@@ -32,6 +32,8 @@ in
     spotify-player.enable = true;
   };
 
+  programs.direnv.enable = true;
+
   home.shellAliases = {
     "nix-rs" = "sudo nixos-rebuild switch --flake ${configsDir}";
     "nix-rsf" = "sudo nixos-rebuild switch --flake ${configsDir} --fast";
