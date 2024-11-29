@@ -1,10 +1,11 @@
-{ config, lib, pkgs, specialArgs, inputs, ... }:
+{ pkgs, inputs, ... }:
 
 {
   imports =
     [
       ./keymap.nix
       inputs.catppuccin.nixosModules.catppuccin
+      {nixpkgs.overlays = [inputs.hyprpanel.overlay];}
     ];
 
   nixpkgs.config = {
@@ -13,15 +14,16 @@
     };
   };
 
+
   # Packages
   environment.systemPackages = with pkgs; [
     bluez
     mesa
     greetd.tuigreet
     hyprpaper
-    waybar
+    hyprpanel
     networkmanagerapplet
-    wofi
+    hyprlauncher
     kitty
     chromium
     # error building with tests
@@ -41,7 +43,6 @@
     swaynotificationcenter
 
     # Apps
-    # discord
     vesktop
     proton-pass
     caprine
@@ -64,6 +65,7 @@
 
     # 3D Printing
     bambu-studio
+    
   ];
 
   environment.sessionVariables = {
@@ -94,6 +96,7 @@
     powerline-symbols
     liberation_ttf
     wqy_zenhei
+    nerdfonts
   ];
 
   # Touchpad support

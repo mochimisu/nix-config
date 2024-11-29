@@ -40,6 +40,10 @@
   ];
 
 
+  # services for fusion360
+  hardware.spacenavd.enable = true;
+  services.samba.enable = true;
+
 
   system.stateVersion = "24.11";
 }

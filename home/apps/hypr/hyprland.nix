@@ -4,11 +4,10 @@
     settings = {
       "$mod" = "SUPER";
       "$terminal" = "kitty";
-      "$menu" = "wofi --show drun";
-      "$menuAll" = "wofi --show run";
+      "$menu" = "hyprlauncher";
 
       "exec-once" = [
-        "sleep 1 && waybar"
+        "hyprpanel"
         "hyprpaper"
         "nm-applet"
         "sleep 2 && blueman-applet"

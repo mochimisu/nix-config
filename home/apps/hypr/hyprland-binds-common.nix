@@ -1,4 +1,4 @@
-{ home, pkgs, ...}: {
+{ ... }: {
   wayland.windowManager.hyprland.settings = {
     bind = [
       # Switch workspaces with mod + [0-9]
@@ -41,6 +41,9 @@
 
       #lock
       "$mod, L, exec, hyprlock"
+
+      # launcher
+      "$mod, space, exec, $menu"
 
       # will switch to a submap called resize
       # bind = $mod CONTROL, R, submap, resize

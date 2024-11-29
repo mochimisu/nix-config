@@ -20,6 +20,7 @@
       url = "github:drakon64/nixos-xivlauncher-rb";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    hyprpanel.url = "github:Jas-SinghFSU/HyprPanel";
     catppuccin.url = "github:catppuccin/nix";
   };
   outputs = { self, nixpkgs, home-manager, nix-darwin, ... } @inputs: {

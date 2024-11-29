@@ -15,10 +15,8 @@ in
   imports = [
     ./apps/hypr
     ./apps/tmux.nix
-    ./apps/waybar.nix
     ./apps/nixvim
     ./apps/zsh
-    ./apps/wofi.nix
   ];
 
   home.sessionPath = ["$HOME/bin"];

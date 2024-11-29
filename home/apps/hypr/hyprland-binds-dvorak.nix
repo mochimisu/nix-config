@@ -8,8 +8,6 @@
       "$mod, M, exit,"
       "$mod, G, exec, $fileManager"
       "$mod, V, togglefloating,"
-      "$mod, R, exec, $menu"
-      "$mod SHIFT, R, exec, $menuAll"
       "$mod, U, pseudo, # dwindle"
       "$mod, P, togglesplit, # dwindle"
 
