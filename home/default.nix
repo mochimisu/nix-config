@@ -1,4 +1,4 @@
-{ config, pkgs, lib, inputs, keyboardLayout, ...}:
+{ config, pkgs, lib, ...}:
 
 let
   configsDir = "${config.home.homeDirectory}/stuff/nix-config";

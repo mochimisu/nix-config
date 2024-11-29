@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ ... }:
 {
   imports = [
     ./p10k.nix
@@ -20,9 +20,15 @@
         name = "chisui/zsh-nix-shell";
         tags = [ "as:plugin" "depth:1" ];
       }
+      {
+        name = "bobsoppe/zsh-ssh-agent";
+        tags = [ "as:plugin" "depth:1" ];
+      }
       ];
     };
     initExtra = ''
+      # ssh-agent lazy loading
+      zstyle :omz:plugins:ssh-agent lazy yes
       bindkey "^[[A" up-line-or-search
       bindkey "^[[B" down-line-or-search
     '';
