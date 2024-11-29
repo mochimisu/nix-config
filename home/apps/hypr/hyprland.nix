@@ -4,16 +4,14 @@
     settings = {
       "$mod" = "SUPER";
       "$terminal" = "kitty";
-      "$menu" = "hyprlauncher";
+      "$menu" = "walker";
 
       "exec-once" = [
-        "hyprpanel"
         "hyprpaper"
         "nm-applet"
         "sleep 2 && blueman-applet"
         "sleep 2 && blueman-tray"
         "${pkgs.polkit-kde-agent}/libexec/polkit-kde-authentication-agent-1"
-        "swaync"
         "hypridle"
       ];
       

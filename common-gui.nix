@@ -21,9 +21,8 @@
     mesa
     greetd.tuigreet
     hyprpaper
-    hyprpanel
     networkmanagerapplet
-    hyprlauncher
+    walker
     kitty
     chromium
     # error building with tests
@@ -40,7 +39,6 @@
     xwaylandvideobridge
 
     polkit-kde-agent
-    swaynotificationcenter
 
     # Apps
     vesktop
