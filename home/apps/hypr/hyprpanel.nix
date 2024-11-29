@@ -1,6 +1,6 @@
 { pkgs, ... } : 
 {
-  environment.systemPackages = with pkgs; [
+  home.packages = with pkgs; [
     hyprpanel
   ];
   wayland.windowManager.hyprland = {
@@ -80,5 +80,4 @@
     "tear": true
   }%
   '';
-  };
 }
