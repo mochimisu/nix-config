@@ -9,6 +9,9 @@
   networking.hostName = "blackmoon";
   environment.systemPackages = with pkgs; [
     bolt
+
+    samba
+    spacenavd
   ];
 
   services.hardware.bolt.enable = true;

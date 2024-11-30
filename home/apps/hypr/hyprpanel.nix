@@ -10,7 +10,7 @@
       ];
     };
   };
-  home.file.".cache/hyprpanel/options.json".source = pkgs.writeText "hyprpanel/options.json" ''
+  home.file.".cache/ags/hyprpanel/options.json".source = pkgs.writeText "hyprpanel/options.json" ''
   {
     "bar.customModules.updates.pollingInterval": 1440000,
     "theme.font.size": "1rem",
@@ -78,6 +78,6 @@
     "bar.workspaces.numbered_active_indicator": "highlight",
     "menus.transition": "crossfade",
     "tear": true
-  }%
+  }
   '';
 }
