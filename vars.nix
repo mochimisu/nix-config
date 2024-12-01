@@ -4,7 +4,10 @@
     type = lib.types.attrs;
     default = {
       keyboardLayout = "qwerty";
-      hyprpanelHiddenMonitors = [];
+      hyprpanel = {
+        hiddenMonitors = [];
+        cpuTempSensor = "/dev/hwmon_aquaflow_water_temp_sensor/temp1_input";
+      };
     };
   };
   config._module.args.variables = config.variables;

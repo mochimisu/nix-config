@@ -1,7 +1,8 @@
 { pkgs, lib, config, ... } : 
 
 let
-  hiddenMonitors = if builtins.hasAttr "hyprpanelHiddenMonitors" config.variables then config.variables.hyprpanelHiddenMonitors else [];
+  hyprpanelVars = if builtins.hasAttr "hyprpanel" config.variables then config.variables.hyprpanel else {};
+  hiddenMonitors = if builtins.hasAttr "hyprpanelHiddenMonitors" hyprpanelVars then config.variables.hyprpanelHiddenMonitors else [];
   defaultLayout = {
     name = "*";
     value = {
@@ -19,7 +20,14 @@ let
     };
   }) hiddenMonitors;
   combinedLayouts = lib.listToAttrs ( hiddenLayouts ++ [ defaultLayout ]);
-  hyprpanelConfig = {
+  cpuTempAttr = if builtins.hasAttr "cpuTempSensor" hyprpanelVars then {
+    "bar.customModules.cpuTemp.sensor" = hyprpanelVars.cpuTempSensor;
+  } else {};
+  avatar = builtins.fetchurl {
+    url = "https://avatars.githubusercontent.com/u/868700?v=4";
+    sha256 = "sha256:0v186vc1l2z1fxm5lyf0lfqf1fkw18kv4945vay7clpryj2a4vh3";
+  };
+  hyprpanelConfig = lib.recursiveUpdate {
     "bar.customModules.updates.pollingInterval" = 1440000;
     "theme.font.size" = "1rem";
     "theme.font.weight" = 500;
@@ -30,7 +38,7 @@ let
     "menus.clock.time.hideSeconds" = true;
     "menus.clock.weather.unit" = "imperial";
     "menus.bluetooth.showBattery" = true;
-    "menus.dashboard.powermenu.avatar.image" = "/home/brandon/Downloads/868700.jpeg";
+    "menus.dashboard.powermenu.avatar.image" = avatar;
     "notifications.position" = "top right";
     "notifications.monitor" = 1;
     "notifications.active_monitor" = false;
@@ -52,14 +60,13 @@ let
     "bar.media.show_label" = true;
     "bar.clock.format" = "%I:%M %p";
     "bar.clock.showIcon" = false;
-    "bar.customModules.cpuTemp.sensor" = "/sys/devices/pci0000:00/0000:00:14.0/usb1/1-10/1-10.2/1-10.2.4/1-10.2.4:1.1/0003:0C70:F012.0009/hwmon/hwmon8/temp1_input";
     "bar.workspaces.show_icons" = false;
     "bar.workspaces.show_numbered" = true;
     "bar.workspaces.showWsIcons" = false;
     "bar.workspaces.numbered_active_indicator" = "highlight";
     "menus.transition" = "crossfade";
     "tear" = true;
-  };
+  } cpuTempAttr;
   in
 {
   home.packages = with pkgs; [

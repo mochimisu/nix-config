@@ -27,6 +27,7 @@
     openssh
     lm_sensors
 
+    fx
     unzip
 
     pulsemixer

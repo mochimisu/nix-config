@@ -47,6 +47,11 @@
   hardware.spacenavd.enable = true;
   services.samba.enable = true;
 
+  # consistent udev for highflownext 
+  services.udev.extraRules = ''
+    ACTION=="add", SUBSYSTEM=="hwmon", ATTRS{idVendor}=="0c70", ATTRS{idProduct}=="f012", ATTRS{serial}=="03550-34834", RUN+="/bin/sh -c 'ln -s /sys$devpath /dev/highflow_next'"
+  '';
+
 
   system.stateVersion = "24.11";
 }

@@ -1,7 +1,10 @@
 { pkgs, ... }:
 {
   variables.keyboardLayout = "dvorak";
-  variables.hyprpanelHiddenMonitors = ["0"];
+  variables.hyprpanel = {
+    hiddenMonitors = ["0"];
+    cpuTempSensor = "/dev/highflow_next/temp1_input";
+  };
   imports = [
     ../../../home/common-linux.nix
     ./conky.nix
@@ -44,6 +47,7 @@
       "wlr-randr --output DP-1 --primary"
       # todo moon profile
       "openrgb --profile /home/brandon/.config/OpenRGB/moon.orp"
+      "mangohud steam"
     ];
 
     # nvidia stuff, move to shared
