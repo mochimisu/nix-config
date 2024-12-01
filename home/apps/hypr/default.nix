@@ -1,7 +1,6 @@
 { lib, ... }: {
   options.me = {
     keyboardLayout = lib.mkEnableOption "keyboard layout";
-    hyprpanelHiddenMonitors = lib.mkEnableOption "hyprpanel hidden monitors";
   };
   imports = [
     ./hyprland.nix
