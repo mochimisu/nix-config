@@ -1,6 +1,7 @@
 { pkgs, ... }:
 {
   variables.keyboardLayout = "dvorak";
+  variables.hyprpanelHiddenMonitors = ["0"];
   imports = [
     ../../../home/common-linux.nix
     ./conky.nix

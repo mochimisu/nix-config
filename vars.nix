@@ -4,6 +4,7 @@
     type = lib.types.attrs;
     default = {
       keyboardLayout = "qwerty";
+      hyprpanelHiddenMonitors = [];
     };
   };
   config._module.args.variables = config.variables;

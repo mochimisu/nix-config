@@ -94,7 +94,7 @@
     powerline-symbols
     liberation_ttf
     wqy_zenhei
-    nerdfonts
+    nerd-fonts.ubuntu-sans
   ];
 
   # Touchpad support
