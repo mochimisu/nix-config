@@ -22,7 +22,6 @@
     greetd.tuigreet
     hyprpaper
     networkmanagerapplet
-    walker
     kitty
     chromium
     # error building with tests

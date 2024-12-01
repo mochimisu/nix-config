@@ -4,7 +4,7 @@
     settings = {
       "$mod" = "SUPER";
       "$terminal" = "kitty";
-      "$menu" = "walker";
+      "$menu" = "wofi --show drun";
 
       "exec-once" = [
         "hyprpaper"

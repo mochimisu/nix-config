@@ -17,6 +17,7 @@ in
     ./apps/tmux.nix
     ./apps/nixvim
     ./apps/zsh
+    ./apps/wofi.nix
   ];
 
   home.sessionPath = ["$HOME/bin"];
