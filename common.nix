@@ -29,6 +29,8 @@
 
     fx
     unzip
+    unrar
+    sshfs
 
     pulsemixer
     conky
