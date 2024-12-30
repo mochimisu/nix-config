@@ -12,8 +12,14 @@
         "nm-applet"
         "sleep 2 && blueman-applet"
         "sleep 2 && blueman-tray"
-        "${pkgs.polkit-kde-agent}/libexec/polkit-kde-authentication-agent-1"
+        "systemctl --user start hyprpolkitagent"
+        "kwalletd5"
         "hypridle"
+        # disable power button being handled by logind
+        "systemd-inhibit --who=\"Hyprland config\" --why=\"wlogout keybind\" --what=handle-power-key --mode=block sleep infinity & echo $! > /tmp/.hyprland-systemd-inhibit"
+      ];
+      "exec-shutdown" = [
+        "kill -9 \"$(cat /tmp/.hyprland-systemd-inhibit)"
       ];
       
       debug = {

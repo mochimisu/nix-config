@@ -37,7 +37,10 @@
     xdg-desktop-portal-hyprland
     xwaylandvideobridge
 
-    polkit-kde-agent
+    hyprpolkitagent
+    libsForQt5.kwallet
+    kwalletcli
+    kwalletmanager
 
     # Apps
     vesktop
@@ -49,6 +52,7 @@
     ani-cli
     transmission-remote-gtk
     ledger-live-desktop
+    protonvpn-gui
 
     # Games
     mangohud
@@ -119,6 +123,7 @@
   security = {
     polkit.enable = true;
     pam.services.hyprlock = {};
+    pam.services.greetd.kwallet.enable = true;
   };
 
   # catppuccin
