@@ -80,5 +80,5 @@ let
     };
   };
 
-  home.file.".cache/ags/hyprpanel/options.json".source = pkgs.writeText "hyprpanel/options.json" (builtins.toJSON hyprpanelConfig);
+  home.file.".config/hyprpanel/config.json".source = pkgs.writeText "hyprpanel/options.json" (builtins.toJSON hyprpanelConfig);
 }
