@@ -60,7 +60,7 @@ in
 
     # Games
     mangohud
-    #heroic
+    # heroic
     inputs.nixos-xivlauncher-rb.packages.${pkgs.system}.default
     parsec-bin
     itch
