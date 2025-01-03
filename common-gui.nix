@@ -1,11 +1,11 @@
 { pkgs, inputs, ... }:
 
 let
-  pkgsPinned = import (builtins.fetchTarball {
-    # Heroic and bambu-studio broken in 12/30/2024
-    url = "https://github.com/NixOS/nixpkgs/archive/0c23a22ce8d0814888a785b89d5b6172755caac2.tar.gz";
-    sha256 = "sha256:1aqk6nvsg5l3nlh1klqzl1kra49zcprc3qaqy7iz9m1j1lxj10vr";
-  }) { system = "x86_64-linux"; };
+  # pkgsPinned = import (builtins.fetchTarball {
+  #   # Heroic and bambu-studio broken in 12/30/2024
+  #   url = "https://github.com/NixOS/nixpkgs/archive/0c23a22ce8d0814888a785b89d5b6172755caac2.tar.gz";
+  #   sha256 = "sha256:1aqk6nvsg5l3nlh1klqzl1kra49zcprc3qaqy7iz9m1j1lxj10vr";
+  # }) { system = "x86_64-linux"; };
 in
 {
   imports =
@@ -60,7 +60,7 @@ in
 
     # Games
     mangohud
-    # heroic
+    heroic
     inputs.nixos-xivlauncher-rb.packages.${pkgs.system}.default
     parsec-bin
     itch
@@ -69,11 +69,7 @@ in
     gamescope
 
     # 3D Printing
-    #bambu-studio
-
-    # temporarily broken packages
-    pkgsPinned.heroic
-    pkgsPinned.bambu-studio
+    bambu-studio
   ];
 
   environment.sessionVariables = {
