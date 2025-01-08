@@ -47,7 +47,7 @@ in
     kwalletmanager
 
     # Apps
-    vesktop
+    discord-canary
     proton-pass
     caprine
     hyprpicker

@@ -31,7 +31,7 @@
       defaultwindows = {
         windowrulev2 = [
           "workspace 2 silent, class:^(steam)$"
-          "workspace 2 silent, class:^(vesktop)$"
+          "workspace 2 silent, class:^(discord)$"
         ];
       };
     };
@@ -42,12 +42,12 @@
     };
 
     "exec-once" = [
-      "vesktop"
+      "discordcanary"
       # set DP-1 as primary
       "wlr-randr --output DP-1 --primary"
       # todo moon profile
       "openrgb --profile /home/brandon/.config/OpenRGB/moon.orp"
-      "mangohud steam"
+      "mangohud steam -silent"
       "mangohud heroic"
     ];
 
