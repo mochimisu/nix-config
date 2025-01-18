@@ -37,8 +37,8 @@
     };
 
     input = {
-      kb_layout = "us";
-      kb_variant = "dvorak";
+      kb_layout = "us,us";
+      kb_variant = "dvorak,";
     };
 
     "exec-once" = [

@@ -29,6 +29,7 @@ in
     greetd.tuigreet
     hyprpaper
     networkmanagerapplet
+    walker
     kitty
     chromium
     cliphist
