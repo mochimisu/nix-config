@@ -129,6 +129,27 @@
           }
         ];
       };
+      gaia = nixpkgs.lib.nixosSystem {
+        specialArgs = { inherit inputs; };
+        system = "x86_64-linux";
+        modules = [
+          ./vars.nix
+          # ./machines/gaia/hardware-configuration.nix
+          ./machines/gaia/configuration.nix
+          ./boot-efi.nix
+          ./common.nix
+          home-manager.nixosModules.home-manager {
+            home-manager.useGlobalPkgs = true;
+            home-manager.useUserPackages = true;
+            home-manager.users.brandon = {
+              imports = [
+                ./machines/gaia/home
+                  self.homeManagerModules.home
+              ];
+            };
+          }
+        ];
+      };
     };
   };
 }
