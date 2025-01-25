@@ -10,6 +10,7 @@
   ];
   programs.nixvim = {
     colorschemes.ayu.enable = true;
+    nixpkgs.useGlobalPackages = true;
 
     plugins = {
       indent-blankline.enable = true;

@@ -1,11 +1,11 @@
 { pkgs, inputs, ... }:
 
 let
-  # pkgsPinned = import (builtins.fetchTarball {
-  #   # Heroic and bambu-studio broken in 12/30/2024
-  #   url = "https://github.com/NixOS/nixpkgs/archive/0c23a22ce8d0814888a785b89d5b6172755caac2.tar.gz";
-  #   sha256 = "sha256:1aqk6nvsg5l3nlh1klqzl1kra49zcprc3qaqy7iz9m1j1lxj10vr";
-  # }) { system = "x86_64-linux"; };
+  pkgsPinned = import (builtins.fetchTarball {
+    # bambu-studio broken in ~1/18/2025-1/25/2025, using commit from 1/12/2025
+    url = "https://github.com/NixOS/nixpkgs/archive/3ffda9033335d95338e1b80171327e2965f91dd7.tar.gz";
+    sha256 = "sha256:03dhmp8l2v0c5vhi83azj1258x53pmgs6k91fzw05ikgz28s3ns0";
+  }) { system = "x86_64-linux"; };
 in
 {
   imports =
@@ -70,7 +70,7 @@ in
     gamescope
 
     # 3D Printing
-    bambu-studio
+    pkgsPinned.bambu-studio
   ];
 
   environment.sessionVariables = {
