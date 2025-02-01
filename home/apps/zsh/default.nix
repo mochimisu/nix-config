@@ -31,6 +31,8 @@
       zstyle :omz:plugins:ssh-agent lazy yes
       bindkey "^[[A" up-line-or-search
       bindkey "^[[B" down-line-or-search
+      # disable ctrl s/q
+      stty -ixon
     '';
   };
 }
