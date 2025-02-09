@@ -33,6 +33,8 @@
       bindkey "^[[B" down-line-or-search
       # disable ctrl s/q
       stty -ixon
+      # local zsh for things like keys
+      source ~/.zshrc-local
     '';
   };
 }
