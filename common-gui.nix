@@ -2,9 +2,9 @@
 
 let
   pkgsPinned = import (builtins.fetchTarball {
-    # bambu-studio broken in ~1/18/2025-1/25/2025, using commit from 1/12/2025
-    url = "https://github.com/NixOS/nixpkgs/archive/3ffda9033335d95338e1b80171327e2965f91dd7.tar.gz";
-    sha256 = "sha256:03dhmp8l2v0c5vhi83azj1258x53pmgs6k91fzw05ikgz28s3ns0";
+    # walker broken on 2/13/2025, use a commit from 2/3/2025
+    url = "https://github.com/NixOS/nixpkgs/archive/9d962cd4ad268f64d125aa8c5599a87a374af78a.tar.gz";
+    sha256 = "sha256:1a1917f9qvg5agx2vhlsrhj3yyjrznpcnlkwcqk4ampzdby6nzhi";
   }) { system = "x86_64-linux"; };
 in
 {
@@ -29,7 +29,7 @@ in
     greetd.tuigreet
     hyprpaper
     networkmanagerapplet
-    walker
+    pkgsPinned.walker
     kitty
     chromium
     cliphist
@@ -70,7 +70,7 @@ in
     gamescope
 
     # 3D Printing
-    pkgsPinned.bambu-studio
+    bambu-studio
   ];
 
   environment.sessionVariables = {

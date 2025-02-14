@@ -55,6 +55,7 @@
         "<space>j" = ":<C-u>CocNext<CR>";
         "<space>k" = ":<C-u>CocPrev<CR>";
         "<space>p" = ":<C-u>CocListResume<CR>";
+        "K" = ":call CocAction('doHover')<CR>";  # New key mapping for showing type definition
       }
       ++
       lib.mapAttrsToList (key: action: {
