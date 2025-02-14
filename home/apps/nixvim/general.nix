@@ -17,5 +17,11 @@
       trail = "·";
     };
     conceallevel = 0;
-  };
+};
+programs.nixvim.autoCmd = [
+{
+  event = "VimResized";
+  command = "wincmd =";
+}
+];
 }
