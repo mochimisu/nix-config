@@ -47,6 +47,9 @@ in
     kwalletcli
     kwalletmanager
 
+    # for pactl
+    pulseaudio
+
     # Apps
     discord-canary
     proton-pass

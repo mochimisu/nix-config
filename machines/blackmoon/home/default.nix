@@ -89,6 +89,10 @@
     };
     bind = [
       "$mod, F2, exec, ~/.config/hypr/gamemode2.sh"
+      ", mouse:275, exec, pactl set-source-mute @DEFAULT_SOURCE@ 0"
+    ];
+    bindr = [
+      ", mouse:275, exec, pactl set-source-mute @DEFAULT_SOURCE@ 1"
     ];
   };
   home.file.".config/hypr/gamemode2.sh" = {
