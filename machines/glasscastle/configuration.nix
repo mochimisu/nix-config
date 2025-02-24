@@ -23,6 +23,9 @@
 
   services.hardware.bolt.enable = true;
 
+  # upower for reading battery
+  services.upower.enable = true;
+
   boot.kernelParams = [
     "video=eDP-1,2880x1920@120"
   ];

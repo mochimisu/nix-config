@@ -1,5 +1,9 @@
 {
   variables.keyboardLayout = "dvorak";
+  variables.hyprpanel = {
+    cpuTempSensor = "/sys/class/thermal/thermal_zone0/temp";
+  };
+
   wayland.windowManager.hyprland.settings = {
     monitors = {
       monitor = [
