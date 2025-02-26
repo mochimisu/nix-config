@@ -3,6 +3,8 @@
   home.packages = with pkgs; [
     # FZF replacement
     fd
+    # ghostty term for mac
+    # ghostty
   ];
   programs.zsh = {
     initExtra = ''
