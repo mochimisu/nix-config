@@ -6,11 +6,6 @@
     # ghostty term for mac
     # ghostty
   ];
-  programs.zsh = {
-    initExtra = ''
-    source ~/.zshrc-oai
-    '';
-  };
   programs.nixvim = {
     plugins.fzf-lua = {
       settings = {
@@ -45,5 +40,6 @@
 
   home.shellAliases = {
     "nix-rs" = lib.mkForce "nix run nix-darwin -- switch --flake ${config.home.homeDirectory}/stuff/nix-config#oai-dev";
+    "gitp" = "GIT_SSH_COMMAND='ssh -i ~/.ssh/id_ed25519-personal' git push";
   };
 }
