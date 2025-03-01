@@ -40,12 +40,12 @@ in
     wl-clipboard
     inputs.rose-pine-hyprcursor.packages.${pkgs.system}.default
     xdg-desktop-portal-hyprland
-    xwaylandvideobridge
+    kdePackages.xwaylandvideobridge
 
     hyprpolkitagent
     libsForQt5.kwallet
     kwalletcli
-    kwalletmanager
+    kdePackages.kwalletmanager
 
     # for pactl
     pulseaudio
