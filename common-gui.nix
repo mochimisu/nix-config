@@ -71,6 +71,7 @@ in
     lutris
     wine
     gamescope
+    antimicrox
 
     # 3D Printing
     bambu-studio
@@ -92,6 +93,7 @@ in
         proton-ge-bin
       ];
     };
+    gamemode.enable = true;
     hyprland.enable = true;
     hyprlock.enable = true;
   };
