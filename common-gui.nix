@@ -86,7 +86,12 @@ in
   };
 
   programs = {
-    steam.enable = true;
+    steam = {
+      enable = true;
+      extraCompatPackages = with pkgs; [
+        proton-ge-bin
+      ];
+    };
     hyprland.enable = true;
     hyprlock.enable = true;
   };
