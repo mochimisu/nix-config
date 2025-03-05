@@ -49,6 +49,9 @@
   # Networking
   networking.networkmanager.enable = true;
 
+  # Power
+  services.upower.enable = true;
+
   # Ledger
   hardware.ledger.enable = true;
 
