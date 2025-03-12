@@ -10,8 +10,8 @@
   imports = [
     ../../home/common-linux.nix
   ];
+
   # custom full remapped keyboard
-  
   wayland.windowManager.hyprland.settings.input = {
     kb_layout = "custom";
     kb_variant = "dvorak-custom";
