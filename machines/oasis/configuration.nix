@@ -6,7 +6,13 @@
     brightnessctl
     bolt
     bash
+    acpid
   ];
+
+  # gnupg
+  programs.gnupg.agent = {
+    enable = true;
+  };
 
   # fix speakers
   boot.kernelPatches = [
@@ -35,6 +41,27 @@
     ACTION=="add", KERNEL=="0003:0B05:1A30.*", SUBSYSTEM=="hid", \
       RUN+="$(pkgs.bash) -c 'sh /etc/scripts/touchpad-fix.sh'"
   '';
+
+  # palm rejection
+  services.xserver.libinput = {
+    enable = true;
+    touchpad = {
+      additionalOptions = ''
+        Option "PalmDetection" "on"
+        Option "PalmSizeThreshold" "10"
+        Option "PalmEdgeWidth" "5"
+        '';
+    };
+  };
+
+  # Ignore wifi button
+  networking.networkmanager = {
+    settings = {
+      main = {
+        "ignore-carrier" = "*";
+      };
+    };
+  };
 
   systemd.services.fprintd = {
     wantedBy = [ "multi-user.target" ];
