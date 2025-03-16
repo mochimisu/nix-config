@@ -8,6 +8,7 @@
         hiddenMonitors = [];
         cpuTempSensor = "/dev/hwmon_aquaflow_water_temp_sensor/temp1_input";
       };
+      hyprpaper-config = "";
     };
   };
   config._module.args.variables = config.variables;
