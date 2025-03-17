@@ -67,4 +67,13 @@
    ];
    shell = pkgs.zsh;
   };
+
+  # Allow SSH for brandon
+  services.openssh = {
+    enable = true;
+    permitRootLogin = "no";
+    extraConfig = ''
+      AllowUsers brandon
+    '';
+  };
 }
