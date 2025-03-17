@@ -10,6 +10,8 @@ let
   };
 in
 {
+  imports = [ ../../../vars.nix ];
+
   home.file.".config/hypr/turquoiseTree.jpg".source = turquoiseTree;
   home.file.".config/hypr/dusk.jpg".source = dusk;
   home.file.".config/hypr/black.png".source = ./black.png;
@@ -21,7 +23,7 @@ in
     wallpaper = DP-1, ${config.home.homeDirectory}/.config/hypr/dusk.jpg
     wallpaper = DP-3, ${config.home.homeDirectory}/.config/hypr/dusk.jpg
     wallpaper = HDMI-A-1, ${config.home.homeDirectory}/.config/hypr/turquoiseTree.jpg
-    ${variables.hyprpaper-config}
+    ${variables.hyprpaper-config or ""}
     '';
 }
 

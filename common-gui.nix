@@ -43,7 +43,7 @@ in
     kdePackages.xwaylandvideobridge
 
     hyprpolkitagent
-    libsForQt5.kwallet
+    kdePackages.kwallet
     kwalletcli
     kdePackages.kwalletmanager
 
@@ -61,6 +61,7 @@ in
     transmission-remote-gtk
     ledger-live-desktop
     protonvpn-gui
+    kdePackages.dolphin
 
     # Games
     mangohud
@@ -72,6 +73,7 @@ in
     wine
     gamescope
     antimicrox
+    sc-controller
 
     # 3D Printing
     bambu-studio
@@ -116,6 +118,9 @@ in
 
   # Touchpad support
   services.libinput.enable = true;
+
+  # Gamepad remapping
+  services.input-remapper.enable = true;
 
   # Audio
   services.pipewire = {
