@@ -7,6 +7,14 @@
     bolt
     bash
     acpid
+
+    # notes
+    xournalpp
+  ];
+
+  # wifi usb
+  boot.extraModulePackages = with config.boot.kernelPackages; [
+    rtl8852bu
   ];
 
   # gnupg
