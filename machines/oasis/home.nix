@@ -1,4 +1,4 @@
-{ config, ... }:
+{ config, pkgs, ... }:
 {
   variables.keyboardLayout = "dvorak";
   variables.hyprpanel = {
@@ -19,6 +19,7 @@
     "exec-once" = [
       "mangohud steam -silent"
       "heroic"
+      "iio-hyprland"
     ];
   };
   imports = [

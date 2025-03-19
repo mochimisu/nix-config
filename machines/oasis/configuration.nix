@@ -9,7 +9,11 @@
     acpid
 
     # notes
-    xournalpp
+    styluslabs-write-bin
+
+    # rotate screen
+    jq
+    iio-hyprland
   ];
 
   # wifi usb
