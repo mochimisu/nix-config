@@ -49,6 +49,9 @@
   # Networking
   networking.networkmanager.enable = true;
 
+  # Power
+  services.upower.enable = true;
+
   # Ledger
   hardware.ledger.enable = true;
 
@@ -63,5 +66,14 @@
       tree
    ];
    shell = pkgs.zsh;
+  };
+
+  # Allow SSH for brandon
+  services.openssh = {
+    enable = true;
+    permitRootLogin = "no";
+    extraConfig = ''
+      AllowUsers brandon
+    '';
   };
 }

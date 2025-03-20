@@ -13,12 +13,10 @@ in
   ];
 
   imports = [
-    ./apps/hypr
     ./apps/tmux.nix
     ./apps/nixvim
     ./apps/zsh
     # ./apps/wofi.nix
-    ./apps/mangohud.nix
   ];
 
   home.sessionPath = ["$HOME/bin"];

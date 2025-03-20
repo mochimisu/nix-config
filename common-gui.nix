@@ -40,12 +40,12 @@ in
     wl-clipboard
     inputs.rose-pine-hyprcursor.packages.${pkgs.system}.default
     xdg-desktop-portal-hyprland
-    xwaylandvideobridge
+    kdePackages.xwaylandvideobridge
 
     hyprpolkitagent
-    libsForQt5.kwallet
+    kdePackages.kwallet
     kwalletcli
-    kwalletmanager
+    kdePackages.kwalletmanager
 
     # for pactl
     pulseaudio
@@ -61,6 +61,7 @@ in
     transmission-remote-gtk
     ledger-live-desktop
     protonvpn-gui
+    kdePackages.dolphin
 
     # Games
     mangohud
@@ -71,6 +72,8 @@ in
     lutris
     wine
     gamescope
+    antimicrox
+    sc-controller
 
     # 3D Printing
     bambu-studio
@@ -86,7 +89,13 @@ in
   };
 
   programs = {
-    steam.enable = true;
+    steam = {
+      enable = true;
+      extraCompatPackages = with pkgs; [
+        proton-ge-bin
+      ];
+    };
+    gamemode.enable = true;
     hyprland.enable = true;
     hyprlock.enable = true;
   };
@@ -109,6 +118,9 @@ in
 
   # Touchpad support
   services.libinput.enable = true;
+
+  # Gamepad remapping
+  services.input-remapper.enable = true;
 
   # Audio
   services.pipewire = {

@@ -74,6 +74,8 @@
       ",XF86AudioRaiseVolume,exec,wpctl set-volume @DEFAULT_SINK@ 5%+"
       ",XF86AudioMute,exec,wpctl set-mute @DEFAULT_SINK@ toggle"
       ",XF86PowerOff,exec,systemctl suspend"
+      ",XF86KbdLightOnOff,exec,brightnessctl --device \*kbd_backlight\* set +1"
+      "SHIFT,XF86KbdLightOnOff,exec,brightnessctl --device \*kbd_backlight\* set 1-"
     ];
 
     bindm = [
