@@ -14,6 +14,9 @@
     # rotate screen
     jq
     iio-hyprland
+
+    # on screen keyboard
+    wvkbd
   ];
 
   # wifi usb
@@ -29,8 +32,8 @@
   # fix speakers
   boot.kernelPatches = [
     {
-      name = "rog-ally-audio";
-      patch = ./rog-ally-x-audio-fix.patch;
+      name = "z13-audio";
+      patch = ./z13-audio-fix.patch;
     }
   ];
 
@@ -67,13 +70,13 @@
   };
 
   # Ignore wifi button
-  networking.networkmanager = {
-    settings = {
-      main = {
-        "ignore-carrier" = "*";
-      };
-    };
-  };
+  # TODO figure out which device
+  services.udev.extraHwdb = ''
+    evdev:input:*
+     KEYBOARD_KEY_5f=f13
+    '';
+
+
 
   systemd.services.fprintd = {
     wantedBy = [ "multi-user.target" ];

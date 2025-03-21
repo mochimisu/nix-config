@@ -21,7 +21,21 @@
       "heroic"
       "iio-hyprland"
     ];
+
+    plugin = {
+      "touch_gestures" = {
+        "hyprgrass-bind" = [
+          ",swipe:4:d,exec,pkill wvkbd-mobintl"
+          ",swipe:4:u,exec,wvkbd-mobintl -L 300"
+        ];
+      };
+    };
   };
+  wayland.windowManager.hyprland.plugins = [
+    pkgs.hyprlandPlugins.hyprgrass
+  ];
+    
+
   imports = [
     ../../home/common-linux.nix
   ];
