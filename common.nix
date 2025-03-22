@@ -31,6 +31,7 @@
     unzip
     unrar
     sshfs
+    lf
 
     pulsemixer
     conky

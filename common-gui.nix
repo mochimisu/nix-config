@@ -61,7 +61,7 @@ in
     transmission-remote-gtk
     ledger-live-desktop
     protonvpn-gui
-    kdePackages.dolphin
+    xfce.thunar
 
     # Games
     mangohud
