@@ -70,7 +70,6 @@
 
     opengl = {
       nvidia_anti_flicker = 0;
-      force_introspection = 2;
     };
     render = {
       # both needed to be disabled to prevent stutter frames in ff14
