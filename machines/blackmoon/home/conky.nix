@@ -82,8 +82,8 @@ in
     ];
     defaultwindows = {
       windowrule = [
-        "workspace 10 silent, title:^Conky$"
-        "fullscreen, title:^Conky$"
+        "workspace 10 silent, class:^Conky$"
+        "fullscreen, class:^Conky$"
       ];
     };
   };

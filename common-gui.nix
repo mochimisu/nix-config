@@ -74,6 +74,8 @@ in
     gamescope
     antimicrox
     sc-controller
+    obs-studio
+    appimage-run
 
     # 3D Printing
     bambu-studio
