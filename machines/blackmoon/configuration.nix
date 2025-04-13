@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ config, pkgs, lib, ... }:
 
 {
   imports = [
@@ -9,6 +9,7 @@
   networking.hostName = "blackmoon";
   environment.systemPackages = with pkgs; [
     bolt
+    cage
 
     samba
     spacenavd
@@ -51,7 +52,6 @@
   services.udev.extraRules = ''
     ACTION=="add", SUBSYSTEM=="hwmon", ATTRS{idVendor}=="0c70", ATTRS{idProduct}=="f012", ATTRS{serial}=="03550-34834", RUN+="/bin/sh -c 'ln -s /sys$devpath /dev/highflow_next'"
   '';
-
 
   system.stateVersion = "24.11";
 }

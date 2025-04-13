@@ -71,5 +71,14 @@ in
       fi
     '';
   };
+
+  xdg.desktopEntries."xivlauncher-rb" = {
+    name = "XIVLauncher-RB";
+    icon = "xivlauncher";
+    exec = "SDL_VIDEODRIVER=wayland XIVLauncher.Core";
+    terminal = false;
+    type = "Application";
+    categories = [ "Game" ];
+  };
 }
 

@@ -26,6 +26,10 @@
       }
       ];
     };
+    sessionVariables = {
+      SDL_VIDEODRIVER = "wayland";
+    };
+
     initExtra = ''
       # ssh-agent lazy loading
       zstyle :omz:plugins:ssh-agent lazy yes
