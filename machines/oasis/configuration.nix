@@ -29,14 +29,6 @@
     enable = true;
   };
 
-  # fix speakers
-  boot.kernelPatches = [
-    {
-      name = "z13-audio";
-      patch = ./z13-audio-fix.patch;
-    }
-  ];
-
   # fix kernel hang on suspend
   boot.kernelParams = [ "amdgpu.gpu_recovery=1" ];
 
