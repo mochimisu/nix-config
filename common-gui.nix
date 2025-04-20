@@ -62,6 +62,7 @@ in
     ledger-live-desktop
     protonvpn-gui
     xfce.thunar
+    signal-desktop
 
     # Games
     mangohud
