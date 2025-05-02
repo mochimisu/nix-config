@@ -20,6 +20,7 @@
       "mangohud steam -silent"
       "heroic"
       "iio-hyprland"
+      "protonvpn-app"
     ];
 
     plugin = {
