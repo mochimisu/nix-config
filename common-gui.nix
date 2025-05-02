@@ -60,7 +60,7 @@ in
     ani-cli
     transmission-remote-gtk
     ledger-live-desktop
-    # protonvpn-gui
+    protonvpn-gui
     xfce.thunar
     signal-desktop
 
