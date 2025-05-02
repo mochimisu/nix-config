@@ -8,6 +8,9 @@
     bash
     acpid
 
+    # adjust tdp
+    ryzenadj
+
     # notes
     styluslabs-write-bin
 
