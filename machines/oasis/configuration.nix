@@ -10,6 +10,8 @@
 
     # adjust tdp
     ryzenadj
+    powercap
+    s-tui
 
     # notes
     styluslabs-write-bin
