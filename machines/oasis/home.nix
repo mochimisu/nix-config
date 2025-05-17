@@ -11,8 +11,8 @@
     monitors = {
       monitor = [
         "eDP-1,2560x1600@180,0x0,1.25"
-        # XReal glasses
-        "DP-1,1920x1080@60,2560x0,1"
+        # XReal glasses, 2048=2560/1.25
+        "DP-1,1920x1080@60,2048x0,1"
       ];
     };
 

@@ -32,6 +32,7 @@
         windowrulev2 = [
           "workspace 2 silent, class:^(steam)$"
           "workspace 2 silent, class:^(discord)$"
+          "renderunfocused, class:^(Monster Hunter Wilds)$"
         ];
       };
     };
@@ -81,7 +82,7 @@
       # vrr = "0";
       # vfr = "0" means every single frame is rendered, not great
       # but allows nvidia_anti_flicker to be set to 0
-      vfr = 0;
+      # vfr = 0;
     };
     cursor = {
       default_monitor = "DP-1";

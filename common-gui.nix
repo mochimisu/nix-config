@@ -31,7 +31,7 @@ in
     networkmanagerapplet
     pkgsPinned.walker
     kitty
-    chromium
+    (chromium.override { enableWideVine = true; })
     cliphist
 
     grim
