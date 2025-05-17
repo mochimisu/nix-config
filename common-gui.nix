@@ -1,11 +1,11 @@
 { pkgs, inputs, ... }:
 
 let
-  pkgsPinned = import (builtins.fetchTarball {
-    # walker broken on 2/13/2025, use a commit from 2/3/2025
-    url = "https://github.com/NixOS/nixpkgs/archive/9d962cd4ad268f64d125aa8c5599a87a374af78a.tar.gz";
-    sha256 = "sha256:1a1917f9qvg5agx2vhlsrhj3yyjrznpcnlkwcqk4ampzdby6nzhi";
-  }) { system = "x86_64-linux"; };
+  # pkgsPinned = import (builtins.fetchTarball {
+  #   # walker broken on 2/13/2025, use a commit from 2/3/2025
+  #   url = "https://github.com/NixOS/nixpkgs/archive/9d962cd4ad268f64d125aa8c5599a87a374af78a.tar.gz";
+  #   sha256 = "sha256:1a1917f9qvg5agx2vhlsrhj3yyjrznpcnlkwcqk4ampzdby6nzhi";
+  # }) { system = "x86_64-linux"; };
 in
 {
   imports =
@@ -15,13 +15,6 @@ in
       {nixpkgs.overlays = [inputs.hyprpanel.overlay];}
     ];
 
-  nixpkgs.config = {
-    chromium = {
-      enableWideVine = true;
-    };
-  };
-
-
   # Packages
   environment.systemPackages = with pkgs; [
     bluez
@@ -29,7 +22,7 @@ in
     greetd.tuigreet
     hyprpaper
     networkmanagerapplet
-    pkgsPinned.walker
+    walker
     kitty
     (chromium.override { enableWideVine = true; })
     cliphist

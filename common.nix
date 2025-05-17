@@ -1,4 +1,4 @@
-{ config, lib, pkgs, specialArgs, inputs, ... }:
+{ pkgs, ... }:
 {
   # Nix
   nix = {
@@ -72,9 +72,11 @@
   # Allow SSH for brandon
   services.openssh = {
     enable = true;
-    permitRootLogin = "no";
     extraConfig = ''
       AllowUsers brandon
     '';
+    settings = {
+      PermitRootLogin = "no";
+    };
   };
 }

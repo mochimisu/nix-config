@@ -30,7 +30,7 @@
       SDL_VIDEODRIVER = "wayland";
     };
 
-    initExtra = ''
+    initContent = ''
       # ssh-agent lazy loading
       zstyle :omz:plugins:ssh-agent lazy yes
       bindkey "^[[A" up-line-or-search

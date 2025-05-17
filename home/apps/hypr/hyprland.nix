@@ -64,8 +64,6 @@
       misc = {
         # vfr = "true";
         # vrr = "0";
-        vfr = false;
-        vrr = 0;
       };
       env = [
         "XDG_SESSION_TYPE,wayland"
