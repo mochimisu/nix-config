@@ -39,21 +39,24 @@
 
       general = {
         gaps_in = "5";
-          gaps_out = "0";
-          border_size = "2";
-          "col.active_border" = "rgba(33ccffee) rgba(00ff99ee) 45deg";
-          "col.inactive_border" = "rgba(595959aa)";
-          layout = "dwindle";
-          allow_tearing = "true";
+        gaps_out = "0";
+        border_size = "2";
+        # "col.active_border" = "rgba(33ccffee) rgba(00ff99ee) 45deg";
+        # "col.inactive_border" = "rgba(595959aa)";
+        "col.active_border" = "rgba(ffffffaa)";
+        "col.inactive_border" = "rgba(00000000)";
+        layout = "dwindle";
+        allow_tearing = "true";
       };
 
       decoration = {
         rounding = "10";
           blur = {
-            enabled = "false";
-            size = "3";
+            enabled = "true";
+            size = "5";
             passes = "1";
             vibrancy = "0.1696";
+            ignore_opacity = "true";
           };
         # drop_shadow = "false";
         # shadow_range = "4";
@@ -62,8 +65,7 @@
       };
 
       misc = {
-        # vfr = "true";
-        # vrr = "0";
+        force_default_wallpaper = 0;
       };
       env = [
         "XDG_SESSION_TYPE,wayland"

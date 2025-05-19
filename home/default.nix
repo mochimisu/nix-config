@@ -16,6 +16,7 @@ in
     ./apps/tmux.nix
     ./apps/nixvim
     ./apps/zsh
+    ./apps/kitty.nix
     # ./apps/wofi.nix
   ];
 
