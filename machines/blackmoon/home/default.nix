@@ -1,10 +1,22 @@
-{ pkgs, ... }:
+{ pkgs, config, ... }:
+let
+  moonWallpaper =  builtins.fetchurl {
+    url = "https://w.wallhaven.cc/full/l8/wallhaven-l8mlyy.jpg";
+    sha256 = "sha256:1571r0sz1qfz9xdqqkbpzfx8wx22azrhmsmdj14km427qcyiiap6";
+  };
+in
 {
   variables.keyboardLayout = "dvorak";
   variables.hyprpanel = {
     hiddenMonitors = ["0"];
     cpuTempSensor = "/dev/highflow_next/temp1_input";
   };
+  home.file.".config/hypr/moon.jpg".source = moonWallpaper;
+  variables.hyprpaper-config = ''
+    preload = ${config.home.homeDirectory}/.config/hypr/moon.jpg
+    wallpaper = DP-3, ${config.home.homeDirectory}/.config/hypr/moon.jpg
+  '';
+
   imports = [
     ../../../home/common-linux.nix
     ./conky.nix

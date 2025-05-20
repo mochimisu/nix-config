@@ -19,6 +19,7 @@ in
     ./apps/zsh
     ./apps/kitty.nix
     # ./apps/wofi.nix
+    ./scripts
   ];
 
   home.sessionPath = ["$HOME/bin"];
@@ -61,8 +62,6 @@ in
     };
   };
 
-  home.file = {
-  };
   home.activation = {
     cloneRepo = lib.hm.dag.entryAfter ["writeBoundary"] ''
       set -e

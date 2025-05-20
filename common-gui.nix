@@ -38,6 +38,9 @@ in
     kdePackages.kwallet
     kwalletcli
     kdePackages.kwalletmanager
+    kdePackages.ksshaskpass
+    kdePackages.kwallet-pam
+
 
     # for pactl
     pulseaudio
@@ -135,10 +138,19 @@ in
     };
   };
 
+  # login to start ssh-agent
   security = {
     polkit.enable = true;
-    pam.services.hyprlock = {};
-    pam.services.greetd.kwallet.enable = true;
+    pam.services = {
+      hyprlock = {};
+      greetd.kwallet.enable = true;
+      login.enableKwallet = true;
+    };
+  };
+  programs.ssh.startAgent = true;
+  programs.ssh.askPassword = "${pkgs.ksshaskpass}/bin/ksshaskpass";
+  environment.sessionVariables = {
+    SSH_ASKPASS_REQUIRE = "prefer";
   };
 
   # catppuccin
