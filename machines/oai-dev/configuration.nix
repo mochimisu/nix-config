@@ -1,5 +1,8 @@
 { pkgs, inputs, ... }:
 {
+  imports = [
+    ./yabai.nix
+    ];
   nixpkgs.config = {
     allowUnfree = true;
   };
