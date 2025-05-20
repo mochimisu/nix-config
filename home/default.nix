@@ -2,6 +2,7 @@
 
 let
   configsDir = "${config.home.homeDirectory}/stuff/nix-config";
+  isLinux = pkgs.stdenv.isLinux;
 in
 {
   home.stateVersion = "24.11";
@@ -73,13 +74,15 @@ in
     '';
   };
 
-  xdg.desktopEntries."xivlauncher-rb" = {
-    name = "XIVLauncher-RB";
-    icon = "xivlauncher";
-    exec = "SDL_VIDEODRIVER=wayland XIVLauncher.Core";
-    terminal = false;
-    type = "Application";
-    categories = [ "Game" ];
+  xdg.desktopEntries = lib.mkIf isLinux {
+    "xivlauncher-rb" = {
+      name       = "XIVLauncher-RB";
+      icon       = "xivlauncher";
+      exec       = "SDL_VIDEODRIVER=wayland XIVLauncher.Core";
+      terminal   = false;
+      type       = "Application";
+      categories = [ "Game" ];
+    };
   };
 }
 
