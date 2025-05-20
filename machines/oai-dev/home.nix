@@ -38,7 +38,7 @@
 
   home.shellAliases = {
     "nix-rs" = lib.mkForce "sudo nix run nix-darwin -- switch --flake ${config.home.homeDirectory}/stuff/nix-config#oai-dev";
-    "gitp" = "GIT_SSH_COMMAND='ssh -i ~/.ssh/id_ed25519-personal' git push";
+    "gitp" = "GIT_SSH_COMMAND='ssh -i ~/.ssh/id_ed25519-personal -o IdentitiesOnly=yes' git push --no-verify";
   };
 
   # Use alacritty over kitty on macOS
