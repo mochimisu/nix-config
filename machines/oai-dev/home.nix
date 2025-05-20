@@ -40,6 +40,10 @@
     "nix-rs" = lib.mkForce "sudo nix run nix-darwin -- switch --flake ${config.home.homeDirectory}/stuff/nix-config#oai-dev";
     "gitp" = "GIT_SSH_COMMAND='ssh -i ~/.ssh/id_ed25519-personal -o IdentitiesOnly=yes' git push --no-verify";
   };
+  catppuccin = {
+    enable = true;
+    flavor = "mocha";
+  };
 
   # Use alacritty over kitty on macOS
   programs.kitty.enable = lib.mkForce false;
@@ -64,36 +68,6 @@
         italic = {
           family = "Cascadia Code PL";
           style  = "Italic";
-        };
-      };
-
-      # Color scheme
-      colors = {
-        primary = {
-          background = "#000000";
-          foreground = "#FFFFFF";
-        };
-
-        normal = {
-          black   = "#1a1a1a";
-          red     = "#f4005f";
-          green   = "#98e024";
-          yellow  = "#fa8419";
-          blue    = "#9d65ff";
-          magenta = "#f4005f";
-          cyan    = "#58d1eb";
-          white   = "#c4c5b5";
-        };
-
-        bright = {
-          black   = "#625e4c";
-          red     = "#f4005f";
-          green   = "#98e024";
-          yellow  = "#e0d561";
-          blue    = "#9d65ff";
-          magenta = "#f4005f";
-          cyan    = "#58d1eb";
-          white   = "#f6f6ef";
         };
       };
 

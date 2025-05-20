@@ -53,6 +53,7 @@
             home-manager.useUserPackages = true;
             home-manager.users.brandonw = {
               imports = [
+                inputs.catppuccin.homeModules.catppuccin
                 ./machines/oai-dev/home.nix
                 self.homeManagerModules.home
               ];
