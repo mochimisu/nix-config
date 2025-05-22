@@ -3,6 +3,8 @@
   home.packages = with pkgs; [
     # FZF replacement
     fd
+    
+    ffmpeg
   ];
   programs.nixvim = {
     plugins.fzf-lua = {
