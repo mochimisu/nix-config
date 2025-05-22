@@ -8,12 +8,13 @@
       "$menuAll" = "walker";
 
       "exec-once" = [
+        "gnome-keyring-daemon --start --components=pkcs11,secrets,ssh,gpg"
         "hyprpaper"
         "nm-applet"
         "sleep 2 && blueman-applet"
         "sleep 2 && blueman-tray"
         "systemctl --user start hyprpolkitagent"
-        "kwalletd5"
+
         "hypridle"
         # disable power button being handled by logind
         "systemd-inhibit --who=\"Hyprland config\" --why=\"wlogout keybind\" --what=handle-power-key --mode=block sleep infinity & echo $! > /tmp/.hyprland-systemd-inhibit"

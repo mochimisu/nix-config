@@ -19,7 +19,6 @@ in
     ./apps/zsh
     ./apps/kitty.nix
     # ./apps/wofi.nix
-    ./scripts
   ];
 
   home.sessionPath = ["$HOME/bin"];

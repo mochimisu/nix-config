@@ -1,4 +1,4 @@
-{ pkgs, inputs, ... }:
+{ pkgs, inputs, lib, ... }:
 
 let
   pkgsPinned = import (builtins.fetchTarball {
@@ -35,12 +35,9 @@ in
     kdePackages.xwaylandvideobridge
 
     hyprpolkitagent
-    kdePackages.kwallet
-    kwalletcli
-    kdePackages.kwalletmanager
-    kdePackages.ksshaskpass
-    kdePackages.kwallet-pam
-
+    gnome-keyring
+    # gnome-keyring management ui
+    seahorse
 
     # for pactl
     pulseaudio
@@ -127,30 +124,27 @@ in
     pulse.enable = true;
   };
 
-  # Greetd
-  services.greetd = {
+  # sddm
+  services.xserver.enable = false;
+  services.displayManager.sddm = {
     enable = true;
-    settings = {
-      default_session = {
-        command = "${pkgs.greetd.tuigreet}/bin/tuigreet --time --time-format '%I:%M %p | %a - %h | %F' --cmd Hyprland";
-        user = "greeter";
-      };
-    };
+    package = pkgs.kdePackages.sddm;
+    wayland.enable = true;
   };
 
   # login to start ssh-agent
+  services.gnome.gnome-keyring.enable = true;
   security = {
     polkit.enable = true;
-    pam.services = {
-      hyprlock = {};
-      greetd.kwallet.enable = true;
-      login.enableKwallet = true;
+    pam = {
+      services = {
+        login.enableGnomeKeyring = true;
+        sddm = {
+          enable = true;
+          enableGnomeKeyring = true;
+        };
+      };
     };
-  };
-  programs.ssh.startAgent = true;
-  programs.ssh.askPassword = "${pkgs.ksshaskpass}/bin/ksshaskpass";
-  environment.sessionVariables = {
-    SSH_ASKPASS_REQUIRE = "prefer";
   };
 
   # catppuccin
