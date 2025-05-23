@@ -1,11 +1,13 @@
 { pkgs, lib, config, ... }:
 {
   home.packages = with pkgs; [
+    fastfetch
     # FZF replacement
     fd
-    
+    # vconv
     ffmpeg
   ];
+  programs.aerospace.userSettings.start-at-login = true;
   programs.nixvim = {
     plugins.fzf-lua = {
       settings = {
@@ -81,6 +83,12 @@
           mods   = "Super";
         }
       ];
+
+      window = {
+        opacity = 0.8;
+        decorations = "None";
+      };
+
     };
   };
   

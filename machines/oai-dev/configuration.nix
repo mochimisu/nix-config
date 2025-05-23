@@ -1,8 +1,9 @@
 { pkgs, inputs, ... }:
 {
+  system.primaryUser = "brandonw";
   imports = [
-    ./yabai.nix
-    ];
+    ./aerospace.nix
+  ];
   nixpkgs.config = {
     allowUnfree = true;
   };
