@@ -6,6 +6,7 @@
     
     ffmpeg
   ];
+  programs.aerospace.userSettings.start-at-login = true;
   programs.nixvim = {
     plugins.fzf-lua = {
       settings = {
