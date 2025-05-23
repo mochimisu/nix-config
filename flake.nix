@@ -79,6 +79,7 @@
             home-manager.useUserPackages = true;
             home-manager.users.brandon = {
               imports = [
+                inputs.catppuccin.homeModules.catppuccin
                 ./machines/glasscastle/home.nix
                 self.homeManagerModules.home
               ];
@@ -101,6 +102,7 @@
             home-manager.useUserPackages = true;
             home-manager.users.brandon = {
               imports = [
+                inputs.catppuccin.homeModules.catppuccin
                 ./machines/espresso/home.nix
                 self.homeManagerModules.home
               ];
@@ -123,6 +125,7 @@
             home-manager.useUserPackages = true;
             home-manager.users.brandon = {
               imports = [
+                inputs.catppuccin.homeModules.catppuccin
                 ./machines/blackmoon/home
                   self.homeManagerModules.home
               ];
@@ -144,8 +147,9 @@
             home-manager.useUserPackages = true;
             home-manager.users.brandon = {
               imports = [
+                inputs.catppuccin.homeModules.catppuccin
                 ./machines/gaia/home
-                  self.homeManagerModules.home
+                self.homeManagerModules.home
               ];
             };
           }
@@ -167,6 +171,7 @@
             home-manager.useUserPackages = true;
             home-manager.users.brandon = {
               imports = [
+                inputs.catppuccin.homeModules.catppuccin
                 ./machines/oasis/home.nix
                 self.homeManagerModules.home
               ];

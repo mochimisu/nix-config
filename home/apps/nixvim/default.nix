@@ -1,4 +1,4 @@
-{inputs, ...}:{
+{...}:{
   imports = [
     ./general.nix
     ./keys.nix

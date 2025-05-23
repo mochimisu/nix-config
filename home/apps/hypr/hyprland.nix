@@ -1,11 +1,11 @@
-{ pkgs, ... }:
+{ ... }:
 {
   wayland.windowManager.hyprland = {
     settings = {
       "$mod" = "SUPER";
       "$terminal" = "kitty";
-      "$menu" = "walker --modules applications";
-      "$menuAll" = "walker";
+      # "$menu" = "rofi-toggle -show drun";
+      # "$menuAll" = "rofi-toggle";
 
       "exec-once" = [
         "gnome-keyring-daemon --start --components=pkcs11,secrets,ssh,gpg"
@@ -42,9 +42,7 @@
         gaps_in = "5";
         gaps_out = "0";
         border_size = "2";
-        # "col.active_border" = "rgba(33ccffee) rgba(00ff99ee) 45deg";
-        # "col.inactive_border" = "rgba(595959aa)";
-        "col.active_border" = "rgba(ffffffaa)";
+        "col.active_border" = "rgba(ffffffff)";
         "col.inactive_border" = "rgba(00000000)";
         layout = "dwindle";
         allow_tearing = "true";
@@ -59,10 +57,9 @@
             vibrancy = "0.1696";
             ignore_opacity = "true";
           };
-        # drop_shadow = "false";
-        # shadow_range = "4";
-        # shadow_render_power = "3";
-        # "col.shadow" = "rgba(1a1a1aee)";
+        shadow = {
+          enabled = false;
+        };
       };
 
       misc = {
@@ -105,7 +102,7 @@
             "wl-paste --type text --watch cliphist store" #Stores only text data
             "wl-paste --type image --watch cliphist store" #Stores only image data
           ];
-          bind = "SUPER, V, exec, cliphist list | wofi --dmenu | cliphist decode | wl-copy";
+          bind = "SUPER, V, exec, cliphist list | rofi --dmenu | cliphist decode | wl-copy";
       };
     };
   };

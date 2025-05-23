@@ -44,6 +44,7 @@
 
       # launcher
       "$mod, space, exec, $menu"
+      "$mod SHIFT, space, exec, $menuAll"
 
       # will switch to a submap called resize
       # bind = $mod CONTROL, R, submap, resize

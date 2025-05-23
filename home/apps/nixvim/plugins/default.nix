@@ -9,7 +9,20 @@
     ./avante.nix
   ];
   programs.nixvim = {
-    colorschemes.ayu.enable = true;
+    colorschemes.ayu = {
+      enable = true;
+      settings.overrides = {
+        Normal = { bg = "None"; };
+        NormalFloat = { bg = "None"; };
+        ColorColumn = { bg = "None"; };
+        SignColumn = { bg = "None"; };
+        Folded = { bg = "None"; };
+        FoldColumn = { bg = "None"; };
+        CursorLine = { bg = "None"; };
+        CursorColumn = { bg = "None"; };
+        VertSplit = { bg = "None"; };
+      };
+    };
     nixpkgs.useGlobalPackages = true;
 
     plugins = {

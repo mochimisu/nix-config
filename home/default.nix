@@ -18,7 +18,8 @@ in
     ./apps/nixvim
     ./apps/zsh
     ./apps/kitty.nix
-    # ./apps/wofi.nix
+    ./apps/rofi.nix
+    # ./apps/walker.nix
   ];
 
   home.sessionPath = ["$HOME/bin"];
