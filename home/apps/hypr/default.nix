@@ -10,6 +10,5 @@
     ./hyprland-binds-common.nix
     ./hyprland-binds-dvorak.nix
     ./hyprland-binds-qwerty.nix
-    # ./hyprpanel.nix
   ];
 }

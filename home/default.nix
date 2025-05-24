@@ -18,6 +18,9 @@ in
     ./apps/nixvim
     ./apps/zsh
     ./apps/kitty.nix
+
+    # status bar, choose one
+    # ./apps/hyprpanel.nix
     ./apps/waybar
 
     # Application launcher, choose one
