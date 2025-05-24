@@ -1,11 +1,15 @@
 { pkgs, ... }:
 
+let
+  waybarCava = pkgs.waybar.overrideAttrs (oldAttrs: {
+    mesonFlags = (oldAttrs.mesonFlags or []) ++ [ "-Dcava=enabled" ];
+    buildInputs = (oldAttrs.buildInputs or []) ++ [ pkgs.libcava ];
+  });
+in
 {
-  nixpkgs.overlays = [ (import ./waybar-cava-overlay.nix) ];
-
   programs.waybar = {
     enable  = true;
-    package = pkgs.waybar;
+    package = waybarCava;
 
     settings = {
       mainBar = {
@@ -158,9 +162,6 @@ window#waybar {
 }
 '';
   };
-
-  # Optional: keep the CLI `cava` program for quick testing
-  home.packages = [ pkgs.cava ];
 
   # Start waybar on login
   wayland.windowManager.hyprland.settings."exec-once" = [
