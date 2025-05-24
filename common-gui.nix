@@ -108,7 +108,10 @@ in
     liberation_ttf
     wqy_zenhei
     nerd-fonts.ubuntu-sans
+    # coding font
     cascadia-code
+    # general sans font
+    montserrat
   ];
 
   # Touchpad support

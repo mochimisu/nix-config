@@ -18,6 +18,9 @@ in
     ./apps/nixvim
     ./apps/zsh
     ./apps/kitty.nix
+    ./apps/waybar
+
+    # Application launcher, choose one
     ./apps/rofi.nix
     # ./apps/walker.nix
   ];
@@ -77,7 +80,7 @@ in
     "xivlauncher-rb" = {
       name       = "XIVLauncher-RB";
       icon       = "xivlauncher";
-      exec       = "SDL_VIDEODRIVER=wayland XIVLauncher.Core";
+      exec       = "sh -c \"SDL_VIDEODRIVER=wayland XIVLauncher.Core\"";
       terminal   = false;
       type       = "Application";
       categories = [ "Game" ];
