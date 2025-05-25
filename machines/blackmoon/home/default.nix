@@ -155,5 +155,14 @@ in
     };
   };
   variables.waybarBattery = "ps-controller-battery-58:10:31:1d:a2:43";
+
+  # dunst/mako settings, show on DP-1
+  services.dunst.settings.global = {
+    monitor = "DP-1";
+    follow = lib.mkForce "none";
+  };
+  services.mako.settings = {
+    output = "DP-1";
+  };
     
 }

@@ -30,6 +30,8 @@ in
     # Application launcher, choose one
     ./apps/rofi.nix
     # ./apps/walker.nix # daemon mode broken, too slow otherwise
+
+    # ./apps/eww
   ];
 
   home.sessionPath = ["$HOME/bin"];
