@@ -1,4 +1,4 @@
-{ pkgs, config, ... }:
+{ pkgs, config, lib, ... }:
 let
   moonWallpaper =  builtins.fetchurl {
     url = "https://w.wallhaven.cc/full/l8/wallhaven-l8mlyy.jpg";
@@ -97,7 +97,7 @@ in
       # vfr = 0;
     };
     cursor = {
-      default_monitor = "DP-1";
+      default_monitor= "DP-1";
     };
     bind = [
       "$mod, F2, exec, ~/.config/hypr/gamemode2.sh"
@@ -128,5 +128,32 @@ in
   hyprctl reload
   '';
   };
+
+
+  # additional waybar modules
+  variables.waybarModulesLeft = [
+    "temperature#gpu"
+    "temperature#water"
+  ];
+  variables.waybarSettings = {
+    "temperature#gpu" = {
+      "hwmon-path-abs" = "/sys/devices/pci0000:00/0000:00:1d.0/0000:72:00.0/nvme/nvme1";
+      "input-filename" = "temp1_input";
+      "critical-threshold" = 80;
+      "format-critical" = "{temperatureC}°C {icon}";
+      format = "{temperatureC}°C {icon}";
+      "format-icons" = [ "🖥" ];
+    };
+
+    "temperature#water" = {
+      "hwmon-path-abs" = "/sys/devices/pci0000:00/0000:00:14.0/usb1/1-10/1-10.2/1-10.2.4/1-10.2.4:1.1/0003:0C70:F012.000B/hwmon";
+      "input-filename" = "temp1_input";
+      "critical-threshold" = 40;
+      "format-critical" = "{temperatureC}°C {icon}";
+      format = "{temperatureC}°C {icon}";
+      "format-icons" = [ "💧" ];
+    };
+  };
+  variables.waybarBattery = "ps-controller-battery-58:10:31:1d:a2:43";
     
 }

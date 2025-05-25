@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, config, ... }:
 
 let
   waybarCava = pkgs.waybar.overrideAttrs (oldAttrs: {
@@ -18,13 +18,12 @@ in
         height  = 30;
         spacing = 0;
 
-        "modules-left"   = [ 
+        "modules-left" = [ 
           "hyprland/workspaces"
           "memory" "cpu" "temperature#cpu" 
-          # "temperature#gpu" "temperature#water"
-        ];
+        ] ++ (if builtins.hasAttr "waybarModulesLeft" config.variables then [ "temperature#gpu" "temperature#water" ] else []);
         "modules-center" = [ "hyprland/window" ];
-        "modules-right"  = [
+        "modules-right" = [
             "cava" "pulseaudio" "network"
             "bluetooth" "tray" "battery" "clock"
         ];
@@ -85,24 +84,6 @@ in
           "format-icons" = [ "" ];
         };
 
-        "temperature#gpu" = {
-          "hwmon-path-abs" = "/sys/devices/pci0000:00/0000:00:1d.0/0000:72:00.0/nvme/nvme1";
-          "input-filename" = "temp1_input";
-          "critical-threshold" = 80;
-          "format-critical" = "{temperatureC}°C {icon}";
-          format = "{temperatureC}°C {icon}";
-          "format-icons" = [ "🖥" ];
-        };
-
-        "temperature#water" = {
-          "hwmon-path-abs" = "/sys/devices/pci0000:00/0000:00:14.0/usb1/1-10/1-10.2/1-10.2.4/1-10.2.4:1.1/0003:0C70:F012.000B/hwmon";
-          "input-filename" = "temp1_input";
-          "critical-threshold" = 40;
-          "format-critical" = "{temperatureC}°C {icon}";
-          format = "{temperatureC}°C {icon}";
-          "format-icons" = [ "💧" ];
-        };
-
         network = {
           "format-wifi" = "";
           "format-ethernet" = "";
@@ -113,7 +94,7 @@ in
 
         battery = {
           # bat = "ps-controller-battery-58:10:31:1d:a2:43";
-          bat = "BAT0";
+          bat = if builtins.hasAttr "waybarBattery" config.variables then config.variables.waybarBattery else "BAT0";
           interval = 60;
           states = { warning = 30; critical = 15; };
           format = "{capacity}% {icon}";
@@ -148,7 +129,7 @@ in
           };
           "on-click" = "pavucontrol";
         };
-      };
+      } // (if builtins.hasAttr "waybarSettings" config.variables then config.variables.waybarSettings else {});
     };
   # Optional – you can inline your CSS as well:
   style = ''
