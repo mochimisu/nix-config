@@ -20,12 +20,16 @@ in
     ./apps/kitty.nix
 
     # status bar, choose one
-    # ./apps/hyprpanel.nix
+    # ./apps/hyprpanel.nix # customization not as deep as id like
     ./apps/waybar
+
+    # notification manager
+    ./apps/dunst.nix
+    # ./apps/mako.nix
 
     # Application launcher, choose one
     ./apps/rofi.nix
-    # ./apps/walker.nix
+    # ./apps/walker.nix # daemon mode broken, too slow otherwise
   ];
 
   home.sessionPath = ["$HOME/bin"];
