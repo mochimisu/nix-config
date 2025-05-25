@@ -20,7 +20,8 @@ in
 
         "modules-left"   = [ 
           "hyprland/workspaces"
-          "memory" "cpu" "temperature#cpu" "temperature#gpu" "temperature#water"
+          "memory" "cpu" "temperature#cpu" 
+          # "temperature#gpu" "temperature#water"
         ];
         "modules-center" = [ "hyprland/window" ];
         "modules-right"  = [
@@ -111,7 +112,8 @@ in
         };
 
         battery = {
-          bat = "ps-controller-battery-58:10:31:1d:a2:43";
+          # bat = "ps-controller-battery-58:10:31:1d:a2:43";
+          bat = "BAT0";
           interval = 60;
           states = { warning = 30; critical = 15; };
           format = "{capacity}% {icon}";

@@ -38,7 +38,7 @@
   boot.kernelParams = [ "amdgpu.gpu_recovery=1" ];
 
   # fix trackpad
-  environment.etc."scripts/touchpad-fix.sh".text = ''
+  environment.etc."scripts/touchpad-fix.sh".source = pkgs.writeScript "touchpad-fix" ''
     #!/run/current-system/sw/bin/bash
     # Find the device ID based on dmesg output (adjust grep if needed)
     touchpadID=$(dmesg | grep "asus 0003:0B05:1A30.* USB HID v1.10 Mouse" \
@@ -46,16 +46,16 @@
     echo -n "$touchpadID" > /sys/bus/hid/drivers/asus/unbind
     echo -n "$touchpadID" > /sys/bus/hid/drivers/hid-multitouch/bind
   '';
-  environment.etc."scripts/touchpad-fix.sh".mode = "0755";  # make it executable
+  # environment.etc."scripts/touchpad-fix.sh".mode = "0755";  # make it executable
 
   # Add a custom udev rule to trigger the script when the device is added
   services.udev.extraRules = ''
     ACTION=="add", KERNEL=="0003:0B05:1A30.*", SUBSYSTEM=="hid", \
-      RUN+="$(pkgs.bash) -c 'sh /etc/scripts/touchpad-fix.sh'"
+      RUN+="${config.environment.etc."scripts/touchpad-fix.sh".source}"
   '';
 
   # palm rejection
-  services.xserver.libinput = {
+  services.libinput = {
     enable = true;
     touchpad = {
       additionalOptions = ''
