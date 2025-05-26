@@ -1,4 +1,22 @@
 { pkgs, lib, ... }:
+let thinFastfetch = pkgs.writeShellScriptBin "thin-fastfetch" ''
+#!/bin/bash
+
+# Set the minimum terminal width required to display the logo
+MIN_WIDTH=80
+
+# Get the current terminal width
+TERM_WIDTH=$(tput cols)
+
+# Check if the terminal width meets the minimum requirement
+if [ "$TERM_WIDTH" -ge "$MIN_WIDTH" ]; then
+    # Run Fastfetch with the logo
+    fastfetch
+else
+    # Run Fastfetch without the logo
+    fastfetch --logo none
+fi'';
+in
 {
   imports = [
     ./p10k.nix
@@ -35,6 +53,7 @@
       stty -ixon
       # local zsh for things like keys
       source ~/.zshrc-local
+      ${thinFastfetch}/bin/thin-fastfetch
     '';
   };
 }
