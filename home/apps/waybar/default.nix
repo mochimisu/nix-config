@@ -13,9 +13,9 @@ in
 
     settings = {
       mainBar = {
-        layer   = "top";
-        output  = "!HDMI-A-1";
-        height  = 30;
+        layer = "top";
+        output = "!HDMI-A-1";
+        height = 20;
         spacing = 0;
 
         "modules-left" = [ 
@@ -34,8 +34,8 @@ in
           warp-on-scroll = false;
           format = "{name}: {icon}";
           format-icons = {
-            urgent = "";
-            active = "";
+            urgent = "◉";
+            active = "●";
             default = "○";
           };
         };
@@ -131,10 +131,14 @@ in
         };
       } // (if builtins.hasAttr "waybarSettings" config.variables then config.variables.waybarSettings else {});
     };
-  # Optional – you can inline your CSS as well:
+
   style = ''
+* {
+  min-height: 0;
+}
+
 window#waybar {
-  background-color: rgba(30, 30, 46, 0.5);
+  background-color: rgba(30, 30, 46, 0.25);
   font-family: "Montserrat Bold";
   font-size: 13px;
 }
@@ -146,9 +150,16 @@ window#waybar {
 '';
   };
 
-  # Start waybar on login
-  wayland.windowManager.hyprland.settings."exec-once" = [
-    "waybar"
-  ];
+  wayland.windowManager.hyprland.settings = {
+    # Start waybar on login
+    "exec-once" = [
+      "waybar"
+    ];
+
+    # blur waybar
+    layerrule = [
+      "blur, ^(waybar)$"
+    ];
+  };
 }
 

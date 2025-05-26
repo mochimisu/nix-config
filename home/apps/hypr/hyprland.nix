@@ -39,8 +39,8 @@
       };
 
       general = {
-        gaps_in = "5";
-        gaps_out = "10,0,0,0";
+        gaps_in = "3";
+        gaps_out = "6,0,0,0";
         border_size = "2";
         "col.active_border" = "rgba(ffffffff)";
         "col.inactive_border" = "rgba(00000000)";

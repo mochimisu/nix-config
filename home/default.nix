@@ -74,6 +74,29 @@ in
     };
   };
 
+  # per-app translucency
+  xdg.configFile."gtk-3.0/gtk.css".source = builtins.toFile "gtk.css" ''
+    .thunar .sidebar .view {
+      background-color: rgba(0,0,0,0.3);
+    }
+    .thunar .standard-view .view {
+      background-color: rgba(0,0,0,0.2);
+    }
+    .thunar toolbar {
+      background-color: rgba(0,0,0,0.1);
+    }
+    .thunar,
+    .thunar menubar,
+    .thunar .shortcuts-pane
+    {
+      background-color: rgba(0,0,0,0.5);
+    }
+    .thunar toolbar > * > * > * > *
+    {
+      background-color: rgba(0,0,0,0.3);
+    }
+    '';
+
   home.activation = {
     cloneRepo = lib.hm.dag.entryAfter ["writeBoundary"] ''
       set -e

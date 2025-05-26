@@ -42,7 +42,8 @@ in
     pulseaudio
 
     # Apps
-    discord-canary
+    # discord-canary
+    vesktop
     proton-pass
     caprine
     hyprpicker

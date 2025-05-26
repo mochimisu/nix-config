@@ -44,6 +44,7 @@ in
         windowrulev2 = [
           "workspace 2 silent, class:^(steam)$"
           "workspace 2 silent, class:^(discord)$"
+          "workspace 2 silent, class:^(vesktop)$"
           "renderunfocused, class:^(Monster Hunter Wilds)$"
         ];
       };
@@ -55,9 +56,10 @@ in
     };
 
     "exec-once" = [
-      "discordcanary"
+      # "discordcanary"
+      "vesktop"
       # set DP-1 as primary
-      "wlr-randr --output DP-1 --primary"
+      "wlr-randr --output DP-3 --primary"
       # todo moon profile
       "openrgb --profile /home/brandon/.config/OpenRGB/moon.orp"
       "mangohud steam -silent"
