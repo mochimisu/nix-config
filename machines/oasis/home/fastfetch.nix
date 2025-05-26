@@ -39,11 +39,7 @@ in
         type = "file";
         height = 16;
         padding = {
-          top = 2;
           left = 2;
-        };
-        color = {
-          "1" = "cyan";
         };
       };
       modules = [
