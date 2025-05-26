@@ -24,7 +24,6 @@
       "$mod CONTROL, e, movewindow, r"
       "$mod CONTROL, comma, movewindow, u"
       "$mod CONTROL, o, movewindow, d"
-      "$mod, n, exec, dunstctl history | jq -r '.data[][] | \"\\(.appname.data): \\(.summary.data) - \\(.body.data)\"' | rofi -dmenu -p \"Notifications\""
     ];
   };
 }

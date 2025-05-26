@@ -48,4 +48,9 @@ in
   wayland.windowManager.hyprland.settings."exec-once" = [
     "dunst"
   ];
+
+  # add a view history alias
+  programs.zsh.shellAliases = {
+    "notification-history" = "dunstctl history | jq -r '.data[][] | \"\\(.appname.data): \\(.summary.data) - \\(.body.data)\"' | less";
+  };
 }
