@@ -5,8 +5,29 @@ let
     mesonFlags = (oldAttrs.mesonFlags or []) ++ [ "-Dcava=enabled" ];
     buildInputs = (oldAttrs.buildInputs or []) ++ [ pkgs.libcava ];
   });
+  toggleApp = pkgs.writeShellScriptBin "toggle-app" ''
+  #!/usr/bin/env bash
+
+  if [ -z "$1" ]; then
+    echo "Usage: toggle-app <application_name>"
+    exit 1
+  fi
+
+  APP_NAME="$1"
+  KILL_PATTERN="''${2:-$1}"
+
+  if pgrep "$KILL_PATTERN" > /dev/null; then
+    pkill "$KILL_PATTERN"
+  else
+    "$APP_NAME" &>/dev/null &
+  fi
+'';
 in
 {
+  home.packages = with pkgs; [
+    pwvucontrol
+    karlender
+  ];
   programs.waybar = {
     enable  = true;
     package = waybarCava;
@@ -34,9 +55,9 @@ in
           warp-on-scroll = false;
           format = "{name}: {icon}";
           format-icons = {
-            urgent = "◉";
-            active = "●";
-            default = "○";
+            urgent = "";
+            active = "";
+            default = "";
           };
         };
 
@@ -45,7 +66,7 @@ in
         clock = {
           format = "{:%I:%M %p}";
           "tooltip-format" = "<tt>{calendar}</tt>";
-          on-click = "mode";
+          on-click = "${toggleApp}/bin/toggle-app karlender";
           calendar = {
             format = {
               today = "<b><u>{}</u></b>";
@@ -69,7 +90,7 @@ in
           noise_reduction = 0.1;
           input_delay = 0;
           "format-icons" = [ "▁" "▂" "▃" "▄" "▅" "▆" "▇" "█" ];
-          actions = { "on-click-right" = "mode"; };
+          "on-click" = "${toggleApp}/bin/toggle-app pvwucontrol";
         };
 
         cpu = { format = "{usage}%"; tooltip = false; };
@@ -108,7 +129,7 @@ in
           "format-disabled" = "";
           "tooltip-format" = "{controller_alias}\t{controller_address}";
           "tooltip-format-connected" = "{controller_alias}\t{controller_address}\n\n{device_enumerate}";
-          "on-click" = "blueman-manager";
+          "on-click" = "${toggleApp}/bin/toggle-app blueman-manager blueman-manage";
         };
 
         pulseaudio = {
@@ -127,7 +148,7 @@ in
             car = "";
             default = [ "" "" "" ];
           };
-          "on-click" = "pavucontrol";
+          "on-click" = "${toggleApp}/bin/toggle-app pwvucontrol";
         };
       } // (if builtins.hasAttr "waybarSettings" config.variables then config.variables.waybarSettings else {});
     };
@@ -143,9 +164,20 @@ window#waybar {
   font-size: 13px;
 }
 
-.modules-right > * >.module,
-.modules-left > * >.module {
+.modules-left,
+.modules-center,
+.modules-right {
+  padding-top: 1px;
+}
+
+.modules-left > * >.module,
+.modules-center > * >.module,
+.modules-right > * >.module {
   margin: 0 0.5rem;
+}
+
+#workspaces > * {
+  padding: 0;
 }
 '';
   };
@@ -160,6 +192,22 @@ window#waybar {
     layerrule = [
       "blur, ^(waybar)$"
     ];
+
+    windowrulev2 = [
+      # pwvucontrol to top right
+      "float, class:^(com.saivert.pwvucontrol)$"
+      "size 700 600, class:^(com.saivert.pwvucontrol)$"
+      "move 100%-700 30, class:^(com.saivert.pwvucontrol)$"
+      # blueman to top right
+      "float, class:^(.blueman-manager-wrapped)$"
+      "size 500 600, class:^(.blueman-manager-wrapped)$"
+      "move 100%-510 30, class:^(.blueman-manager-wrapped)$"
+      # karlender to top right
+      "float, class:^(codes.loers.Karlender)$"
+      "size 400 500, class:^(codes.loers.Karlender)$"
+      "move 100%-400 30, class:^(codes.loers.Karlender)$"
+    ];
+
   };
 }
 

@@ -69,6 +69,8 @@
         "XDG_SESSION_TYPE,wayland"
         "NIXOS_OZONE_WL=1"
         "WLR_NO_HARDWARE_CURSORS=1"
+        # Get dark mode in GTK4
+        "ADW_DISABLE_PORTAL=1"
       ];
       cursor = {
         no_hardware_cursors = "true";

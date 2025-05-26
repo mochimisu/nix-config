@@ -153,7 +153,7 @@ in
       "critical-threshold" = 40;
       "format-critical" = "{temperatureC}°C {icon}";
       format = "{temperatureC}°C {icon}";
-      "format-icons" = [ "💧" ];
+      "format-icons" = [ "󰖌" ];
     };
   };
   variables.waybarBattery = "ps-controller-battery-58:10:31:1d:a2:43";
