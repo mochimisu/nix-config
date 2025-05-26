@@ -26,6 +26,7 @@
     nodejs
     openssh
     lm_sensors
+    jq
 
     fx
     unzip
