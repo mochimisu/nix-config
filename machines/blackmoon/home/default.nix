@@ -20,6 +20,7 @@ in
   imports = [
     ../../../home/common-linux.nix
     ./conky.nix
+    ./fastfetch.nix
   ];
 
   home.packages = with pkgs; [
