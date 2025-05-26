@@ -31,11 +31,11 @@ in
         type = "file";
         height = 20;
         padding = {
-          top = 1;
+          top = 4;
           left = 2;
         };
         color = {
-          "1" = "cyan";
+          "1" = "white";
         };
       };
       modules = [

@@ -1,4 +1,4 @@
-{ pkgs, config, ... }:
+{ pkgs, lib, config, ... }:
 
 let
   waybarCava = pkgs.waybar.overrideAttrs (oldAttrs: {
@@ -24,11 +24,11 @@ let
 '';
 in
 {
-  home.packages = with pkgs; [
+  home.packages = with pkgs; lib.mkIf pkgs.stdenv.isLinux [
     pwvucontrol
     karlender
   ];
-  programs.waybar = {
+  programs.waybar = lib.mkIf pkgs.stdenv.isLinux { 
     enable  = true;
     package = waybarCava;
 
