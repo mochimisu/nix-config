@@ -1,7 +1,10 @@
 { pkgs, lib, config, ... }:
 {
+  imports = [
+    ./fastfetch.nix
+  ];
+
   home.packages = with pkgs; [
-    fastfetch
     # FZF replacement
     fd
     # vconv

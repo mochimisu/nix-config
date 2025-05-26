@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ pkgs, ... }:
 let
   moonLogo = pkgs.writeText "moon.txt" ''
 ⠀⠀⠀⠀⠀⠀⠀⢀⡠⠔⠚⠉⠩⠍⠩⠍⢩⣶⣦⣤⡀⠀⠀⠀⠀⠀⠀⠀

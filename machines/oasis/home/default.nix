@@ -1,5 +1,8 @@
 { config, pkgs, ... }:
 {
+  import = [
+    ./fastfetch.nix
+  ];
   variables.keyboardLayout = "dvorak";
   variables.hyprpanel = {
     cpuTempSensor = "/sys/devices/pci0000:00/0000:00:08.1/0000:c4:00.0/hwmon/hwmon9/temp1_input";

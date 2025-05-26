@@ -54,7 +54,7 @@
             home-manager.users.brandonw = {
               imports = [
                 inputs.catppuccin.homeModules.catppuccin
-                ./machines/oai-dev/home.nix
+                ./machines/oai-dev/home
                 self.homeManagerModules.home
               ];
             };
@@ -172,7 +172,7 @@
             home-manager.users.brandon = {
               imports = [
                 inputs.catppuccin.homeModules.catppuccin
-                ./machines/oasis/home.nix
+                ./machines/oasis/home
                 self.homeManagerModules.home
               ];
             };
