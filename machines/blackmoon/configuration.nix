@@ -53,5 +53,10 @@
     ACTION=="add", SUBSYSTEM=="hwmon", ATTRS{idVendor}=="0c70", ATTRS{idProduct}=="f012", ATTRS{serial}=="03550-34834", RUN+="/bin/sh -c 'ln -s /sys$devpath /dev/highflow_next'"
   '';
 
+
+  # fix sddm, eDP-3 (ultrawide) doesnt show with wayland.
+  services.xserver.enable = lib.mkForce true;
+  services.displayManager.sddm.wayland.enable = lib.mkForce false;
+
   system.stateVersion = "24.11";
 }

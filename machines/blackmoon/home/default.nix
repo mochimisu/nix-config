@@ -19,7 +19,7 @@ in
 
   imports = [
     ../../../home/common-linux.nix
-    ./conky.nix
+    ./eww-sysmon.nix
     ./fastfetch.nix
   ];
 
@@ -33,7 +33,7 @@ in
       monitor = [
         "DP-1,2560x1440@120,-2560x0,1"
         "DP-3,3440x1440@175,0x0,1"
-        "HDMI-A-1,480x1920@60,3440x1200,2,transform,1"
+        "HDMI-A-1,480x1920@60,3440x1400,1,transform,1"
       ];
       workspace = [
         "1, monitor:DP-3, default:true"
