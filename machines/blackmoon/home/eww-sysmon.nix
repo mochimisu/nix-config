@@ -8,39 +8,21 @@
     (defpoll uptime
       :interval "1s"
       "awk '{t=$1; d=int(t/86400); h=int((t%86400)/3600); m=int((t%3600)/60); printf \"%dd %dh %dm\n\", d,h,m}' /proc/uptime")
-    (defpoll cpu-ghz
-      :interval "1s"
-      "grep \"cpu MHz\" /proc/cpuinfo | awk '{print $4}' | awk '{sum+=$1} END {printf \"%.2f\", sum/NR/1000}'")
     (defpoll time
       :interval "1s"
       `date +%H:%M:%S`)
-    (defpoll cpu
-      :interval "1s"
-      "top -bn1 | grep 'Cpu(s)' | awk '{print $2 + $4}'")
     (defwidget cpu-graph []
       (graph
-        :value cpu
+        :value "''${EWW_CPU.avg}"
         :max 100
         :time-range "30s"
       ))
-    (defpoll ram
-      :interval "5s"
-      "free -h | awk '/^Mem/ {print $3 \"/\" $2}'")
-    (defpoll ram-perc
-      :interval "5s"
-      "free | awk '/^Mem/ {printf \"%.0f\", $3/$2 * 100.0}'")
     (defwidget ram-graph []
       (graph
-        :value ram-perc
+        :value "''${EWW_RAM.used_mem_perc}"
         :max 100
         :time-range "30s"
       ))
-    (defpoll disk
-      :interval "30s"
-      "df -h / | awk 'NR==2 {print $3 \"/\" $2}'")
-    (defpoll disk-perc
-      :interval "30s"
-      "df / | awk 'NR==2 {printf \"%.0f\", $3/$2 * 100.0}'")
     (defpoll swap
       :interval "30s"
       "free -h | awk '/^Swap/ {print $3 \"/\" $2}'")
@@ -120,10 +102,6 @@
         :time-range "30s"
         :class "pump-speed-graph graph"
       ))
-    (deflisten current-time :interval "1s"
-      `date '+%-I:%M %p'`)
-    (deflisten current-date :interval "1s"
-      `date '+%A, %B %d, %Y'`)
 
     (defwidget left-label [text]
       (label
@@ -185,10 +163,10 @@
           :hexpand true
           :valign "end"
           (left-row :label "Up" :value uptime)
-          (left-row :label "CPU" :value "''${cpu}%" :subtext "''${cpu-ghz}GHz" (cpu-graph))
-          (left-row :label "RAM" :value "''${ram-perc}%" :subtext ram (ram-graph))
-          (left-row :label "Swap" :value "''${swap-perc}%" :subtext swap (ram-graph))
-          (left-row :label "Disk" :value "''${disk-perc}%" :subtext disk)
+          (left-row :label "CPU" :value "''${round(EWW_CPU.avg, 1)}%" (cpu-graph))
+          (left-row :label "RAM" :value "''${round(EWW_RAM.used_mem_perc, 1)}%" :subtext "''${round(EWW_RAM.used_mem / 1073741824, 1)} / ''${round(EWW_RAM.total_mem / 1073741824, 0)} GB" (ram-graph))
+          (left-row :label "Swap" :value "''${round((EWW_RAM.total_swap - EWW_RAM.free_swap) / EWW_RAM.total_swap, 0)}%" :subtext "''${round((EWW_RAM.total_swap - EWW_RAM.free_swap) / 1073741824, 1)}/''${round(EWW_RAM.total_swap / 1073741824, 0)} GB")
+          (left-row :label "Disk" :value "''${round(EWW_DISK["/"].used_perc, 0)}%" :subtext "''${round(EWW_DISK["/"].used / 1073741824, 0)} / ''${round(EWW_DISK["/"].total / 1073741824, 0)} GB")
           (left-row :label "Net" :value "↑''${round(EWW_NET.eno2.NET_UP / 104856, 1)} ↓''${round(EWW_NET.eno2.NET_DOWN / 1048576, 1)}" :subtext "MB/s")
           (left-row :label "Procs" :value "''${num-processes} / ''${running-processes}")
         )
@@ -211,8 +189,8 @@
           :hexpand true
           :space-evenly false
           :class "right"
-          (label :text current-time :class "time" :xalign 1.0 :hexpand true)
-          (label :text current-date :class "date" :xalign 1.0 :hexpand true)
+          (label :text "''${formattime(EWW_TIME, '%I:%M %p')}" :class "time" :xalign 1.0 :hexpand true)
+          (label :text "''${formattime(EWW_TIME, '%A, %B %d, %Y')}" :class "date" :xalign 1.0 :hexpand true)
           (label :text processes
             :class "processes"
             :xalign 1.0
