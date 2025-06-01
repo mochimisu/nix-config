@@ -1,4 +1,84 @@
-{ lib, ... }:
+{ lib, pkgs, ... }:
+let
+
+ewwProcs = pkgs.writeShellScriptBin "eww-procs" ''
+#!/usr/bin/env bash
+# ~/bin/eww-procs.sh
+# JSON: {"total":618,"running":2,"top1":"foo: 17%","top2":"bar: 16%",…}
+
+while true; do
+  # one single ps, already without the header
+  mapfile -t ps_lines < <(ps -eo stat,comm,%cpu --sort=-%cpu --no-headers)
+
+  total=''${#ps_lines[@]}
+  running=0
+  tops=()
+
+  for line in "''${ps_lines[@]}"; do
+    # read collapses *any* whitespace, so leading blanks don’t hurt
+    read -r stat comm cpu <<< "''$line"
+
+    [[ ''$stat == R* ]] && ((running++))
+
+    if ((''${#tops[@]} < 7)); then
+      tops+=("''$(printf "%-15s: %s%%" "''$comm" "''$cpu")")
+    fi
+  done
+
+  # pad to exactly seven keys for predictable labels
+  while ((''${#tops[@]} < 7)); do tops+=(""); done
+
+  printf '{"total":%d,"running":%d' "''$total" "''$running"
+  for i in {1..7}; do
+    printf ',"top%d":"%s"' "''$i" "''${tops[''$((i-1))]}"
+  done
+  printf '}\n'
+
+  sleep 2
+done
+
+
+'';
+ewwSensors = pkgs.writeShellScriptBin "eww-sensors" ''
+#!/usr/bin/env bash
+# Emits: {"gpu_temp":44,"flow_rate":382,"fan_speed":937,"pump_speed":2725}
+
+while true; do
+  raw=''$(sensors 2>/dev/null)          # one single probe; silence warnings
+
+  # ----- GPU temperature ----------------------------------------------------
+  # use nvidia-smi
+  if command -v nvidia-smi >/dev/null 2>&1; then
+    gpu_temp=''$(nvidia-smi --query-gpu=temperature.gpu \
+                           --format=csv,noheader,nounits 2>/dev/null | head -n1)
+  else
+    gpu_temp="<unknown>"
+  fi
+
+  # ----- Flow-rate, fan RPM, pump RPM ---------------------------------------
+  # Use AWK section delimiters to stay within the right hwmon block.
+  flow_rate=''$(awk '
+    /highflownext-hid-3-/ {inblock=1}
+    inblock && /Flow \[dL\/h]/ {
+      gsub(/[[:space:]dL\/h]/,"",''$3); print ''$3; exit
+    }' <<< "''$raw")
+
+  fan_speed=''$(awk '
+    /nct6798-isa-0290/ {inblock=1}
+    inblock && /fan3/  {gsub(/[[:space:]RPM]/,"",''$2); print ''$2; exit}' <<< "''$raw")
+
+  pump_speed=''$(awk '
+    /nct6798-isa-0290/ {inblock=1}
+    inblock && /fan6/  {gsub(/[[:space:]RPM]/,"",''$2); print ''$2; exit}' <<< "''$raw")
+
+  printf '{"gpu_temp":%s,"flow_rate":%s,"fan_speed":%s,"pump_speed":%s}\n' \
+         "''${gpu_temp:-null}" "''${flow_rate:-null}" \
+         "''${fan_speed:-null}" "''${pump_speed:-null}"
+
+  sleep 2
+done
+'';
+in
 {
   programs.eww = {
     enable = lib.mkDefault true;
@@ -7,7 +87,7 @@
   home.file.".config/eww/sysmon/eww.yuck".text = ''
     (defpoll uptime
       :interval "1s"
-      "awk '{t=$1; d=int(t/86400); h=int((t%86400)/3600); m=int((t%3600)/60); printf \"%dd %dh %dm\n\", d,h,m}' /proc/uptime")
+      "awk '{t=$1; d=int(t/86400); h=int((t%86400)/3600); m=int((t%3600)/60); printf \"%dd %dh %dm\", d,h,m}' /proc/uptime")
     (defpoll time
       :interval "1s"
       `date +%H:%M:%S`)
@@ -29,21 +109,11 @@
     (defpoll swap-perc
       :interval "30s"
       "free | awk '/^Swap/ {printf \"%.0f\", $3/$2 * 100.0}'")
-    (defpoll num-processes
-      :interval "5s"
-      "ps -e | wc -l")
-    (defpoll running-processes
-      :interval "5s"
-      "ps -eo stat | grep -c '^R'")
-    (defpoll processes
-      :interval "1s"
-       `ps -eo pid,comm,%cpu --sort=-%cpu | head -n 7 | tail -n +2 | awk '{printf "%15s: %s%%\\n", $2, $3}'`)
-    (defpoll cpu-temp
-      :interval "5s"
-      "sensors coretemp-isa-0000 | awk '/Package id 0/ {print $4}' | sed 's/+//;s/°C//'")
+    (deflisten procs "bash ${ewwProcs}/bin/eww-procs")
+    (deflisten sensors "bash ${ewwSensors}/bin/eww-sensors")
     (defwidget cpu-temp-graph []
       (graph
-        :value cpu-temp
+        :value "''${EWW_TEMPS.CORETEMP_PACKAGE_ID_0}"
         :max 120
         :time-range "30s"
         :class "cpu-temp-graph graph"
@@ -52,52 +122,37 @@
         :width "100%"
         :height "100%"
       ))
-    (defpoll gpu-temp
-      :interval "5s"
-      "sensors nvme-pci-7200 | awk '/Composite/ {print $2}' | sed 's/+//;s/°C//'")
     (defwidget gpu-temp-graph []
       (graph
-        :value gpu-temp
+        :value "''${sensors.gpu_temp}"
         :max 120
         :time-range "30s"
         :class "gpu-temp-graph graph"
       ))
-    (defpoll water-temp
-      :interval "5s"
-      "sensors highflownext-hid-3-\\* | awk '/Coolant temp/ {print $3}' | sed 's/+//;s/°C//'")
     (defwidget water-temp-graph []
       (graph
-        :value water-temp
+        :value "''${EWW_TEMPS.HIGHFLOWNEXT_COOLANT_TEMP}"
         :max 60
         :time-range "30s"
         :class "water-temp-graph graph"
       ))
-    (defpoll flow-rate
-      :interval "5s"
-      "sensors highflownext-hid-3-\\* | awk '/Flow \\[dL\\/h\\]/ {print $3}' | sed 's/ dL\\/h//;s/ //g'")
     (defwidget flow-rate-graph []
       (graph
-        :value flow-rate
+        :value "''${sensors.flow_rate}"
         :max 1000
         :time-range "30s"
         :class "flow-rate-graph graph"
       ))
-    (defpoll fan-speed
-      :interval "5s"
-      "sensors nct6798-isa-0290 | awk '/fan3/ {print $2}' | sed 's/ RPM//;s/ //g'")
     (defwidget fan-speed-graph []
       (graph
-        :value fan-speed
+        :value "''${sensors.fan_speed}"
         :max 5000
         :time-range "30s"
         :class "fan-speed-graph graph"
       ))
-    (defpoll pump-speed
-      :interval "5s"
-      "sensors nct6798-isa-0290 | awk '/fan6/ {print $2}' | sed 's/ RPM//;s/ //g'")
     (defwidget pump-speed-graph []
       (graph
-        :value pump-speed
+        :value "''${sensors.pump_speed}"
         :max 5000
         :time-range "30s"
         :class "pump-speed-graph graph"
@@ -168,7 +223,7 @@
           (left-row :label "Swap" :value "''${round((EWW_RAM.total_swap - EWW_RAM.free_swap) / EWW_RAM.total_swap, 0)}%" :subtext "''${round((EWW_RAM.total_swap - EWW_RAM.free_swap) / 1073741824, 1)}/''${round(EWW_RAM.total_swap / 1073741824, 0)} GB")
           (left-row :label "Disk" :value "''${round(EWW_DISK["/"].used_perc, 0)}%" :subtext "''${round(EWW_DISK["/"].used / 1073741824, 0)} / ''${round(EWW_DISK["/"].total / 1073741824, 0)} GB")
           (left-row :label "Net" :value "↑''${round(EWW_NET.eno2.NET_UP / 104856, 1)} ↓''${round(EWW_NET.eno2.NET_DOWN / 1048576, 1)}" :subtext "MB/s")
-          (left-row :label "Procs" :value "''${num-processes} / ''${running-processes}")
+          (left-row :label "Procs" :value "''${procs.total} / ''${procs.running}")
         )
         (box
           :orientation "v"
@@ -176,12 +231,12 @@
           :space-evenly false
           :class "mid"
           :valign "end"
-          (mid-row :label "CPU" :value "''${cpu-temp}°C" (cpu-temp-graph))
-          (mid-row :label "GPU" :value "''${gpu-temp}°C" (gpu-temp-graph))
-          (mid-row :label "Water" :value "''${water-temp}°C" (water-temp-graph))
-          (mid-row :label "Flow" :value "''${flow-rate} dL/h" (flow-rate-graph))
-          (mid-row :label "Fan" :value "''${fan-speed} RPM" (fan-speed-graph))
-          (mid-row :label "Pump" :value "''${pump-speed} RPM" (pump-speed-graph))
+          (mid-row :label "CPU" :value "''${round(EWW_TEMPS.CORETEMP_PACKAGE_ID_0,0)}°C" (cpu-temp-graph))
+          (mid-row :label "GPU" :value "''${sensors.gpu_temp}°C" (gpu-temp-graph))
+          (mid-row :label "Water" :value "''${round(EWW_TEMPS.HIGHFLOWNEXT_COOLANT_TEMP,0)}°C" (water-temp-graph))
+          (mid-row :label "Flow" :value "''${sensors.flow_rate} dL/h" (flow-rate-graph))
+          (mid-row :label "Fan" :value "''${sensors.fan_speed} RPM" (fan-speed-graph))
+          (mid-row :label "Pump" :value "''${sensors.pump_speed} RPM" (pump-speed-graph))
         )
         (box
           :orientation "v"
@@ -191,9 +246,15 @@
           :class "right"
           (label :text "''${formattime(EWW_TIME, '%I:%M %p')}" :class "time" :xalign 1.0 :hexpand true)
           (label :text "''${formattime(EWW_TIME, '%A, %B %d, %Y')}" :class "date" :xalign 1.0 :hexpand true)
-          (label :text processes
+          (box
+            :orientation "v"
             :class "processes"
-            :xalign 1.0
+            (label :text "''${procs.top1}" :xalign 1.0)
+            (label :text "''${procs.top2}" :xalign 1.0)
+            (label :text "''${procs.top3}" :xalign 1.0)
+            (label :text "''${procs.top4}" :xalign 1.0)
+            (label :text "''${procs.top5}" :xalign 1.0)
+            (label :text "''${procs.top6}" :xalign 1.0)
           )
         )))
 
