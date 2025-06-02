@@ -42,11 +42,12 @@ in
         "10, monitor:HDMI-A-1, default:true"
       ];
       defaultwindows = {
-        windowrulev2 = [
+        windowrule = [
           "workspace 2 silent, class:^(steam)$"
           "workspace 2 silent, class:^(discord)$"
           "workspace 2 silent, class:^(vesktop)$"
           "renderunfocused, class:^(Monster Hunter Wilds)$"
+          "monitor DP-3 tile, class:^(ffxiv_dx11.exe)$" 
         ];
       };
     };
@@ -59,7 +60,7 @@ in
     "exec-once" = [
       # "discordcanary"
       "vesktop"
-      # set DP-1 as primary
+      # set DP-3 as primary
       "wlr-randr --output DP-3 --primary"
       # todo moon profile
       "openrgb --profile /home/brandon/.config/OpenRGB/moon.orp"
