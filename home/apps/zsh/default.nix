@@ -11,10 +11,10 @@ TERM_WIDTH=$(tput cols)
 # Check if the terminal width meets the minimum requirement
 if [ "$TERM_WIDTH" -ge "$MIN_WIDTH" ]; then
     # Run Fastfetch with the logo
-    fastfetch
+    fastfetch &
 else
     # Run Fastfetch without the logo
-    fastfetch --logo none
+    fastfetch --logo none &
 fi'';
 in
 {
