@@ -1,7 +1,8 @@
 {
   imports = [
     ./airline.nix
-    ./coc.nix
+    # ./coc.nix
+    ./lsp.nix
     ./fzf.nix
     ./commentary.nix
     ./flash.nix

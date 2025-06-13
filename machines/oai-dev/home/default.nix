@@ -1,5 +1,9 @@
-{ pkgs, lib, config, ... }:
 {
+  pkgs,
+  lib,
+  config,
+  ...
+}: {
   imports = [
     ./fastfetch.nix
   ];
@@ -9,6 +13,13 @@
     fd
     # vconv
     ffmpeg
+
+    # utils
+    watch
+
+    #
+
+    nerd-fonts.caskaydia-cove
   ];
   programs.aerospace.userSettings.start-at-login = true;
   programs.nixvim = {
@@ -24,24 +35,24 @@
   programs.spotify-player.enable = lib.mkForce false;
 
   home.file.".config/nvim/coc-settings.json".text = lib.mkForce ''
-  {
-    "eslint.autoFixOnSave": true,
-      "tslint.autoFixOnSave": true,
-      "eslint.filetypes": ["javascript", "javascriptreact", "typescript", "typescriptreact"],
-      "tslint.filetypes": ["typescript", "typescriptreact"],
-      "pyright.inlayHints.functionReturnTypes": false,
-      "pyright.inlayHints.variableTypes": false,
-      "pyright.inlayHints.parameterTypes": false,
-      "pyright.disableDiagnostics": true,
-      "[javascript][javascriptreact][typescript][typescriptreact]": {
-        "coc.preferences.formatOnSave": true
-      },
-      "tsserver.formatOnType": true,
-      "coc.preferences.formatOnType": true,
-      "typescript.autoClosingTags": false,
-      "python.pythonPath": "/Users/brandonw/.virtualenvs/openai/bin/python",
-  }
-    '';
+    {
+      "eslint.autoFixOnSave": true,
+        "tslint.autoFixOnSave": true,
+        "eslint.filetypes": ["javascript", "javascriptreact", "typescript", "typescriptreact"],
+        "tslint.filetypes": ["typescript", "typescriptreact"],
+        "pyright.inlayHints.functionReturnTypes": false,
+        "pyright.inlayHints.variableTypes": false,
+        "pyright.inlayHints.parameterTypes": false,
+        "pyright.disableDiagnostics": true,
+        "[javascript][javascriptreact][typescript][typescriptreact]": {
+          "coc.preferences.formatOnSave": true
+        },
+        "tsserver.formatOnType": true,
+        "coc.preferences.formatOnType": true,
+        "typescript.autoClosingTags": false,
+        "python.pythonPath": "/Users/brandonw/.virtualenvs/openai/bin/python",
+    }
+  '';
 
   home.shellAliases = {
     "nix-rs" = lib.mkForce "sudo nix run nix-darwin -- switch --flake ${config.home.homeDirectory}/stuff/nix-config#oai-dev";
@@ -65,16 +76,16 @@
 
         # Font faces
         normal = {
-          family = "Cascadia Code PL";
-          style  = "Regular";
+          family = "CaskaydiaCove Nerd Font";
+          style = "Regular";
         };
         bold = {
-          family = "Cascadia Code PL";
-          style  = "Bold";
+          family = "CaskaydiaCove Nerd Font";
+          style = "Bold";
         };
         italic = {
-          family = "Cascadia Code PL";
-          style  = "Italic";
+          family = "CaskaydiaCove Nerd Font";
+          style = "Italic";
         };
       };
 
@@ -82,17 +93,15 @@
       keyboard.bindings = [
         {
           action = "ToggleSimpleFullscreen";
-          key    = "Return";
-          mods   = "Super";
+          key = "Return";
+          mods = "Super";
         }
       ];
 
       window = {
         opacity = 0.8;
-        decorations = "None";
+        decorations = "transparent";
       };
-
     };
   };
-  
 }
