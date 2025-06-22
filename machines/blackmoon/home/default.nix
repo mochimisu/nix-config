@@ -1,11 +1,14 @@
-{ pkgs, config, lib, ... }:
-let
-  moonWallpaper =  builtins.fetchurl {
+{
+  pkgs,
+  config,
+  lib,
+  ...
+}: let
+  moonWallpaper = builtins.fetchurl {
     url = "https://w.wallhaven.cc/full/l8/wallhaven-l8mlyy.jpg";
     sha256 = "sha256:1571r0sz1qfz9xdqqkbpzfx8wx22azrhmsmdj14km427qcyiiap6";
   };
-in
-{
+in {
   variables.keyboardLayout = "dvorak";
   variables.hyprpanel = {
     hiddenMonitors = ["0"];
@@ -47,7 +50,7 @@ in
           "workspace 2 silent, class:^(discord)$"
           "workspace 2 silent, class:^(vesktop)$"
           "renderunfocused, class:^(Monster Hunter Wilds)$"
-          "monitor DP-3 tile, class:^(ffxiv_dx11.exe)$" 
+          "monitor DP-3 tile, class:^(ffxiv_dx11.exe)$"
         ];
       };
     };
@@ -101,7 +104,7 @@ in
       # vfr = 0;
     };
     cursor = {
-      default_monitor= "DP-1";
+      default_monitor = "DP-1";
     };
     bind = [
       "$mod, F2, exec, ~/.config/hypr/gamemode2.sh"
@@ -114,25 +117,24 @@ in
   home.file.".config/hypr/gamemode2.sh" = {
     executable = true;
     text = ''
-  HYPRGAMEMODE=$(hyprctl getoption animations:enabled | awk 'NR==1{print $2}')
-  if [ "$HYPRGAMEMODE" = 1 ] ; then
-      hyprctl --batch "\
-          keyword animations:enabled 0;\
-          keyword decoration:drop_shadow 0;\
-          keyword decoration:blur:enabled 0;\
-          keyword general:gaps_in 0;\
-          keyword general:gaps_out 0;\
-          keyword general:border_size 1;\
-          keyword decoration:rounding 0;\
-          keyword monitor DP-1,2560x1440@120,-3000x0,1;\
-          keyword monitor DP-3,3440x1440@175,0x0,1;\
-          keyword monitor HDMI-A-1,480x1920@60,4000x1200,2,transform,1"
-      exit
-  fi
-  hyprctl reload
-  '';
+      HYPRGAMEMODE=$(hyprctl getoption animations:enabled | awk 'NR==1{print $2}')
+      if [ "$HYPRGAMEMODE" = 1 ] ; then
+          hyprctl --batch "\
+              keyword animations:enabled 0;\
+              keyword decoration:drop_shadow 0;\
+              keyword decoration:blur:enabled 0;\
+              keyword general:gaps_in 0;\
+              keyword general:gaps_out 0;\
+              keyword general:border_size 1;\
+              keyword decoration:rounding 0;\
+              keyword monitor DP-1,2560x1440@120,-3000x0,1;\
+              keyword monitor DP-3,3440x1440@175,0x0,1;\
+              keyword monitor HDMI-A-1,480x1920@60,4000x1200,1,transform,1"
+          exit
+      fi
+      hyprctl reload
+    '';
   };
-
 
   # additional waybar modules
   variables.waybarModulesLeft = [
@@ -146,7 +148,7 @@ in
       "critical-threshold" = 80;
       "format-critical" = "{temperatureC}°C {icon}";
       format = "{temperatureC}°C {icon}";
-      "format-icons" = [ "🖥" ];
+      "format-icons" = ["🖥"];
     };
 
     "temperature#water" = {
@@ -155,7 +157,7 @@ in
       "critical-threshold" = 40;
       "format-critical" = "{temperatureC}°C {icon}";
       format = "{temperatureC}°C {icon}";
-      "format-icons" = [ "󰖌" ];
+      "format-icons" = ["󰖌"];
     };
   };
   variables.waybarBattery = "ps-controller-battery-58:10:31:1d:a2:43";
@@ -168,5 +170,4 @@ in
   services.mako.settings = {
     output = "DP-1";
   };
-    
 }
