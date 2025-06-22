@@ -1,12 +1,14 @@
-{ config, pkgs, lib, ...}:
-
-let
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}: let
   configsDir = "${config.home.homeDirectory}/stuff/nix-config";
   isLinux = pkgs.stdenv.isLinux;
-in
-{
+in {
   home.stateVersion = "24.11";
-  home.packages = with pkgs; [ 
+  home.packages = with pkgs; [
     tmux
     btop
     silver-searcher
@@ -66,7 +68,7 @@ in
     gtk3.extraConfig = {
       "gtk-application-prefer-dark-theme" = "1";
     };
-    
+
     gtk4.extraConfig = {
       "gtk-application-prefer-dark-theme" = "1";
     };
@@ -93,7 +95,7 @@ in
     {
       background-color: rgba(0,0,0,0.3);
     }
-    '';
+  '';
 
   home.activation = {
     cloneRepo = lib.hm.dag.entryAfter ["writeBoundary"] ''
@@ -108,13 +110,12 @@ in
 
   xdg.desktopEntries = lib.mkIf isLinux {
     "xivlauncher-rb" = {
-      name       = "XIVLauncher-RB";
-      icon       = "xivlauncher";
-      exec       = "sh -c \"SDL_VIDEODRIVER=wayland XIVLauncher.Core\"";
-      terminal   = false;
-      type       = "Application";
-      categories = [ "Game" ];
+      name = "XIVLauncher-RB";
+      icon = "xivlauncher";
+      exec = "sh -c \"SDL_VIDEODRIVER=wayland XIVLauncher.Core\"";
+      terminal = false;
+      type = "Application";
+      categories = ["Game"];
     };
   };
 }
-
