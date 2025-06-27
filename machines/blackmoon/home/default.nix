@@ -104,7 +104,7 @@ in {
       # vfr = 0;
     };
     cursor = {
-      default_monitor = "DP-1";
+      default_monitor = "DP-3";
     };
     bind = [
       "$mod, F2, exec, ~/.config/hypr/gamemode2.sh"
@@ -161,6 +161,11 @@ in {
     };
   };
   variables.waybarBattery = "ps-controller-battery-58:10:31:1d:a2:43";
+
+  # eww sidebar settings
+  variables.ewwSidebarScreens = [
+    "DP-3"
+  ];
 
   # dunst/mako settings, show on DP-1
   services.dunst.settings.global = {

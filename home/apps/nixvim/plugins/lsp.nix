@@ -64,6 +64,9 @@
       cmp-path
       luasnip
       cmp_luasnip
+
+      # color yuck
+      yuck-vim
     ];
 
     # Minimal Lua snippet to wire cmp → LSP
