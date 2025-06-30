@@ -10,12 +10,23 @@
     else ["0"];
   barCommands =
     lib.map (
-      screen: "eww --config ~/.config/eww/sidebar open bar --screen ${screen}"
+      screen: "eww --config ~/.config/eww/sidebar open bar_${screen}"
     )
     sidebarScreens;
   startupCommand = ''
     eww daemon --config ~/.config/eww/sidebar && \
     ${builtins.concatStringsSep " && " barCommands}'';
+  onAttachScript = pkgs.writeShellScriptBin "eww-on-attach" ''
+    #! /run/current-system/sw/bin/bash
+
+    # Wait for Hyprland to be ready
+    while ! hyprctl monitors > /dev/null 2>&1; do
+      sleep 0.1
+    done
+
+    # Open the bar for this monitor
+    eww --config ~/.config/eww/sidebar open bar_''${1}
+  '';
   ewwCava = pkgs.writeShellScriptBin "eww-cava" ''
     #! /run/current-system/sw/bin/bash
 
@@ -94,6 +105,7 @@ in {
     cava
     hyprland-workspaces
     hyprland-activewindow
+    hyprland-monitor-attached
   ];
 
   home.file.".config/eww/sidebar/eww.yuck".text = ''
@@ -102,11 +114,29 @@ in {
       :monitor screen
       :windowtype "dock"
       :geometry (geometry :x "0%"
-                          :y "0%"
-                          :width "20px"
-                          :height "100%"
-                          :anchor "right center")
+                  :y "0%"
+                  :width "20px"
+                  :height "100%"
+                  :anchor "right center"
+                  )
       (bar))
+    ; Also just define bar_0, bar_1, etc. for each screen
+    ${builtins.concatStringsSep "\n" (
+      lib.map (screen: ''
+        (defwindow bar_${screen}
+          :exclusive true
+          :monitor "${screen}"
+          :windowtype "dock"
+          :geometry (geometry :x "0%"
+                      :y "0%"
+                      :width "20px"
+                      :height "100%"
+                      :anchor "right center"
+                      )
+          (bar))
+      '')
+      sidebarScreens
+    )}
 
     (defwidget bar []
       (centerbox :orientation "v"
@@ -258,5 +288,6 @@ in {
 
   wayland.windowManager.hyprland.settings."exec-once" = [
     startupCommand
+    "hyprland-monitor-attached onAttachScript"
   ];
 }

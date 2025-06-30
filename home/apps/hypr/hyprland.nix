@@ -1,5 +1,4 @@
-{ ... }:
-{
+{...}: {
   wayland.windowManager.hyprland = {
     settings = {
       "$mod" = "SUPER";
@@ -23,7 +22,7 @@
       "exec-shutdown" = [
         "kill -9 \"$(cat /tmp/.hyprland-systemd-inhibit)"
       ];
-      
+
       debug = {
         # disable_logs = "false";
       };
@@ -40,7 +39,7 @@
 
       general = {
         gaps_in = "3";
-        gaps_out = "6,0,0,0";
+        gaps_out = "0";
         border_size = "2";
         "col.active_border" = "rgba(ffffffff)";
         "col.inactive_border" = "rgba(00000000)";
@@ -50,13 +49,13 @@
 
       decoration = {
         rounding = "10";
-          blur = {
-            enabled = "true";
-            size = "5";
-            passes = "1";
-            vibrancy = "0.1696";
-            ignore_opacity = "true";
-          };
+        blur = {
+          enabled = "true";
+          size = "5";
+          passes = "1";
+          vibrancy = "0.1696";
+          ignore_opacity = "true";
+        };
         shadow = {
           enabled = false;
         };
@@ -94,17 +93,17 @@
       };
 
       dwindle = {
-# See https://wiki.hyprland.org/Configuring/Dwindle-Layout/ for more
+        # See https://wiki.hyprland.org/Configuring/Dwindle-Layout/ for more
         pseudotile = "true"; # master switch for pseudotiling. Enabling is bound to mod + P in the keybinds section below
         preserve_split = "true"; # you probably want this
       };
 
       cliphist = {
-          exec-once = [
-            "wl-paste --type text --watch cliphist store" #Stores only text data
-            "wl-paste --type image --watch cliphist store" #Stores only image data
-          ];
-          bind = "SUPER, V, exec, cliphist list | rofi --dmenu | cliphist decode | wl-copy";
+        exec-once = [
+          "wl-paste --type text --watch cliphist store" #Stores only text data
+          "wl-paste --type image --watch cliphist store" #Stores only image data
+        ];
+        bind = "SUPER, V, exec, cliphist list | rofi --dmenu | cliphist decode | wl-copy";
       };
     };
   };

@@ -165,6 +165,7 @@ in {
   # eww sidebar settings
   variables.ewwSidebarScreens = [
     "DP-3"
+    "DP-1"
   ];
 
   # dunst/mako settings, show on DP-1
