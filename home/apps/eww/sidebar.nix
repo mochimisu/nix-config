@@ -119,7 +119,7 @@ in {
                   :height "100%"
                   :anchor "right center"
                   )
-      (bar))
+      (bar :monitor screen))
     ; Also just define bar_0, bar_1, etc. for each screen
     ${builtins.concatStringsSep "\n" (
       lib.map (screen: ''
@@ -133,47 +133,47 @@ in {
                       :height "100%"
                       :anchor "right center"
                       )
-          (bar))
+          (bar :monitor "${screen}"))
       '')
       sidebarScreens
     )}
 
-    (defwidget bar []
+    (defwidget bar [monitor]
       (centerbox :orientation "v"
-        (top)
-        (center)
-        (bottom)))
+        (top :monitor monitor)
+        (center :monitor monitor)
+        (bottom :monitor monitor)))
 
     ; Top
-    (defwidget top []
+    (defwidget top [monitor]
       (box :orientation "v" :vexpand true :spacing 0 :space-evenly false
-        (workspace :monitor 2)
+        (workspace :monitor monitor)
         ))
 
-    (deflisten all-workspaces "hyprland-workspaces _")
+    (deflisten all-workspaces "hyprland-workspaces _ | jq -c --unbuffered 'to_entries | map([{(.key | tostring): .value}, (if .value.name != null then {(.value.name): .value} else empty end)]) | flatten | add'")
     (defwidget workspace [monitor]
       (box
         :orientation "v"
-        (for workspace in {all-workspaces[2].workspaces}
+        (for workspace in {all-workspaces[monitor].workspaces}
           (button
             :class "workspace-button ''${workspace.active ? "active" : ""}"
             :onclick "hyprctl dispatch workspace ''${workspace.id}"
             {workspace.active ? "-''${workspace.name}-" : "''${workspace.name}"}))))
 
     ; Center
-    (defwidget center []
+    (defwidget center [monitor]
       (box :orientation "v"
-        (window :monitor 2)))
-    (deflisten windows "hyprland-activewindow _")
+        (window :monitor monitor)))
+    (deflisten windows "hyprland-activewindow _ | jq -c --unbuffered 'to_entries | map([{(.key | tostring): .value}, (if .value.name != null then {(.value.name): .value} else empty end)]) | flatten | add'")
     (defwidget window [monitor]
       (box
         (label :text "''${windows[${"'"}''${monitor}'].title}" :angle -90)
       ))
 
     ; Bottom
-      (defwidget bottom []
-        (box :orientation "v" :valign "end" :spacing 4 :space-evenly false
-          (systray :orientation "v" :icon-size 16 :spacing 2)
+      (defwidget bottom [monitor]
+        (box :orientation "v" :valign "end" :spacing 6 :space-evenly false
+          (systray :orientation "v" :icon-size 16 :spacing 2 :class "systray")
           (bluetooth)
           (net-indicator)
           (vol)
@@ -231,9 +231,11 @@ in {
                    cava)))
 
     (defpoll hour :interval "1s"
-      "date '+%H'")
+      "date '+%I'")
     (defpoll minute :interval "1s"
       "date '+%M'")
+    (defpoll ampm :interval "1s"
+      "date '+%p' | tr '[:upper:]' '[:lower:]'")
     (defpoll date :interval "1s"
       "date '+%m/%d'")
     (defwidget clock []
@@ -247,6 +249,8 @@ in {
            hour)
            (box :class "clock-minute"
            minute)
+           (box :class "clock-ampm"
+           ampm)
            (box :class "clock-date"
            date)))
   '';
@@ -284,7 +288,33 @@ in {
 
     .bluetooth-count {
     font-size: 11px;
-    }'';
+    }
+
+    tooltip,
+    .systray > widget > window > menu {
+      background-color: rgba(0, 0, 0, 0.6);
+      border-radius: 8px;
+      padding: 2px 0;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .systray > widget > window >menu > menuitem {
+
+      padding: 2px 6px;
+    }
+
+    .systray > widget > window > menu > menuitem:hover {
+      background-color: rgba(255,255,255,0.05);
+    }
+
+    .clock-ampm > label {
+      font-size: 8px;
+      margin-left: 8px;
+      margin-top: -2px;
+    }
+
+  '';
 
   wayland.windowManager.hyprland.settings."exec-once" = [
     startupCommand
