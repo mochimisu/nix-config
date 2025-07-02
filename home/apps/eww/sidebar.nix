@@ -96,6 +96,22 @@
     echo "{\"ssid\":null,\"eth\":null}"
 
   '';
+  ewwBattery = pkgs.writeShellScriptBin "eww-battery" ''
+    #! /run/current-system/sw/bin/bash
+
+    upower -i /org/freedesktop/UPower/devices/battery_BAT0 | awk '
+    /state/ { state = $2 }
+    /percentage/ {
+      gsub(/%/, "", $2)
+      percent = $2
+    }
+    /time to empty/ { time = $4 " " $5 }
+    /energy-rate/ { rate = $2 }
+    /icon-name/ { icon = $2 }
+    END {
+      printf("{\"state\": \"%s\", \"percent\": %s, \"time\": \"%s\", \"rate\": \"%s\", \"icon-name\": \"%s\"}\n", state, percent, time, rate, icon)
+    }'
+  '';
 in {
   programs.eww = {
     enable = true;
@@ -178,6 +194,7 @@ in {
           (net-indicator)
           (vol)
           (cava)
+          (battery)
           (clock)
           ))
 
@@ -229,6 +246,51 @@ in {
               :class "cava"
               (transform :scale-x "16%"
                    cava)))
+
+
+    (defpoll battery :interval "10s" "${ewwBattery}/bin/eww-battery")
+    (defwidget battery []
+      (box :class "battery"
+           :halign "center"
+           :valign "end"
+           :orientation "h"
+           :space-evenly false
+           :spacing -2
+           :tooltip {
+            "''${battery.state} - ''${battery.percent}% - ''${battery.rate}W"
+           }
+           (box :class "battery-icon"
+                (label :text {
+                  battery.state == "changing" ?
+                    (battery.percent < 10 ? "󰢟" :
+                    battery.percent < 20 ? "󰢜" :
+                    battery.percent < 30 ? "󰂆" :
+                    battery.percent < 40 ? "󰂇" :
+                    battery.percent < 50 ? "󰂈" :
+                    battery.percent < 60 ? "󰢝" :
+                    battery.percent < 70 ? "󰂉" :
+                    battery.percent < 80 ? "󰢞" :
+                    battery.percent < 90 ? "󰂊" :
+                    battery.percent < 100 ? "󰂋" : "󱐋") :
+                  battery.state == "discharging" || battery.state == "pending-discharge" ?
+                  (battery.percent < 10 ? "󰂎" :
+                    battery.percent < 20 ? "󰁺" :
+                    battery.percent < 30 ? "󰁻" :
+                    battery.percent < 40 ? "󰁼" :
+                    battery.percent < 50 ? "󰁽" :
+                    battery.percent < 60 ? "󰁾" :
+                    battery.percent < 70 ? "󰁿" :
+                    battery.percent < 80 ? "󰂀" :
+                    battery.percent < 90 ? "󰂁" :
+                    battery.percent < 100 ? "󰂂" :
+                    battery.percent == 100 ? "󰁹" : "󰂃") :
+                  battery.state == "fully-charged" || battery.state == "pending-charge" ? "󱟢" :
+                  battery.state == "empty" ? "󱃍" :
+                  ""}))
+           (box :class "battery-percentage"
+                (label :text "''${battery.percent}" :angle -90))))
+
+
 
     (defpoll hour :interval "1s"
       "date '+%I'")
@@ -312,6 +374,15 @@ in {
       font-size: 8px;
       margin-left: 8px;
       margin-top: -2px;
+    }
+
+    .battery-icon > label{
+      font-size: 20px;
+    }
+
+    .battery-percentage > label{
+      font-size: 11px;
+      font-weight: bold;
     }
 
   '';
