@@ -15,8 +15,6 @@
         "systemctl --user start hyprpolkitagent"
 
         "hypridle"
-        # disable power button being handled by logind
-        "systemd-inhibit --who=\"Hyprland config\" --why=\"wlogout keybind\" --what=handle-power-key --mode=block sleep infinity & echo $! > /tmp/.hyprland-systemd-inhibit"
         "walker --gapplication-service"
       ];
       "exec-shutdown" = [

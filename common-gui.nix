@@ -93,7 +93,6 @@ in {
     };
     gamemode.enable = true;
     hyprland.enable = true;
-    hyprlock.enable = true;
   };
   services.hypridle.enable = true;
   hardware.bluetooth = {

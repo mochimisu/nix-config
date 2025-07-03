@@ -1,4 +1,4 @@
-{ ... }: {
+{...}: {
   wayland.windowManager.hyprland.settings = {
     bind = [
       # Switch workspaces with mod + [0-9]
@@ -59,7 +59,7 @@
       # binde=,down,resizeactive,0 40
 
       # use reset to go back to the global submap
-      # bind=,escape,submap,reset 
+      # bind=,escape,submap,reset
 
       # will reset the submap, meaning end the current one and return to the global one
       # submap=reset
@@ -67,14 +67,12 @@
       # keybinds further down will be global again...
 
       "$mod, F1, exec, ~/.config/hypr/gamemode.sh"
-      
 
       ",XF86MonBrightnessDown,exec,brightnessctl set 5%-"
       ",XF86MonBrightnessUp,exec,brightnessctl set +5%"
       ",XF86AudioLowerVolume,exec,wpctl set-volume @DEFAULT_SINK@ 5%-"
       ",XF86AudioRaiseVolume,exec,wpctl set-volume @DEFAULT_SINK@ 5%+"
       ",XF86AudioMute,exec,wpctl set-mute @DEFAULT_SINK@ toggle"
-      ",XF86PowerOff,exec,systemctl suspend"
       ",XF86KbdLightOnOff,exec,brightnessctl --device \*kbd_backlight\* set +1"
       "SHIFT,XF86KbdLightOnOff,exec,brightnessctl --device \*kbd_backlight\* set 1-"
     ];
@@ -89,22 +87,20 @@
   home.file.".config/hypr/gamemode.sh" = {
     executable = true;
     text = ''
-#!/usr/bin/env sh
-HYPRGAMEMODE=$(hyprctl getoption animations:enabled | awk 'NR==1{print $2}')
-if [ "$HYPRGAMEMODE" = 1 ] ; then
-    hyprctl --batch "\
-        keyword animations:enabled 0;\
-        keyword decoration:drop_shadow 0;\
-        keyword decoration:blur:enabled 0;\
-        keyword general:gaps_in 0;\
-        keyword general:gaps_out 0;\
-        keyword general:border_size 1;\
-        keyword decoration:rounding 0"
-    exit
-fi
-hyprctl reload
-'';
+      #!/usr/bin/env sh
+      HYPRGAMEMODE=$(hyprctl getoption animations:enabled | awk 'NR==1{print $2}')
+      if [ "$HYPRGAMEMODE" = 1 ] ; then
+          hyprctl --batch "\
+              keyword animations:enabled 0;\
+              keyword decoration:drop_shadow 0;\
+              keyword decoration:blur:enabled 0;\
+              keyword general:gaps_in 0;\
+              keyword general:gaps_out 0;\
+              keyword general:border_size 1;\
+              keyword decoration:rounding 0"
+          exit
+      fi
+      hyprctl reload
+    '';
   };
-  
 }
-        

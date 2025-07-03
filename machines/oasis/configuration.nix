@@ -1,6 +1,12 @@
-{ config, lib, pkgs, specialArgs, variables, inputs, ... }:
-
 {
+  config,
+  lib,
+  pkgs,
+  specialArgs,
+  variables,
+  inputs,
+  ...
+}: {
   networking.hostName = "oasis";
   environment.systemPackages = with pkgs; [
     brightnessctl
@@ -35,7 +41,7 @@
   };
 
   # fix kernel hang on suspend
-  boot.kernelParams = [ "amdgpu.gpu_recovery=1" ];
+  boot.kernelParams = ["amdgpu.gpu_recovery=1"];
 
   # fix trackpad
   environment.etc."scripts/touchpad-fix.sh".source = pkgs.writeScript "touchpad-fix" ''
@@ -62,7 +68,7 @@
         Option "PalmDetection" "on"
         Option "PalmSizeThreshold" "10"
         Option "PalmEdgeWidth" "5"
-        '';
+      '';
     };
   };
 
@@ -71,12 +77,16 @@
   services.udev.extraHwdb = ''
     evdev:input:*
      KEYBOARD_KEY_5f=f13
-    '';
+  '';
 
-
+  services.logind.extraConfig = ''
+    HandlePowerKey=suspend
+    HandleLidSwitch=suspend
+    HandleLidSwitchDocked=ignore
+  '';
 
   systemd.services.fprintd = {
-    wantedBy = [ "multi-user.target" ];
+    wantedBy = ["multi-user.target"];
     serviceConfig.Type = "simple";
   };
 

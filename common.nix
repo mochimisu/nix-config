@@ -1,5 +1,4 @@
-{ pkgs, ... }:
-{
+{pkgs, ...}: {
   # Nix
   nix = {
     package = pkgs.nixVersions.stable;
@@ -63,11 +62,11 @@
   # User
   users.users.brandon = {
     isNormalUser = true;
-    extraGroups = [ "wheel" ]; # Enable ‘sudo’ for the user.
+    extraGroups = ["wheel"]; # Enable ‘sudo’ for the user.
     packages = with pkgs; [
       tree
-   ];
-   shell = pkgs.zsh;
+    ];
+    shell = pkgs.zsh;
   };
 
   # Allow SSH for brandon
@@ -80,4 +79,7 @@
       PermitRootLogin = "no";
     };
   };
+
+  # Latest kernel
+  boot.kernelPackages = pkgs.linuxPackages_latest;
 }
