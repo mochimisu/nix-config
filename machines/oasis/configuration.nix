@@ -7,6 +7,8 @@
   inputs,
   ...
 }: {
+  nixpkgs.overlays = [(import ../../overlays/wvkbd.nix)];
+
   networking.hostName = "oasis";
   environment.systemPackages = with pkgs; [
     brightnessctl
