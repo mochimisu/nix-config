@@ -256,6 +256,7 @@ in {
            :orientation "h"
            :space-evenly false
            :spacing -2
+           :visible {battery.state != ""}
            :tooltip {
             "''${battery.state} - ''${battery.percent}% - ''${battery.rate}W"
            }
