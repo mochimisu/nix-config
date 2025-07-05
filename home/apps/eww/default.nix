@@ -4,7 +4,7 @@
   ...
 }: {
   imports = [
-    ./sidebar.nix
+    ./sidebar
   ];
   programs.eww = {
     enable = true;

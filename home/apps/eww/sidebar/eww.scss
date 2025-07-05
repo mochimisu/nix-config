@@ -1,0 +1,67 @@
+* {
+all: unset;
+min-height: 0;
+font-family: "Montserrat Bold";
+font-size: 13px;
+}
+
+.clock-hour > label,
+.clock-minute > label {
+font-size: 16px;
+font-weight: bold;
+}
+
+.clock-date > label {
+font-size: 8px;
+margin-top: 4px;
+}
+
+.workspace-button.active {
+font-weight: bold;
+}
+
+.cava {
+padding-left: 2px;
+}
+
+.volume-icon, .bluetooth-icon, .network-icon, .battery-icon {
+font-size: 16px;
+}
+
+.bluetooth-count {
+font-size: 11px;
+}
+
+tooltip,
+.systray > widget > window > menu {
+  background-color: rgba(0, 0, 0, 0.6);
+  border-radius: 8px;
+  padding: 2px 0;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.systray > widget > window >menu > menuitem {
+
+  padding: 2px 6px;
+}
+
+.systray > widget > window > menu > menuitem:hover {
+  background-color: rgba(255,255,255,0.05);
+}
+
+.clock-ampm > label {
+  font-size: 8px;
+  margin-left: 8px;
+  margin-top: -2px;
+}
+
+.battery-icon > label{
+  font-size: 20px;
+}
+
+.battery-percentage > label{
+  font-size: 11px;
+  font-weight: bold;
+}
+
