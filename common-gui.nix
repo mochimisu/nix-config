@@ -13,7 +13,6 @@ in {
   imports = [
     ./keymap.nix
     inputs.catppuccin.nixosModules.catppuccin
-    {nixpkgs.overlays = [inputs.hyprpanel.overlay];}
   ];
 
   # Packages

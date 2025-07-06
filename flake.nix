@@ -20,10 +20,15 @@
       url = "github:drakon64/nixos-xivlauncher-rb";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    hyprpanel.url = "github:Jas-SinghFSU/HyprPanel";
     catppuccin.url = "github:catppuccin/nix";
   };
-  outputs = { self, nixpkgs, home-manager, nix-darwin, ... } @inputs: {
+  outputs = {
+    self,
+    nixpkgs,
+    home-manager,
+    nix-darwin,
+    ...
+  } @ inputs: {
     defaultPackage.x86_64-linux = home-manager.defaultPackage.x86_64-linux;
 
     homeManagerModules.home = {
@@ -36,8 +41,8 @@
     homeConfigurations = {
       brandon = home-manager.lib.homeManagerConfiguration {
         pkgs = nixpkgs;
-        modules = [ 
-          self.homeManagerModules.home 
+        modules = [
+          self.homeManagerModules.home
         ];
       };
     };
@@ -48,7 +53,8 @@
         modules = [
           ./vars.nix
           ./machines/oai-dev/configuration.nix
-          home-manager.darwinModules.home-manager {
+          home-manager.darwinModules.home-manager
+          {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
             home-manager.users.brandonw = {
@@ -65,7 +71,7 @@
 
     nixosConfigurations = {
       glasscastle = nixpkgs.lib.nixosSystem {
-        specialArgs = { inherit inputs; };
+        specialArgs = {inherit inputs;};
         system = "x86_64-linux";
         modules = [
           ./vars.nix
@@ -74,7 +80,8 @@
           ./boot-efi.nix
           ./common.nix
           ./common-gui.nix
-          home-manager.nixosModules.home-manager {
+          home-manager.nixosModules.home-manager
+          {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
             home-manager.users.brandon = {
@@ -88,7 +95,7 @@
         ];
       };
       espresso = nixpkgs.lib.nixosSystem {
-        specialArgs = { inherit inputs; };
+        specialArgs = {inherit inputs;};
         system = "x86_64-linux";
         modules = [
           ./vars.nix
@@ -97,7 +104,8 @@
           ./boot-efi.nix
           ./common.nix
           ./common-gui.nix
-          home-manager.nixosModules.home-manager {
+          home-manager.nixosModules.home-manager
+          {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
             home-manager.users.brandon = {
@@ -111,7 +119,7 @@
         ];
       };
       blackmoon = nixpkgs.lib.nixosSystem {
-        specialArgs = { inherit inputs; };
+        specialArgs = {inherit inputs;};
         system = "x86_64-linux";
         modules = [
           ./vars.nix
@@ -120,21 +128,22 @@
           ./boot-efi.nix
           ./common.nix
           ./common-gui.nix
-          home-manager.nixosModules.home-manager {
+          home-manager.nixosModules.home-manager
+          {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
             home-manager.users.brandon = {
               imports = [
                 inputs.catppuccin.homeModules.catppuccin
                 ./machines/blackmoon/home
-                  self.homeManagerModules.home
+                self.homeManagerModules.home
               ];
             };
           }
         ];
       };
       gaia = nixpkgs.lib.nixosSystem {
-        specialArgs = { inherit inputs; };
+        specialArgs = {inherit inputs;};
         system = "x86_64-linux";
         modules = [
           ./vars.nix
@@ -142,7 +151,8 @@
           ./machines/gaia/configuration.nix
           ./boot-efi.nix
           ./common.nix
-          home-manager.nixosModules.home-manager {
+          home-manager.nixosModules.home-manager
+          {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
             home-manager.users.brandon = {
@@ -157,7 +167,7 @@
       };
 
       oasis = nixpkgs.lib.nixosSystem {
-        specialArgs = { inherit inputs; };
+        specialArgs = {inherit inputs;};
         system = "x86_64-linux";
         modules = [
           ./vars.nix
@@ -166,7 +176,8 @@
           ./boot-efi.nix
           ./common.nix
           ./common-gui.nix
-          home-manager.nixosModules.home-manager {
+          home-manager.nixosModules.home-manager
+          {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
             home-manager.users.brandon = {
@@ -179,7 +190,6 @@
           }
         ];
       };
-
     };
   };
 }
