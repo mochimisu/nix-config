@@ -24,7 +24,7 @@
   padding-left: 2px;
 }
 
-.volume-icon, .bluetooth-icon, .network-icon, .battery-icon {
+.bluetooth-icon, .network-icon, .battery-icon {
   font-size: 16px;
 }
 
@@ -63,8 +63,9 @@ tooltip,
   font-size: 20px;
 }
 
-.battery-percentage > label{
-  font-size: 11px;
+.battery-percentage > label,
+.volume-percentage > label {
+  font-size: 8px;
   font-weight: bold;
 }
 

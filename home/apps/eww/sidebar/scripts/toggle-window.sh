@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 WIN="$1"
 
+echo "Toggling window: $WIN"
+
 # If we have a EWW_CONFIG environment variable, use it.
 if [ -z "$EWW_CONFIG" ]; then
   EWW_CONFIG="$HOME/.config/eww"

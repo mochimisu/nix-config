@@ -30,9 +30,9 @@
         :orientation "v"
         (for workspace in {all-workspaces[monitor].workspaces}
           (button
-            :class "workspace-button ''${workspace.active ? "active" : ""}"
-            :onclick "hyprctl dispatch workspace ''${workspace.id}"
-            {workspace.active ? "-''${workspace.name}-" : "''${workspace.name}"}))))
+            :class "workspace-button ${workspace.active ? "active" : ""}"
+            :onclick "hyprctl dispatch workspace ${workspace.id}"
+            {workspace.active ? "-${workspace.name}-" : "${workspace.name}"}))))
 
     ; Center
     (defwidget center [monitor]
@@ -51,13 +51,12 @@
           (bluetooth)
           (net-indicator)
           (vol :monitor monitor)
-          (cava)
           (battery)
           (clock)
           ))
 
     (defwidget bluetooth []
-      (box :class "bluetooth" :spacing 0 :space-evenly false
+      (box :class "bluetooth" :spacing 0 :space-evenly false :halign "center"
         (label :text "" :class "bluetooth-icon")
         (label :text "${num-bluetooth-devices}" :class "bluetooth-count")))
 
@@ -66,8 +65,8 @@
       "@networkBin@")
 
     (defwidget net-indicator []
-      (box :tooltip {net-status["eth"] != "" ? "Ethernet: ''${net-status['eth']}" :
-        net-status['ssid'] != "" ? "Wi-Fi: ''${net-status['ssid']}" :
+      (box :tooltip {net-status["eth"] != "" ? "Ethernet: ${net-status['eth']}" :
+        net-status['ssid'] != "" ? "Wi-Fi: ${net-status['ssid']}" :
           "No network connection"}
         :class "network-indicator"
         :halign "center"
@@ -90,7 +89,7 @@
         (for line in audio-sinks
             (button
               :class "${line.state == "RUNNING" ? "audio-sink-button-active" : ""} audio-sink-button tooltip-item"
-              :onclick "pactl set-default-sink ''${line.name}"
+              :onclick "pactl set-default-sink ${line.name} & @toggleWindow@ audio-selector --screen ${screen}"
               :tooltip "${line.state}"
               (label :text "${line.description}" :xalign "1")
         ))))
@@ -98,20 +97,16 @@
     (defwidget vol [monitor]
       (eventbox
         :onclick "@toggleWindow@ audio-selector --screen ${monitor}"
-        (box :vexpand false :hexpand false
-          (circular-progress
-            :value {volume*100}
-            :width 20
-            :height 20
-            :thickness 2
-            :clockwise false
-            :start-at 75
-            :tooltip "Volume: ''${volume*100}%"
-          (label :text "" :class "volume-icon")))))
+        
+        (box
+          :orientation "v"
+          :class "volume"
+          (cava)
+          (box :class "volume-percentage"
+            (label :text "${volume}%" :xalign "1")))))
 
 
-    (defpoll volume :interval "1s"
-      "wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk '{print $2}' | sed 's/%//g' || echo 0")
+    (deflisten volume "@volBin@")
 
     (defpoll num-bluetooth-devices :interval "10s"
       "bluetoothctl devices Connected | wc -l || echo 0")
@@ -135,7 +130,7 @@
            :spacing -2
            :visible {battery.state != ""}
            :tooltip {
-            "''${battery.state} - ''${battery.percent}% - ''${battery.rate}W"
+            "${battery.state} - ${battery.percent}% - ${battery.rate}W"
            }
            (box :class "battery-icon"
                 (label :text {
@@ -164,9 +159,10 @@
                     battery.percent == 100 ? "󰁹" : "󰂃") :
                   battery.state == "fully-charged" || battery.state == "pending-charge" ? "󱟢" :
                   battery.state == "empty" ? "󱃍" :
-                  ""}))
+                  "󱉝"}
+                  :angle -90))
            (box :class "battery-percentage"
-                (label :text "''${battery.percent}" :angle -90))))
+                (label :text "${battery.percent}" :xalign "1"))))
 
 
 

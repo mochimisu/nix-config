@@ -22,6 +22,7 @@
   networkBin = "${pkgs.writeShellScriptBin "eww-network" (builtins.readFile ./scripts/network.sh)}/bin/eww-network";
   batteryBin = "${pkgs.writeShellScriptBin "eww-battery" (builtins.readFile ./scripts/battery.sh)}/bin/eww-battery";
   audioSinksBin = "${pkgs.writeShellScriptBin "eww-audio-sinks" (builtins.readFile ./scripts/audio-sinks.sh)}/bin/eww-audio-sinks";
+  volBin = "${pkgs.writeShellScriptBin "eww-volume" (builtins.readFile ./scripts/vol.sh)}/bin/eww-volume";
   toggleWindow = "EWW_CONFIG=${configDir} ${pkgs.writeShellScriptBin "eww-toggle-window" (builtins.readFile ./scripts/toggle-window.sh)}/bin/eww-toggle-window";
 in {
   programs.eww = {
@@ -55,9 +56,7 @@ in {
         sidebarScreens
       )}
     '';
-    inherit cavaBin networkBin batteryBin audioSinksBin toggleWindow;
-    # Variables that should be not replaced
-    DEFAULT_AUDIO_SINK = null;
+    inherit cavaBin networkBin batteryBin audioSinksBin volBin toggleWindow;
   };
 
   home.file.".config/eww/sidebar/eww.scss".source = pkgs.replaceVars ./eww.scss {};
