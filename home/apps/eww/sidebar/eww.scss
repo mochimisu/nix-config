@@ -1,38 +1,39 @@
 * {
-all: unset;
-min-height: 0;
-font-family: "Montserrat Bold";
-font-size: 13px;
+  all: unset;
+  min-height: 0;
+  font-family: "Montserrat Bold";
+  font-size: 13px;
 }
 
 .clock-hour > label,
 .clock-minute > label {
-font-size: 16px;
-font-weight: bold;
+  font-size: 16px;
+  font-weight: bold;
 }
 
 .clock-date > label {
-font-size: 8px;
-margin-top: 4px;
+  font-size: 8px;
+  margin-top: 4px;
 }
 
 .workspace-button.active {
-font-weight: bold;
+  font-weight: bold;
 }
 
 .cava {
-padding-left: 2px;
+  padding-left: 2px;
 }
 
 .volume-icon, .bluetooth-icon, .network-icon, .battery-icon {
-font-size: 16px;
+  font-size: 16px;
 }
 
 .bluetooth-count {
-font-size: 11px;
+  font-size: 11px;
 }
 
 tooltip,
+.menu,
 .systray > widget > window > menu {
   background-color: rgba(0, 0, 0, 0.6);
   border-radius: 8px;
@@ -41,11 +42,13 @@ tooltip,
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
+.tooltip-item,
 .systray > widget > window >menu > menuitem {
 
   padding: 2px 6px;
 }
 
+.tooltip-item:hover,
 .systray > widget > window > menu > menuitem:hover {
   background-color: rgba(255,255,255,0.05);
 }
@@ -62,6 +65,10 @@ tooltip,
 
 .battery-percentage > label{
   font-size: 11px;
+  font-weight: bold;
+}
+
+.audio-sink-button-active {
   font-weight: bold;
 }
 

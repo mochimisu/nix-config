@@ -50,7 +50,7 @@
           (systray :orientation "v" :icon-size 16 :spacing 2 :class "systray")
           (bluetooth)
           (net-indicator)
-          (vol)
+          (vol :monitor monitor)
           (cava)
           (battery)
           (clock)
@@ -78,17 +78,36 @@
           net-status['ssid'] != "" ? "" :
           "⚠"})))
 
-    (defwidget vol []
-      (box :vexpand false :hexpand false
-        (circular-progress
-          :value {volume*100}
-          :width 20
-          :height 20
-          :thickness 2
-          :clockwise false
-          :start-at 75
-          :tooltip "Volume: ''${volume*100}%"
-        (label :text "" :class "volume-icon"))))
+    (deflisten audio-sinks
+      "@audioSinksBin@")
+    (defwindow audio-selector [screen]
+      :geometry (geometry :anchor "bottom right")
+      :stacking "fg"
+      :monitor screen
+      (box
+        :orientation "vertical"
+        :class "menu"
+        (for line in audio-sinks
+            (button
+              :class "${line.state == "RUNNING" ? "audio-sink-button-active" : ""} audio-sink-button tooltip-item"
+              :onclick "pactl set-default-sink ''${line.name}"
+              :tooltip "${line.state}"
+              (label :text "${line.description}" :xalign "1")
+        ))))
+
+    (defwidget vol [monitor]
+      (eventbox
+        :onclick "@toggleWindow@ audio-selector --screen ${monitor}"
+        (box :vexpand false :hexpand false
+          (circular-progress
+            :value {volume*100}
+            :width 20
+            :height 20
+            :thickness 2
+            :clockwise false
+            :start-at 75
+            :tooltip "Volume: ''${volume*100}%"
+          (label :text "" :class "volume-icon")))))
 
 
     (defpoll volume :interval "1s"
