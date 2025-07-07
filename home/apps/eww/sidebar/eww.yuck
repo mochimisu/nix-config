@@ -41,6 +41,7 @@
     (deflisten windows "hyprland-activewindow _ | jq -c --unbuffered 'to_entries | map([{(.key | tostring): .value}, (if .value.name != null then {(.value.name): .value} else empty end)]) | flatten | add'")
     (defwidget window [monitor]
       (box
+        :class "active-window"
         (label :text "${windows['${monitor}'].title}" :angle -90 :lines 1 :limit-width 100)
       ))
 

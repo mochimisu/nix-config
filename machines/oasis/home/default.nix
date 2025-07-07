@@ -10,6 +10,8 @@
   variables.hyprpaper-config = ''
     wallpaper = DP-2, ${config.home.homeDirectory}/.config/hypr/black.png
   '';
+  variables.ewwSidebarFontSize = "24px";
+  variables.ewwSidebarIconSize = "32";
   wayland.windowManager.hyprland.settings = {
     monitors = {
       monitor = [
