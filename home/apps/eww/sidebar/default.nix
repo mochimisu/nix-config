@@ -57,9 +57,12 @@ in {
       )}
     '';
     inherit cavaBin networkBin batteryBin audioSinksBin volBin toggleWindow;
+    iconSize = config.variables.ewwSidebarIconSize or "16";
   };
 
-  home.file.".config/eww/sidebar/eww.scss".source = pkgs.replaceVars ./eww.scss {};
+  home.file.".config/eww/sidebar/eww.scss".source = pkgs.replaceVars ./eww.scss {
+    fontSize = config.variables.ewwSidebarFontSize or "13px";
+  };
 
   wayland.windowManager.hyprland.settings."exec-once" = [
     startupCommand

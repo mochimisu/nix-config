@@ -2,36 +2,10 @@
   all: unset;
   min-height: 0;
   font-family: "Montserrat Bold";
-  font-size: 13px;
+  font-size: @fontSize@;
 }
 
-.clock-hour > label,
-.clock-minute > label {
-  font-size: 16px;
-  font-weight: bold;
-}
-
-.clock-date > label {
-  font-size: 8px;
-  margin-top: 4px;
-}
-
-.workspace-button.active {
-  font-weight: bold;
-}
-
-.cava {
-  padding-left: 2px;
-}
-
-.bluetooth-icon, .network-icon, .battery-icon {
-  font-size: 16px;
-}
-
-.bluetooth-count {
-  font-size: 11px;
-}
-
+// Tooltips/submenus
 tooltip,
 .menu,
 .systray > widget > window > menu {
@@ -53,23 +27,72 @@ tooltip,
   background-color: rgba(255,255,255,0.05);
 }
 
-.clock-ampm > label {
-  font-size: 8px;
-  margin-left: 8px;
-  margin-top: -2px;
-}
-
-.battery-icon > label{
-  font-size: 20px;
-}
-
-.battery-percentage > label,
-.volume-percentage > label {
-  font-size: 8px;
-  font-weight: bold;
-}
-
 .audio-sink-button-active {
   font-weight: bold;
 }
 
+// Workspaces
+.workspace-button.active {
+  font-weight: bold;
+}
+
+// Active Window
+.active-window > label {
+  font-size: 13px;
+}
+
+
+// General bottom bar styles
+.bottom > * {
+  margin: 0.3em 0;
+}
+
+.bluetooth-icon, .network-icon, .battery-icon {
+  font-size: 1.4em;
+}
+
+.battery-percentage > label,
+.volume-percentage > label {
+  font-size: 0.6em;
+  font-weight: bold;
+  font-stretch: condensed;
+}
+
+// Systray {
+.systray > widget > image {
+  margin: 0.4em 0;
+}
+
+// Bluetooth
+.bluetooth-count {
+  font-size: 0.7em;
+}
+
+// Battery
+.battery-icon > label {
+  font-size: 1.3em;
+}
+
+// Audio
+.cava {
+  padding-left: 2px;
+}
+
+// Clock
+.clock-hour > label,
+.clock-minute > label {
+  font-size: 1.2em;
+  font-weight: bold;
+  margin: -2px 0;
+}
+
+.clock-ampm > label {
+  font-size: 0.65em;
+  margin-left: 8px;
+  margin-top: -2px;
+}
+
+.clock-date > label {
+  font-size: 0.65em;
+  margin: 2px 0 0 0;
+}

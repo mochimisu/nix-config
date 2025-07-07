@@ -20,7 +20,7 @@
 
     ; Top
     (defwidget top [monitor]
-      (box :orientation "v" :vexpand true :spacing 0 :space-evenly false
+      (box :orientation "v" :vexpand true :space-evenly false
         (workspace :monitor monitor)
         ))
 
@@ -41,13 +41,13 @@
     (deflisten windows "hyprland-activewindow _ | jq -c --unbuffered 'to_entries | map([{(.key | tostring): .value}, (if .value.name != null then {(.value.name): .value} else empty end)]) | flatten | add'")
     (defwidget window [monitor]
       (box
-        (label :text "${windows['${monitor}'].title}" :angle -90)
+        (label :text "${windows['${monitor}'].title}" :angle -90 :lines 1 :limit-width 100)
       ))
 
     ; Bottom
       (defwidget bottom [monitor]
-        (box :orientation "v" :valign "end" :spacing 6 :space-evenly false
-          (systray :orientation "v" :icon-size 16 :spacing 2 :class "systray")
+        (box :orientation "v" :valign "end" :space-evenly false
+          (systray :orientation "v" :icon-size "@iconSize@" :class "systray")
           (bluetooth)
           (net-indicator)
           (vol :monitor monitor)
@@ -56,7 +56,7 @@
           ))
 
     (defwidget bluetooth []
-      (box :class "bluetooth" :spacing 0 :space-evenly false :halign "center"
+      (box :class "bluetooth" :space-evenly false :halign "center"
         (label :text "" :class "bluetooth-icon")
         (label :text "${num-bluetooth-devices}" :class "bluetooth-count")))
 
@@ -71,7 +71,6 @@
         :class "network-indicator"
         :halign "center"
         :valign "center"
-        :spacing 0
         (label :text
           {net-status["eth"] != "" ? "" :
           net-status['ssid'] != "" ? "" :
@@ -127,7 +126,6 @@
            :valign "end"
            :orientation "v"
            :space-evenly false
-           :spacing -2
            :visible {battery.state != ""}
            :tooltip {
             "${battery.state} - ${battery.percent}% - ${battery.rate}W"
@@ -180,7 +178,6 @@
            :valign "end"
            :orientation "v"
            :space-evenly false
-           :spacing -2
            (box :class "clock-hour"
            hour)
            (box :class "clock-minute"
