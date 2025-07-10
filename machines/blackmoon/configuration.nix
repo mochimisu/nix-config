@@ -1,11 +1,16 @@
-{ config, pkgs, lib, ... }:
-
 {
+  inputs,
+  config,
+  pkgs,
+  lib,
+  ...
+}: {
   imports = [
     ../../nvidia.nix
     ./uni-sync.nix
+    inputs.nix-snapd.nixosModules.default
   ];
-    
+
   networking.hostName = "blackmoon";
   environment.systemPackages = with pkgs; [
     bolt
@@ -29,30 +34,30 @@
     v4l2loopback
   ];
   boot.extraModprobeConfig = ''
-  options v4l2loopback devices=1 video_nr=10 card_label="VirtualCam" exclusive_caps=1
-'';
-  boot.kernelModules= [ 
+    options v4l2loopback devices=1 video_nr=10 card_label="VirtualCam" exclusive_caps=1
+  '';
+  boot.kernelModules = [
     # sensors for temps
     "nct6775"
     # loopback for screen sharing
     "v4l2loopback"
   ];
   boot.kernelParams = [
-    "acpi_enforce_resources=lax" 
+    "acpi_enforce_resources=lax"
     # disable GSP for frame stuttering
     "NVreg_EnableGpuFirmware=0"
   ];
 
-
   # services for fusion360
-  hardware.spacenavd.enable = true;
-  services.samba.enable = true;
+  # hardware.spacenavd.enable = true;
+  # services.samba.enable = true;
+  # snap for fusion360
+  services.snap.enable = true;
 
-  # consistent udev for highflownext 
+  # consistent udev for highflownext
   services.udev.extraRules = ''
     ACTION=="add", SUBSYSTEM=="hwmon", ATTRS{idVendor}=="0c70", ATTRS{idProduct}=="f012", ATTRS{serial}=="03550-34834", RUN+="/bin/sh -c 'ln -s /sys$devpath /dev/highflow_next'"
   '';
-
 
   # fix sddm, eDP-3 (ultrawide) doesnt show with wayland.
   services.xserver.enable = lib.mkForce true;

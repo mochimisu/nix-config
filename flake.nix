@@ -21,6 +21,10 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     catppuccin.url = "github:catppuccin/nix";
+    nix-snapd = {
+      url = "github:nix-community/nix-snapd";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
   outputs = {
     self,
