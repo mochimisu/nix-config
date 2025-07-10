@@ -59,7 +59,7 @@
   # Add a custom udev rule to trigger the script when the device is added
   services.udev.extraRules = ''
     ACTION=="add", KERNEL=="0003:0B05:1A30.*", SUBSYSTEM=="hid", \
-      RUN+="${config.environment.etc."scripts/touchpad-fix.sh".source}"
+    RUN+="${config.environment.etc."scripts/touchpad-fix.sh".source}"
   '';
 
   # palm rejection
@@ -78,7 +78,7 @@
   # TODO figure out which device
   services.udev.extraHwdb = ''
     evdev:input:*
-     KEYBOARD_KEY_5f=f13
+    KEYBOARD_KEY_5f=f13
   '';
 
   services.logind.extraConfig = ''
@@ -109,6 +109,19 @@
       alsa.support32Bit = true;
       jack.enable = true;
     };
+    displayManager.sddm = {
+      settings = {
+        # TODO: fix this
+        # "General" = {
+        #   "InputMethod" = "qtvirtualkeyboard";
+        # };
+      };
+      wayland.enable = lib.mkForce false; # force X11
+      extraPackages = with pkgs; [
+        qt6.qtvirtualkeyboard
+      ];
+    };
+    xserver.enable = lib.mkForce true; # force X11
   };
 
   # orientation sensor

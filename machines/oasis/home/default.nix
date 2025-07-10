@@ -12,12 +12,16 @@
   '';
   variables.ewwSidebarFontSize = "24px";
   variables.ewwSidebarIconSize = "32";
+  variables.ewwSidebarScreens = [
+    "eDP-1"
+    "DP-1"
+  ];
   wayland.windowManager.hyprland.settings = {
     monitors = {
       monitor = [
         "eDP-1,2560x1600@180,0x0,1.25"
         # XReal glasses, 2048=2560/1.25
-        "DP-1,1920x1080@60,2048x0,1"
+        "DP-1,1920x1080@120,2048x0,1"
       ];
     };
 
