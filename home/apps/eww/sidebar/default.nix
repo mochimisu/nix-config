@@ -5,7 +5,7 @@
   ...
 }: let
   sidebarScreens =
-    if builtins.hasAttr "ewwSidebarScreens" config.variables
+    if pkgs.stdenv.isLinux && builtins.hasAttr "ewwSidebarScreens" config.variables
     then config.variables.ewwSidebarScreens
     else ["0"];
   configDir = "~/.config/eww/sidebar";
@@ -26,15 +26,16 @@
   toggleWindow = "EWW_CONFIG=${configDir} ${pkgs.writeShellScriptBin "eww-toggle-window" (builtins.readFile ./scripts/toggle-window.sh)}/bin/eww-toggle-window";
 in {
   programs.eww = {
-    enable = true;
+    enable = lib.mkIf pkgs.stdenv.isLinux true;
   };
 
-  home.packages = with pkgs; [
-    cava
-    hyprland-workspaces
-    hyprland-activewindow
-    hyprland-monitor-attached
-  ];
+  home.packages = with pkgs;
+    lib.optionals pkgs.stdenv.isLinux [
+      cava
+      hyprland-workspaces
+      hyprland-activewindow
+      hyprland-monitor-attached
+    ];
 
   home.file.".config/eww/sidebar/eww.yuck".source = pkgs.replaceVars ./eww.yuck {
     generatedWidgets = ''

@@ -6,7 +6,7 @@
   imports = [
     ./sidebar
   ];
-  programs.eww = {
+  programs.eww = lib.mkIf pkgs.stdenv.isLinux {
     enable = true;
   };
 }

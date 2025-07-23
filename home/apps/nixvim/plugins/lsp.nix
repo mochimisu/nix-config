@@ -7,6 +7,18 @@
     ##############################################################################
     # 1 ─ Enable Nixvim’s built-in LSP layer
     ##############################################################################
+    keymaps = [
+      {
+        mode = "n";
+        key = "E"; # Shift+e
+        action = "<cmd>lua vim.diagnostic.open_float()<CR>";
+        options = {
+          silent = true;
+          noremap = true;
+          desc = "LSP diagnostics float";
+        };
+      }
+    ];
     plugins.lsp = {
       enable = true;
 
