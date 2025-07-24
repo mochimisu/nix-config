@@ -23,8 +23,8 @@ in {
 
     # status bar, choose one
     # ./apps/hyprpanel.nix # customization not as deep as id like
-    # ./apps/waybar
-    ./apps/eww
+    ./apps/waybar # horizontal only
+    # ./apps/eww # high cpu usage
 
     # notification manager
     ./apps/dunst.nix
