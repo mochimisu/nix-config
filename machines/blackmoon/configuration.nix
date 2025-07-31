@@ -62,6 +62,8 @@
   # fix sddm, eDP-3 (ultrawide) doesnt show with wayland.
   services.xserver.enable = lib.mkForce true;
   services.displayManager.sddm.wayland.enable = lib.mkForce false;
+  # flatpak
+  services.flatpak.enable = true;
 
   system.stateVersion = "24.11";
 }
