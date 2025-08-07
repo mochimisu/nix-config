@@ -75,6 +75,7 @@ in {
     sc-controller
     obs-studio
     appimage-run
+    seventeenlands
 
     # 3D Printing
     bambu-studio
