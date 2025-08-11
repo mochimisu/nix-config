@@ -35,7 +35,7 @@
       User = "root";
       Group = "root";
       ExecStart = "${pkgs.uni-sync}/bin/uni-sync";
-      ExecStartPre = "/bin/sleep 5";
+      ExecStartPre = "/run/current-system/sw/bin/sleep 5";
     };
   };
 }
