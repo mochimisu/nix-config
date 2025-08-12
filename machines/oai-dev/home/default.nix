@@ -58,10 +58,10 @@
     "nix-rs" = lib.mkForce "sudo nix run nix-darwin -- switch --flake ${config.home.homeDirectory}/stuff/nix-config#oai-dev";
     "gitp" = "GIT_SSH_COMMAND='ssh -i ~/.ssh/id_ed25519-personal -o IdentitiesOnly=yes' git push --no-verify";
   };
-  catppuccin = {
-    enable = true;
-    flavor = "mocha";
-  };
+  # catppuccin = {
+  #   enable = true;
+  #   flavor = "mocha";
+  # };
 
   # Use alacritty over kitty on macOS
   programs.kitty.enable = lib.mkForce false;
