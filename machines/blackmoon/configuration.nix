@@ -46,6 +46,8 @@
     "acpi_enforce_resources=lax"
     # disable GSP for frame stuttering
     "NVreg_EnableGpuFirmware=0"
+    #issues rebooting
+    "reboot=pci"
   ];
 
   # services for fusion360
