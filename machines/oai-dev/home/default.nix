@@ -16,10 +16,12 @@
 
     # utils
     watch
-
-    #
+    autoraise
 
     nerd-fonts.caskaydia-cove
+    source-sans
+
+    discord
   ];
   programs.aerospace.userSettings.start-at-login = true;
   programs.nixvim = {
@@ -56,12 +58,18 @@
 
   home.shellAliases = {
     "nix-rs" = lib.mkForce "sudo nix run nix-darwin -- switch --flake ${config.home.homeDirectory}/stuff/nix-config#oai-dev";
-    "gitp" = "GIT_SSH_COMMAND='ssh -i ~/.ssh/id_ed25519-personal -o IdentitiesOnly=yes' git push --no-verify";
+    "gitp" = "GIT_SSH_COMMAND='ssh -i ~/.ssh/id_ed25519_personal -o IdentitiesOnly=yes' git push --no-verify";
+    "cdc" = "cd ~/code/openai/chatgpt";
+    "cdcw" = "cd ~/code/openai/chatgpt/web";
+    "cdcs" = "cd ~/code/openai/chatgpt/search-service";
   };
   # catppuccin = {
   #   enable = true;
   #   flavor = "mocha";
   # };
+  programs.zsh.envExtra = ''
+    source ~/.zshenv-local
+  '';
 
   # Use alacritty over kitty on macOS
   programs.kitty.enable = lib.mkForce false;
