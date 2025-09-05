@@ -15,11 +15,6 @@ in {
     inputs.catppuccin.nixosModules.catppuccin
   ];
 
-  # Heroic and bambu-studio use this insecure library
-  nixpkgs.config.permittedInsecurePackages = [
-    "libsoup-2.74.3"
-  ];
-
   # Packages
   environment.systemPackages = with pkgs; [
     bluez
