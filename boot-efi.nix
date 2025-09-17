@@ -12,6 +12,7 @@
       devices = [ "nodev" ];
       enable = true;
       useOSProber = true;
+      configurationLimit = 25;
     };
   };
 }

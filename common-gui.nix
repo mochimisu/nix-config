@@ -23,6 +23,7 @@ in {
     hyprpaper
     networkmanagerapplet
     (chromium.override {enableWideVine = true;})
+    zen-browser
     cliphist
 
     grim
