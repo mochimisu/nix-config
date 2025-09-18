@@ -35,9 +35,9 @@
   } @ inputs: {
     defaultPackage.x86_64-linux = home-manager.defaultPackage.x86_64-linux;
 
-    homeManagerModules.home = {
+    homeModules.home = {
       imports = [
-        inputs.nixvim.homeManagerModules.nixvim
+        inputs.nixvim.homeModules.nixvim
         ./home
       ];
     };
@@ -46,7 +46,7 @@
       brandon = home-manager.lib.homeManagerConfiguration {
         pkgs = nixpkgs;
         modules = [
-          self.homeManagerModules.home
+          self.homeModules.home
         ];
       };
     };
@@ -65,7 +65,7 @@
               imports = [
                 inputs.catppuccin.homeModules.catppuccin
                 ./machines/oai-dev/home
-                self.homeManagerModules.home
+                self.homeModules.home
               ];
             };
           }
@@ -92,7 +92,7 @@
               imports = [
                 inputs.catppuccin.homeModules.catppuccin
                 ./machines/glasscastle/home.nix
-                self.homeManagerModules.home
+                self.homeModules.home
               ];
             };
           }
@@ -116,7 +116,7 @@
               imports = [
                 inputs.catppuccin.homeModules.catppuccin
                 ./machines/espresso/home.nix
-                self.homeManagerModules.home
+                self.homeModules.home
               ];
             };
           }
@@ -140,7 +140,7 @@
               imports = [
                 inputs.catppuccin.homeModules.catppuccin
                 ./machines/blackmoon/home
-                self.homeManagerModules.home
+                self.homeModules.home
               ];
             };
           }
@@ -163,7 +163,7 @@
               imports = [
                 inputs.catppuccin.homeModules.catppuccin
                 ./machines/gaia/home
-                self.homeManagerModules.home
+                self.homeModules.home
               ];
             };
           }
@@ -188,7 +188,7 @@
               imports = [
                 inputs.catppuccin.homeModules.catppuccin
                 ./machines/oasis/home
-                self.homeManagerModules.home
+                self.homeModules.home
               ];
             };
           }

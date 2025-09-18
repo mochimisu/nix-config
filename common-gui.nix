@@ -19,7 +19,7 @@ in {
   environment.systemPackages = with pkgs; [
     bluez
     mesa
-    greetd.tuigreet
+    # greetd.tuigreet
     hyprpaper
     networkmanagerapplet
     (chromium.override {enableWideVine = true;})
