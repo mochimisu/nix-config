@@ -1,0 +1,87 @@
+* {
+  font-family: "Montserrat", sans-serif;
+  font-size: 13px;
+  color: #cdd6f4;
+}
+
+window#astal-bar {
+  background-color: rgba(30, 30, 46, 0.25);
+  border-radius: 16px;
+  padding: 10px;
+}
+
+.bar {
+  min-width: 70px;
+  padding: 6px;
+  border-radius: 12px;
+  background-color: rgba(24, 24, 37, 0.35);
+}
+
+.section {
+  gap: 12px;
+}
+
+.module {
+  padding: 2px 0;
+}
+
+.module.workspaces button {
+  background-color: transparent;
+  border: none;
+  border-radius: 10px;
+  padding: 6px 8px;
+  margin: 1px 0;
+}
+
+.module.workspaces button.workspace.active {
+  background-color: rgba(137, 180, 250, 0.35);
+}
+
+.module.workspaces button.workspace.urgent {
+  color: #f38ba8;
+}
+
+.module.workspaces .workspace-label {
+  font-weight: 600;
+}
+
+.module.stats .stat {
+  padding: 2px 0;
+}
+
+.stat.temperature.critical {
+  color: #f38ba8;
+}
+
+.module.interactive {
+  cursor: pointer;
+}
+
+.module.window-title {
+  text-align: center;
+  color: #f2cdcd;
+  padding: 6px 4px;
+}
+
+.module.tray {
+  padding: 4px 0;
+}
+
+.module.clock {
+  font-weight: 600;
+}
+
+.module.battery {
+  font-weight: 600;
+}
+
+.module.volume,
+.module.network,
+.module.bluetooth {
+  font-weight: 600;
+}
+
+.module + .module {
+  margin-top: 6px;
+}
+

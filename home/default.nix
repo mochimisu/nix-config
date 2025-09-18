@@ -22,7 +22,8 @@ in {
     ./apps/kitty.nix
 
     # status bar, choose one
-    ./apps/hyprpanel.nix # customization not as deep as id like
+    ./apps/astal-bar # vertical astal/ags bar
+    # ./apps/hyprpanel.nix # customization not as deep as id like
     # ./apps/waybar # horizontal only
     # ./apps/eww # high cpu usage
 
