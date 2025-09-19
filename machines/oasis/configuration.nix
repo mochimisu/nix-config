@@ -7,7 +7,10 @@
   inputs,
   ...
 }: {
-  nixpkgs.overlays = [(import ../../overlays/wvkbd.nix)];
+  nixpkgs.overlays = [
+    (import ../../overlays/wvkbd.nix)
+    (import ../../overlays/hyprgrass.nix)
+  ];
 
   networking.hostName = "oasis";
   environment.systemPackages = with pkgs; [
