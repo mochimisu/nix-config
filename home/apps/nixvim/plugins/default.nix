@@ -8,6 +8,7 @@
     ./flash.nix
     ./hop.nix
     ./avante.nix
+    ./obsidian.nix
   ];
   programs.nixvim = {
     colorschemes.ayu = {

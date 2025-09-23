@@ -13,6 +13,7 @@ in {
     btop
     silver-searcher
     tree
+    obsidian
   ];
 
   imports = [

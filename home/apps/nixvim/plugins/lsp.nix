@@ -69,6 +69,10 @@
     ##############################################################################
     # 2 ─ Completion: nvim-cmp + LuaSnip (closest match to CoC experience)
     ##############################################################################
+    plugins.cmp = {
+      enable = true;
+    };
+
     extraPlugins = with pkgs.vimPlugins; [
       nvim-cmp
       cmp-nvim-lsp
