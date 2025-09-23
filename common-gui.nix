@@ -48,6 +48,7 @@ in {
     proton-pass
     caprine
     hyprpicker
+    inputs.zen-browser.packages.${pkgs.system}.default
     vlc
     signal-desktop
     ani-cli
