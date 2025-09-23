@@ -29,13 +29,22 @@
   };
 
   systemd.services.uni-sync = {
-    wantedBy = ["multi-user.target"];
     enable = true;
     serviceConfig = {
       User = "root";
       Group = "root";
       ExecStart = "${pkgs.uni-sync}/bin/uni-sync";
-      ExecStartPre = "/bin/sleep 5";
+    };
+  };
+
+  # Add a timer that triggers the service every minute
+  systemd.timers.uni-sync = {
+    enable = true;
+    wantedBy = ["timers.target"];
+    timerConfig = {
+      OnBootSec = "15sec";
+      OnUnitActiveSec = "1min";
+      Unit = "uni-sync.service";
     };
   };
 }

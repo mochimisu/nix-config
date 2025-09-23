@@ -22,12 +22,13 @@ in {
     ./apps/kitty.nix
 
     # status bar, choose one
-    # ./apps/hyprpanel.nix # customization not as deep as id like
-    ./apps/waybar # horizontal only
+    ./apps/hyprpanel.nix # customization not as deep as id like
+    # ./apps/waybar # horizontal only
     # ./apps/eww # high cpu usage
 
     # notification manager
-    ./apps/dunst.nix
+    # (don't need with hyprpanel)
+    # ./apps/dunst.nix
     # ./apps/mako.nix
 
     # Application launcher, choose one

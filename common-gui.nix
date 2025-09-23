@@ -15,16 +15,11 @@ in {
     inputs.catppuccin.nixosModules.catppuccin
   ];
 
-  # Heroic and bambu-studio use this insecure library
-  nixpkgs.config.permittedInsecurePackages = [
-    "libsoup-2.74.3"
-  ];
-
   # Packages
   environment.systemPackages = with pkgs; [
     bluez
     mesa
-    greetd.tuigreet
+    # greetd.tuigreet
     hyprpaper
     networkmanagerapplet
     (chromium.override {enableWideVine = true;})
@@ -53,6 +48,7 @@ in {
     proton-pass
     caprine
     hyprpicker
+    inputs.zen-browser.packages.${pkgs.system}.default
     vlc
     signal-desktop
     ani-cli

@@ -1,11 +1,14 @@
-{ lib, variables, ... }:
 {
-  imports = [ ../../../vars.nix ];
+  lib,
+  variables,
+  ...
+}: {
+  imports = [../../../vars.nix];
   wayland.windowManager.hyprland.settings = lib.mkIf (variables.keyboardLayout == "dvorak") {
     bind = [
       "$mod, apostrophe, exec, $terminal"
       "$mod, C, killactive,"
-      "$mod, M, exit,"
+      "$mod SHIFT, M, exit,"
       "$mod, G, exec, $fileManager"
       "$mod, V, togglefloating,"
       "$mod, U, pseudo, # dwindle"

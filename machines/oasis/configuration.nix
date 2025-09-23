@@ -7,7 +7,10 @@
   inputs,
   ...
 }: {
-  nixpkgs.overlays = [(import ../../overlays/wvkbd.nix)];
+  nixpkgs.overlays = [
+    (import ../../overlays/wvkbd.nix)
+    (import ../../overlays/hyprgrass.nix)
+  ];
 
   networking.hostName = "oasis";
   environment.systemPackages = with pkgs; [
@@ -33,9 +36,9 @@
   ];
 
   # wifi usb
-  boot.extraModulePackages = with config.boot.kernelPackages; [
-    rtl8852bu
-  ];
+  # boot.extraModulePackages = with config.boot.kernelPackages; [
+  #   rtl8852bu
+  # ];
 
   # gnupg
   programs.gnupg.agent = {
@@ -81,11 +84,11 @@
     KEYBOARD_KEY_5f=f13
   '';
 
-  services.logind.extraConfig = ''
-    HandlePowerKey=suspend
-    HandleLidSwitch=suspend
-    HandleLidSwitchDocked=ignore
-  '';
+  # services.logind.extraConfig = ''
+  #   HandlePowerKey=suspend
+  #   HandleLidSwitch=suspend
+  #   HandleLidSwitchDocked=ignore
+  # '';
 
   systemd.services.fprintd = {
     wantedBy = ["multi-user.target"];

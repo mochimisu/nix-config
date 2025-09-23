@@ -7,6 +7,12 @@
       cores = 4;
       max-jobs = 4;
     };
+    gc = {
+      automatic = true;
+      dates = "weekly";
+      options = "--delete-older-than 7d";
+    };
+    optimise.automatic = true;
   };
   nixpkgs.config = {
     allowUnfree = true;
@@ -36,6 +42,7 @@
     pulsemixer
     conky
     spotify-player
+    codex
   ];
 
   programs = {
