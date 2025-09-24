@@ -8,8 +8,8 @@ let
     }
     {
       name = "Obsidian";
-      kind = "bin";
-      path = "${pkgs.obsidian}/bin/obsidian";
+      kind = "app";
+      path = "${pkgs.obsidian}/Applications/Obsidian.app";
     }
   ];
 
