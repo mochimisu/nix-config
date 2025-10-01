@@ -13,6 +13,7 @@ in {
   imports = [
     ./keymap.nix
     inputs.catppuccin.nixosModules.catppuccin
+    inputs.flatpaks.nixosModules.nix-flatpak
   ];
 
   # Packages
@@ -72,9 +73,6 @@ in {
     obs-studio
     appimage-run
     seventeenlands
-
-    # 3D Printing
-    bambu-studio
   ];
 
   environment.sessionVariables = {
@@ -127,6 +125,16 @@ in {
   services.pipewire = {
     enable = true;
     pulse.enable = true;
+  };
+
+  services.flatpak = {
+    enable = lib.mkDefault true;
+    packages = [
+      {
+        appId = "com.bambulab.BambuStudio";
+        origin = "flathub";
+      }
+    ];
   };
 
   # sddm

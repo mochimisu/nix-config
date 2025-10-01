@@ -29,10 +29,6 @@ in {
   home.packages = with pkgs; [
     wlr-randr
     nvidia-vaapi-driver
-    # fix bambu-studio for nvidia; without this it will not render anything in 3d
-    (pkgs.writeShellScriptBin "bambu-studio" ''
-      __EGL_VENDOR_LIBRARY_FILENAMES="${pkgs.mesa}/share/glvnd/egl_vendor.d/50_mesa.json" ${pkgs.bambu-studio}/bin/bambu-studio "$@"
-    '')
   ];
 
   wayland.windowManager.hyprland.settings = {
