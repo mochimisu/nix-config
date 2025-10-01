@@ -72,31 +72,10 @@ in {
     obs-studio
     appimage-run
     seventeenlands
+
+    # 3D Printing
+    bambu-studio
   ];
-
-  xdg.portal = {
-    enable = true;
-    extraPortals = [pkgs.xdg-desktop-portal-hyprland];
-  };
-
-  services.flatpak.enable = true;
-
-  system.activationScripts.ensure-bambu-flatpak = ''
-    export PATH=${lib.makeBinPath [pkgs.flatpak pkgs.coreutils]}
-    set -eu
-
-    if ! flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo; then
-      echo "warning: failed to add flathub remote" >&2
-    fi
-
-    if flatpak info --system com.bambulab.BambuStudio >/dev/null 2>&1; then
-      flatpak update --noninteractive --system com.bambulab.BambuStudio || \
-        echo "warning: failed to update Bambu Studio flatpak" >&2
-    else
-      flatpak install --noninteractive --system flathub com.bambulab.BambuStudio || \
-        echo "warning: failed to install Bambu Studio flatpak" >&2
-    fi
-  '';
 
   environment.sessionVariables = {
     NIXOS_OZONE_WL = "1";

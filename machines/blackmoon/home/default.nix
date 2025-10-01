@@ -29,9 +29,9 @@ in {
   home.packages = with pkgs; [
     wlr-randr
     nvidia-vaapi-driver
-    # convenience wrapper to launch the system Flatpak build
+    # fix bambu-studio for nvidia; without this it will not render anything in 3d
     (pkgs.writeShellScriptBin "bambu-studio" ''
-      exec ${pkgs.flatpak}/bin/flatpak run --branch=stable --system com.bambulab.BambuStudio "$@"
+      __EGL_VENDOR_LIBRARY_FILENAMES="${pkgs.mesa}/share/glvnd/egl_vendor.d/50_mesa.json" ${pkgs.bambu-studio}/bin/bambu-studio "$@"
     '')
   ];
 
