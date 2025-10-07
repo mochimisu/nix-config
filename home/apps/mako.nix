@@ -27,7 +27,7 @@ in
       };
 
       "urgency=critical" = {
-        "background-color" = palette.red.text;
+        "background-color" = palette.red.hex;
         "text-color" = palette.crust.hex;
         "border-color" = palette.red.hex;
         "border-size" = 3;
@@ -40,4 +40,3 @@ in
     "mako"
   ];
 }
-

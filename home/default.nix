@@ -30,7 +30,7 @@ in {
     # notification manager
     # (don't need with hyprpanel)
     # ./apps/dunst.nix
-    # ./apps/mako.nix
+    ./apps/mako.nix
 
     # Application launcher, choose one
     ./apps/rofi.nix

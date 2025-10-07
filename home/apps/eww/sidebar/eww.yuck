@@ -61,9 +61,7 @@
         (label :text "" :class "bluetooth-icon")
         (label :text "${num-bluetooth-devices}" :class "bluetooth-count")))
 
-    (deflisten net-status
-      :interval 5
-      "@networkBin@")
+    (deflisten net-status "@networkBin@")
 
     (defwidget net-indicator []
       (box :tooltip {net-status["eth"] != "" ? "Ethernet: ${net-status['eth']}" :
@@ -108,8 +106,7 @@
 
     (deflisten volume "@volBin@")
 
-    (defpoll num-bluetooth-devices :interval "10s"
-      "bluetoothctl devices Connected | wc -l || echo 0")
+    (deflisten num-bluetooth-devices "@bluetoothBin@")
 
     (deflisten cava "@cavaBin@")
     (defwidget cava []
@@ -120,7 +117,7 @@
                    cava)))
 
 
-    (defpoll battery :interval "10s" "@batteryBin@")
+    (deflisten battery "@batteryBin@")
     (defwidget battery []
       (box :class "battery"
            :halign "center"
@@ -165,14 +162,7 @@
 
 
 
-    (defpoll hour :interval "1s"
-      "date '+%I'")
-    (defpoll minute :interval "1s"
-      "date '+%M'")
-    (defpoll ampm :interval "1s"
-      "date '+%p' | tr '[:upper:]' '[:lower:]'")
-    (defpoll date :interval "1s"
-      "date '+%m/%d'")
+    (deflisten clock "@clockBin@")
     (defwidget clock []
       (box :class "clock"
            :halign "center"
@@ -180,11 +170,10 @@
            :orientation "v"
            :space-evenly false
            (box :class "clock-hour"
-           hour)
+             (label :text {clock.hour}))
            (box :class "clock-minute"
-           minute)
+             (label :text {clock.minute}))
            (box :class "clock-ampm"
-           ampm)
+             (label :text {clock.ampm}))
            (box :class "clock-date"
-           date)))
-
+             (label :text {clock.date}))))

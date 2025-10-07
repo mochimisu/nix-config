@@ -19,8 +19,10 @@
     ${builtins.concatStringsSep " && " barCommands}'';
   onAttachScript = "${pkgs.writeShellScriptBin "eww-on-attach" (builtins.readFile ./scripts/on-attach.sh)}/bin/eww-on-attach";
   cavaBin = "${pkgs.writeShellScriptBin "eww-cava" (builtins.readFile ./scripts/cava.sh)}/bin/eww-cava";
+  clockBin = "${pkgs.writeShellScriptBin "eww-clock" (builtins.readFile ./scripts/clock.sh)}/bin/eww-clock";
   networkBin = "${pkgs.writeShellScriptBin "eww-network" (builtins.readFile ./scripts/network.sh)}/bin/eww-network";
   batteryBin = "${pkgs.writeShellScriptBin "eww-battery" (builtins.readFile ./scripts/battery.sh)}/bin/eww-battery";
+  bluetoothBin = "${pkgs.writeShellScriptBin "eww-bluetooth" (builtins.readFile ./scripts/bluetooth.sh)}/bin/eww-bluetooth";
   audioSinksBin = "${pkgs.writeShellScriptBin "eww-audio-sinks" (builtins.readFile ./scripts/audio-sinks.sh)}/bin/eww-audio-sinks";
   volBin = "${pkgs.writeShellScriptBin "eww-volume" (builtins.readFile ./scripts/vol.sh)}/bin/eww-volume";
   toggleWindow = "EWW_CONFIG=${configDir} ${pkgs.writeShellScriptBin "eww-toggle-window" (builtins.readFile ./scripts/toggle-window.sh)}/bin/eww-toggle-window";
@@ -57,7 +59,7 @@ in {
         sidebarScreens
       )}
     '';
-    inherit cavaBin networkBin batteryBin audioSinksBin volBin toggleWindow;
+    inherit cavaBin clockBin networkBin batteryBin bluetoothBin audioSinksBin volBin toggleWindow;
     iconSize = config.variables.ewwSidebarIconSize or "16";
   };
 
