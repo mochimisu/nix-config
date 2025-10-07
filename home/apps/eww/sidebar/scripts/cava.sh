@@ -1,43 +1,49 @@
-    #!/run/current-system/sw/bin/bash
+#!/run/current-system/sw/bin/bash
+set -euo pipefail
 
-    bar="▁▂▃▄▅▆▇█"
-    dict="s/;//g;"
+pipe="/tmp/eww-cava.fifo"
+config_file="/tmp/eww-cava.conf"
 
-    # creating "dictionary" to replace char with bar
-    i=0
-    while [ $i -lt ''${#bar} ]
-    do
-        dict="${dict}s/$i/${bar:$i:1}/g;"
-        i=$((i=i+1))
-    done
+cleanup() {
+  rm -f "$pipe" "$config_file"
+  if [[ -n "${cava_pid:-}" ]]; then
+    kill "$cava_pid" 2>/dev/null || true
+  fi
+}
 
-    # make sure to clean pipe
-    pipe="/tmp/cava.fifo"
-    if [ -p $pipe ]; then
-        unlink $pipe
-    fi
-    mkfifo $pipe
+trap cleanup EXIT INT TERM
 
-    # write cava config
-    config_file="/tmp/waybar_cava_config"
-    echo "
-    [general]
-    bars = 12
-    [output]
-    method = raw
-    raw_target = $pipe
-    data_format = ascii
-    ascii_max_range = 7
-    [smoothing]
-    monstercat = true
-    waves = false
-    noise_reduction = 0.1
-    " > $config_file
+[[ -p $pipe ]] && rm -f "$pipe"
+mkfifo "$pipe"
 
-    # run cava in the background
-    cava -p $config_file &
+cat >"$config_file" <<CFG
+[general]
+bars = 12
+framerate = 24
+[output]
+method = raw
+raw_target = $pipe
+data_format = ascii
+ascii_max_range = 7
+[smoothing]
+monstercat = true
+waves = false
+noise_reduction = 0.15
+CFG
 
-    # reading data from fifo
-    while read -r cmd; do
-        echo $cmd | sed $dict
-    done < $pipe
+cava -p "$config_file" &
+cava_pid=$!
+
+bars=("▁" "▂" "▃" "▄" "▅" "▆" "▇" "█")
+prev=""
+while IFS= read -r line; do
+  line=${line//;/}
+  out=""
+  for ((i = 0; i < ${#line}; i++)); do
+    digit=${line:i:1}
+    out+="${bars[digit]:- }"
+  done
+  [[ $out == "$prev" ]] && continue
+  printf '%s\n' "$out"
+  prev="$out"
+done <"$pipe"
