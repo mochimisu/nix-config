@@ -14,6 +14,10 @@
     };
     optimise.automatic = true;
   };
+  nixpkgs.overlays = [
+    (import ./overlays/toluapp.nix)
+  ];
+
   nixpkgs.config = {
     allowUnfree = true;
   };
