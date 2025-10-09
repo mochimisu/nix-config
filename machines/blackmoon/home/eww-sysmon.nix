@@ -12,42 +12,44 @@ normalize_top() {
 }
 
 while true; do
-  read -r total running < <(
-    ps -eo stat --no-headers |
-      awk '{ total++; if ($1 ~ /^R/) running++ } END { printf "%d %d", total, running }'
-  )
+  ps_output=$(ps -eo stat,comm,%cpu --sort=-pcpu --no-headers)
+  total=$(printf '%s\n' "$ps_output" | wc -l)
+  running=$(printf '%s\n' "$ps_output" | awk '{ if ($1 ~ /^R/) run++ } END { printf "%d", run + 0 }')
 
-  mapfile -t top_lines < <(ps -eo comm,%cpu --sort=-%cpu --no-headers | head -n7)
+  top_json=""
+  idx=1
+  while IFS= read -r line && [ "$idx" -le 7 ]; do
+    read -r stat comm cpu <<< "$line"
+    [ -z "$stat" ] && continue
+    top_json="$top_json,\"top$idx\":\"$(normalize_top "$comm" "$cpu")\""
+    idx=$((idx + 1))
+  done <<EOF_TOP
+$ps_output
+EOF_TOP
 
-  tops=()
-  for line in "''${top_lines[@]}"; do
-    read -r comm cpu <<< "$line"
-    tops+=("$(normalize_top "$comm" "$cpu")")
+  while [ "$idx" -le 7 ]; do
+    top_json="$top_json,\"top$idx\":\"\""
+    idx=$((idx + 1))
   done
 
-  while (( ''${#tops[@]} < 7 )); do
-    tops+=("")
-  done
+  printf '{"total":%d,"running":%d%s}\n' "$total" "$running" "$top_json"
 
-  printf '{"total":%d,"running":%d' "''${total:-0}" "''${running:-0}"
-  for i in {1..7}; do
-    printf ',"top%d":"%s"' "$i" "''${tops[$((i-1))]}"
-  done
-  printf '}\n'
-
-  sleep 4
+  sleep 5
 done
 
 '';
+
 
 ewwSensors = pkgs.writeShellScriptBin "eww-sensors" ''
 #!/usr/bin/env bash
 # Emits: {"gpu_temp":44,"flow_rate":382,"fan_speed":937,"pump_speed":2725}
 
 LC_ALL=C
-gpu_refresh_loops=3   # refresh GPU temp roughly every 12s (3 * sleep interval)
+gpu_refresh_loops=4   # refresh GPU temp roughly every ~24s (4 * sleep interval)
 gpu_counter=0
 gpu_temp=null
+sensors_timeout=0.4
+nvidia_timeout=0.4
 
 normalize() {
   local value="$1"
@@ -60,7 +62,11 @@ normalize() {
 }
 
 while true; do
-  raw="$(sensors 2>/dev/null || true)"
+  if raw=$(timeout "$sensors_timeout" sensors 2>/dev/null); then
+    :
+  else
+    raw=""
+  fi
 
   mapfile -t sensor_vals < <(awk '
     BEGIN {
@@ -93,9 +99,8 @@ while true; do
 
   if (( gpu_counter <= 0 )); then
     if command -v nvidia-smi >/dev/null 2>&1; then
-      gpu_readout=$(nvidia-smi --query-gpu=temperature.gpu \
-                                --format=csv,noheader,nounits 2>/dev/null |
-                     head -n1 | tr -d '[:space:]')
+      gpu_readout=$(timeout "$nvidia_timeout" nvidia-smi --query-gpu=temperature.gpu \
+                                --format=csv,noheader,nounits 2>/dev/null | head -n1 | tr -d '[:space:]')
       gpu_temp=$(normalize "$gpu_readout")
     else
       gpu_temp=null
@@ -107,7 +112,7 @@ while true; do
   printf '{"gpu_temp":%s,"flow_rate":%s,"fan_speed":%s,"pump_speed":%s}\n' \
          "$gpu_temp" "$flow_rate" "$fan_speed" "$pump_speed"
 
-  sleep 4
+  sleep 6
 done
 '';
 in
@@ -120,17 +125,15 @@ in
     (defpoll uptime
       :interval "5s"
       "awk '{t=$1; d=int(t/86400); h=int((t%86400)/3600); m=int((t%3600)/60); printf \"%dd %dh %dm\", d,h,m}' /proc/uptime")
-    (defwidget cpu-graph []
+    (defwidget history-graph [value max class]
       (graph
-        :value "''${EWW_CPU.avg}"
-        :max 100
-        :time-range "30s"
-      ))
-    (defwidget ram-graph []
-      (graph
-        :value "''${EWW_RAM.used_mem_perc}"
-        :max 100
-        :time-range "30s"
+        :value value
+        :max max
+        :time-range "90s"
+        :class class
+        :hexpand true
+        :vexpand false
+        :thickness 2
       ))
     (defpoll swap
       :interval "120s"
@@ -140,52 +143,6 @@ in
       "free | awk '/^Swap/ {printf \"%.0f\", $3/$2 * 100.0}'")
     (deflisten procs "bash ${ewwProcs}/bin/eww-procs")
     (deflisten sensors "bash ${ewwSensors}/bin/eww-sensors")
-    (defwidget cpu-temp-graph []
-      (graph
-        :value "''${EWW_TEMPS.CORETEMP_PACKAGE_ID_0}"
-        :max 120
-        :time-range "30s"
-        :class "cpu-temp-graph graph"
-        :hexpand true
-        :vexpand true
-        :width "100%"
-        :height "100%"
-      ))
-    (defwidget gpu-temp-graph []
-      (graph
-        :value "''${sensors.gpu_temp}"
-        :max 120
-        :time-range "30s"
-        :class "gpu-temp-graph graph"
-      ))
-    (defwidget water-temp-graph []
-      (graph
-        :value "''${EWW_TEMPS.HIGHFLOWNEXT_COOLANT_TEMP}"
-        :max 60
-        :time-range "30s"
-        :class "water-temp-graph graph"
-      ))
-    (defwidget flow-rate-graph []
-      (graph
-        :value "''${sensors.flow_rate}"
-        :max 1000
-        :time-range "30s"
-        :class "flow-rate-graph graph"
-      ))
-    (defwidget fan-speed-graph []
-      (graph
-        :value "''${sensors.fan_speed}"
-        :max 5000
-        :time-range "30s"
-        :class "fan-speed-graph graph"
-      ))
-    (defwidget pump-speed-graph []
-      (graph
-        :value "''${sensors.pump_speed}"
-        :max 5000
-        :time-range "30s"
-        :class "pump-speed-graph graph"
-      ))
 
     (defwidget left-label [text]
       (label
@@ -247,11 +204,13 @@ in
           :hexpand true
           :valign "end"
           (left-row :label "Up" :value uptime)
-          (left-row :label "CPU" :value "''${round(EWW_CPU.avg, 1)}%" (cpu-graph))
-          (left-row :label "RAM" :value "''${round(EWW_RAM.used_mem_perc, 1)}%" :subtext "''${round(EWW_RAM.used_mem / 1073741824, 1)} / ''${round(EWW_RAM.total_mem / 1073741824, 0)} GB" (ram-graph))
+          (left-row :label "CPU" :value "''${round(EWW_CPU.avg, 1)}%"
+            (history-graph :value "''${EWW_CPU.avg}" :max 100 :class "cpu-history history-graph"))
+          (left-row :label "RAM" :value "''${round(EWW_RAM.used_mem_perc, 1)}%"
+            :subtext "''${round(EWW_RAM.used_mem / 1073741824, 1)} / ''${round(EWW_RAM.total_mem / 1073741824, 0)} GB"
+            (history-graph :value "''${EWW_RAM.used_mem_perc}" :max 100 :class "ram-history history-graph"))
           (left-row :label "Swap" :value "''${round((EWW_RAM.total_swap - EWW_RAM.free_swap) / EWW_RAM.total_swap, 0)}%" :subtext "''${round((EWW_RAM.total_swap - EWW_RAM.free_swap) / 1073741824, 1)}/''${round(EWW_RAM.total_swap / 1073741824, 0)} GB")
           (left-row :label "Disk" :value "''${round(EWW_DISK["/"].used_perc, 0)}%" :subtext "''${round(EWW_DISK["/"].used / 1073741824, 0)} / ''${round(EWW_DISK["/"].total / 1073741824, 0)} GB")
-          (left-row :label "Net" :value "↑''${round(EWW_NET.eno2.NET_UP / 104856, 1)} ↓''${round(EWW_NET.eno2.NET_DOWN / 1048576, 1)}" :subtext "MB/s")
           (left-row :label "Procs" :value "''${procs.total} / ''${procs.running}")
         )
         (box
@@ -260,12 +219,18 @@ in
           :space-evenly false
           :class "mid"
           :valign "end"
-          (mid-row :label "CPU" :value "''${round(EWW_TEMPS.CORETEMP_PACKAGE_ID_0,0)}°C" (cpu-temp-graph))
-          (mid-row :label "GPU" :value "''${sensors.gpu_temp}°C" (gpu-temp-graph))
-          (mid-row :label "Water" :value "''${round(EWW_TEMPS.HIGHFLOWNEXT_COOLANT_TEMP,0)}°C" (water-temp-graph))
-          (mid-row :label "Flow" :value "''${sensors.flow_rate} dL/h" (flow-rate-graph))
-          (mid-row :label "Fan" :value "''${sensors.fan_speed} RPM" (fan-speed-graph))
-          (mid-row :label "Pump" :value "''${sensors.pump_speed} RPM" (pump-speed-graph))
+          (mid-row :label "CPU" :value "''${round(EWW_TEMPS.CORETEMP_PACKAGE_ID_0,0)}°C"
+            (history-graph :value "''${EWW_TEMPS.CORETEMP_PACKAGE_ID_0}" :max 120 :class "cpu-temp-history history-graph"))
+          (mid-row :label "GPU" :value "''${sensors.gpu_temp}°C"
+            (history-graph :value "''${sensors.gpu_temp}" :max 120 :class "gpu-temp-history history-graph"))
+          (mid-row :label "Water" :value "''${round(EWW_TEMPS.HIGHFLOWNEXT_COOLANT_TEMP,0)}°C"
+            (history-graph :value "''${EWW_TEMPS.HIGHFLOWNEXT_COOLANT_TEMP}" :max 60 :class "water-temp-history history-graph"))
+          (mid-row :label "Flow" :value "''${sensors.flow_rate} dL/h"
+            (history-graph :value "''${sensors.flow_rate}" :max 1000 :class "flow-rate-history history-graph"))
+          (mid-row :label "Fan" :value "''${sensors.fan_speed} RPM"
+            (history-graph :value "''${sensors.fan_speed}" :max 5000 :class "fan-speed-history history-graph"))
+          (mid-row :label "Pump" :value "''${sensors.pump_speed} RPM"
+            (history-graph :value "''${sensors.pump_speed}" :max 5000 :class "pump-speed-history history-graph"))
         )
         (box
           :orientation "v"
@@ -335,8 +300,8 @@ in
       .left-value,
       .mid-value
        {
-      font-weight: bold;
-       color: rgba(255,255,255,1);
+        font-weight: bold;
+        color: rgba(255,255,255,1);
       }
 
       .left-label {
@@ -346,6 +311,45 @@ in
       .mid-label {
         min-width: 120px;
       }
+
+      .graph.history-graph {
+        min-height: 42px;
+        padding: 2px 0;
+        opacity: 0.9;
+      }
+
+      .graph.cpu-history { color: rgba(202,153,255,0.9); }
+      .graph.ram-history { color: rgba(249,226,175,0.95); }
+      .graph.cpu-temp-history { color: rgba(250,179,135,0.95); }
+      .graph.gpu-temp-history { color: rgba(137,220,235,0.95); }
+      .graph.water-temp-history { color: rgba(116,199,236,0.95); }
+      .graph.flow-rate-history { color: rgba(166,218,149,0.95); }
+      .graph.fan-speed-history { color: rgba(245,194,231,0.95); }
+      .graph.pump-speed-history { color: rgba(148,226,213,0.95); }
+
+      .cpu-bar progress,
+      .cpu-bar progressbar progress { background-color: rgba(202,153,255,0.85); }
+
+      .ram-bar progress,
+      .ram-bar progressbar progress { background-color: rgba(249,226,175,0.9); }
+
+      .cpu-temp-bar progress,
+      .cpu-temp-bar progressbar progress { background-color: rgba(250,179,135,0.9); }
+
+      .gpu-temp-bar progress,
+      .gpu-temp-bar progressbar progress { background-color: rgba(137,220,235,0.9); }
+
+      .water-temp-bar progress,
+      .water-temp-bar progressbar progress { background-color: rgba(116,199,236,0.9); }
+
+      .flow-rate-bar progress,
+      .flow-rate-bar progressbar progress { background-color: rgba(166,218,149,0.9); }
+
+      .fan-speed-bar progress,
+      .fan-speed-bar progressbar progress { background-color: rgba(245,194,231,0.9); }
+
+      .pump-speed-bar progress,
+      .pump-speed-bar progressbar progress { background-color: rgba(148,226,213,0.9); }
 
       .left-subtext {
         font-size: 24px;
