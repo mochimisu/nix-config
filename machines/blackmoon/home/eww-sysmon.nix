@@ -3,79 +3,111 @@ let
 
 ewwProcs = pkgs.writeShellScriptBin "eww-procs" ''
 #!/usr/bin/env bash
-# ~/bin/eww-procs.sh
-# JSON: {"total":618,"running":2,"top1":"foo: 17%","top2":"bar: 16%",…}
+# Emits: {"total":618,"running":2,"top1":"foo: 17%", ...}
+
+normalize_top() {
+  local label="$1"
+  local cpu="$2"
+  printf "%-15s: %s%%" "$label" "$cpu"
+}
 
 while true; do
-  # one single ps, already without the header
-  mapfile -t ps_lines < <(ps -eo stat,comm,%cpu --sort=-%cpu --no-headers)
+  read -r total running < <(
+    ps -eo stat --no-headers |
+      awk '{ total++; if ($1 ~ /^R/) running++ } END { printf "%d %d", total, running }'
+  )
 
-  total=''${#ps_lines[@]}
-  running=0
+  mapfile -t top_lines < <(ps -eo comm,%cpu --sort=-%cpu --no-headers | head -n7)
+
   tops=()
-
-  for line in "''${ps_lines[@]}"; do
-    # read collapses *any* whitespace, so leading blanks don’t hurt
-    read -r stat comm cpu <<< "''$line"
-
-    [[ ''$stat == R* ]] && ((running++))
-
-    if ((''${#tops[@]} < 7)); then
-      tops+=("''$(printf "%-15s: %s%%" "''$comm" "''$cpu")")
-    fi
+  for line in "''${top_lines[@]}"; do
+    read -r comm cpu <<< "$line"
+    tops+=("$(normalize_top "$comm" "$cpu")")
   done
 
-  # pad to exactly seven keys for predictable labels
-  while ((''${#tops[@]} < 7)); do tops+=(""); done
+  while (( ''${#tops[@]} < 7 )); do
+    tops+=("")
+  done
 
-  printf '{"total":%d,"running":%d' "''$total" "''$running"
+  printf '{"total":%d,"running":%d' "''${total:-0}" "''${running:-0}"
   for i in {1..7}; do
-    printf ',"top%d":"%s"' "''$i" "''${tops[''$((i-1))]}"
+    printf ',"top%d":"%s"' "$i" "''${tops[$((i-1))]}"
   done
   printf '}\n'
 
-  sleep 2
+  sleep 4
 done
 
-
 '';
+
 ewwSensors = pkgs.writeShellScriptBin "eww-sensors" ''
 #!/usr/bin/env bash
 # Emits: {"gpu_temp":44,"flow_rate":382,"fan_speed":937,"pump_speed":2725}
 
-while true; do
-  raw=''$(sensors 2>/dev/null)          # one single probe; silence warnings
+LC_ALL=C
+gpu_refresh_loops=3   # refresh GPU temp roughly every 12s (3 * sleep interval)
+gpu_counter=0
+gpu_temp=null
 
-  # ----- GPU temperature ----------------------------------------------------
-  # use nvidia-smi
-  if command -v nvidia-smi >/dev/null 2>&1; then
-    gpu_temp=''$(nvidia-smi --query-gpu=temperature.gpu \
-                           --format=csv,noheader,nounits 2>/dev/null | head -n1)
+normalize() {
+  local value="$1"
+  value="''${value#+}"
+  if [[ $value =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
+    printf '%s' "$value"
   else
-    gpu_temp="<unknown>"
+    printf 'null'
   fi
+}
 
-  # ----- Flow-rate, fan RPM, pump RPM ---------------------------------------
-  # Use AWK section delimiters to stay within the right hwmon block.
-  flow_rate=''$(awk '
-    /highflownext-hid-3-/ {inblock=1}
-    inblock && /Flow \[dL\/h]/ {
-      gsub(/[[:space:]dL\/h]/,"",''$3); print ''$3; exit
-    }' <<< "''$raw")
+while true; do
+  raw="$(sensors 2>/dev/null || true)"
 
-  fan_speed=''$(awk '
-    /nct6798-isa-0290/ {inblock=1}
-    inblock && /fan3/  {gsub(/[[:space:]RPM]/,"",''$2); print ''$2; exit}' <<< "''$raw")
+  mapfile -t sensor_vals < <(awk '
+    BEGIN {
+      flow = ""; fan = ""; pump = "";
+      in_high = 0; in_nct = 0;
+    }
+    /highflownext-hid-3-/ { in_high = 1; next }
+    in_high && NF == 0 { in_high = 0 }
+    in_high && /Flow \[dL\/h]/ {
+      if (match($0, /:[[:space:]]+([0-9]+(\.[0-9]+)?)/, m)) flow = m[1]
+    }
+    /nct6798-isa-0290/ { in_nct = 1; next }
+    in_nct && NF == 0 { in_nct = 0 }
+    in_nct && /fan3/ {
+      if (match($0, /:[[:space:]]+([0-9]+(\.[0-9]+)?)/, m)) fan = m[1]
+    }
+    in_nct && /fan6/ {
+      if (match($0, /:[[:space:]]+([0-9]+(\.[0-9]+)?)/, m)) pump = m[1]
+    }
+    END { printf "%s\n%s\n%s\n", flow, fan, pump }
+  ' <<< "$raw")
 
-  pump_speed=''$(awk '
-    /nct6798-isa-0290/ {inblock=1}
-    inblock && /fan6/  {gsub(/[[:space:]RPM]/,"",''$2); print ''$2; exit}' <<< "''$raw")
+  flow_rate="''${sensor_vals[0]}"
+  fan_speed="''${sensor_vals[1]}"
+  pump_speed="''${sensor_vals[2]}"
+
+  flow_rate=$(normalize "$flow_rate")
+  fan_speed=$(normalize "$fan_speed")
+  pump_speed=$(normalize "$pump_speed")
+
+  if (( gpu_counter <= 0 )); then
+    if command -v nvidia-smi >/dev/null 2>&1; then
+      gpu_readout=$(nvidia-smi --query-gpu=temperature.gpu \
+                                --format=csv,noheader,nounits 2>/dev/null |
+                     head -n1 | tr -d '[:space:]')
+      gpu_temp=$(normalize "$gpu_readout")
+    else
+      gpu_temp=null
+    fi
+    gpu_counter=$gpu_refresh_loops
+  fi
+  ((gpu_counter--))
 
   printf '{"gpu_temp":%s,"flow_rate":%s,"fan_speed":%s,"pump_speed":%s}\n' \
-         "''${gpu_temp:-null}" "''${flow_rate:-null}" \
-         "''${fan_speed:-null}" "''${pump_speed:-null}"
+         "$gpu_temp" "$flow_rate" "$fan_speed" "$pump_speed"
 
-  sleep 2
+  sleep 4
 done
 '';
 in
@@ -86,11 +118,8 @@ in
 
   home.file.".config/eww/sysmon/eww.yuck".text = ''
     (defpoll uptime
-      :interval "1s"
+      :interval "5s"
       "awk '{t=$1; d=int(t/86400); h=int((t%86400)/3600); m=int((t%3600)/60); printf \"%dd %dh %dm\", d,h,m}' /proc/uptime")
-    (defpoll time
-      :interval "1s"
-      `date +%H:%M:%S`)
     (defwidget cpu-graph []
       (graph
         :value "''${EWW_CPU.avg}"
@@ -104,10 +133,10 @@ in
         :time-range "30s"
       ))
     (defpoll swap
-      :interval "30s"
+      :interval "120s"
       "free -h | awk '/^Swap/ {print $3 \"/\" $2}'")
     (defpoll swap-perc
-      :interval "30s"
+      :interval "120s"
       "free | awk '/^Swap/ {printf \"%.0f\", $3/$2 * 100.0}'")
     (deflisten procs "bash ${ewwProcs}/bin/eww-procs")
     (deflisten sensors "bash ${ewwSensors}/bin/eww-sensors")
