@@ -1,4 +1,4 @@
-{
+{pkgs, lib, ...}: {
   imports = [
     ./airline.nix
     # ./coc.nix
@@ -26,6 +26,10 @@
       };
     };
     nixpkgs.useGlobalPackages = true;
+    extraPackages = [
+      pkgs.nodejs
+    ];
+    globals.copilot_node_command = lib.mkForce "${pkgs.nodejs}/bin/node";
 
     plugins = {
       indent-blankline.enable = true;
