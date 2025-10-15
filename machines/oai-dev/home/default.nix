@@ -17,6 +17,7 @@
 
     # utils
     watch
+    fx
     autoraise
 
     nerd-fonts.caskaydia-cove
