@@ -24,7 +24,7 @@
       "$mod SHIFT, 8, movetoworkspace, 8"
       "$mod SHIFT, 9, movetoworkspace, 9"
       "$mod SHIFT, 0, movetoworkspace, 10"
-      "$mod CONTROL, 4, exec, grim -g \"$(slurp)\" - | wl-copy"
+      "$mod CONTROL, 4, exec, ~/.config/hypr/screenshot.sh"
 
       # Example special workspace (scratchpad)
       "$mod, S, togglespecialworkspace, magic"
@@ -102,6 +102,23 @@
           exit
       fi
       hyprctl reload
+    '';
+  };
+
+  home.file.".config/hypr/screenshot.sh" = {
+    executable = true;
+    text = ''
+      #!/usr/bin/env bash
+
+      dir="$HOME/screenshots"
+      mkdir -p "$dir"
+
+      geometry="$(slurp)" || exit 0
+
+      timestamp="$(date +%Y-%m-%d_%H-%M-%S)"
+      file="$dir/$timestamp.png"
+
+      grim -g "$geometry" - | tee "$file" | wl-copy
     '';
   };
 }

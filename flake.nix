@@ -42,6 +42,35 @@
     ...
   } @ inputs: {
     defaultPackage.x86_64-linux = home-manager.defaultPackage.x86_64-linux;
+    packages.x86_64-linux = {
+      earth-iso =
+        let
+          isoSystem = nixpkgs.lib.nixosSystem {
+            specialArgs = { inherit inputs; };
+            system = "x86_64-linux";
+            modules = [
+              "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
+              ./vars.nix
+              ({ lib, ... }: {
+                boot.supportedFilesystems = lib.mkForce [
+                  "ext4"
+                  "vfat"
+                  "btrfs"
+                  "xfs"
+                ];
+                boot.initrd.supportedFilesystems = lib.mkForce [
+                  "ext4"
+                  "vfat"
+                  "btrfs"
+                  "xfs"
+                ];
+              })
+              ./common.nix
+              ./machines/earth/configuration.nix
+            ];
+          };
+        in isoSystem.config.system.build.isoImage;
+    };
 
     homeModules.home = {
       imports = [
@@ -196,6 +225,29 @@
               imports = [
                 inputs.catppuccin.homeModules.catppuccin
                 ./machines/oasis/home
+                self.homeModules.home
+              ];
+            };
+          }
+        ];
+      };
+      earth = nixpkgs.lib.nixosSystem {
+        specialArgs = {inherit inputs;};
+        system = "x86_64-linux";
+        modules = [
+          ./vars.nix
+          ./machines/earth/hardware-configuration.nix
+          ./machines/earth/configuration.nix
+          ./boot-efi.nix
+          ./common.nix
+          home-manager.nixosModules.home-manager
+          {
+            home-manager.useGlobalPkgs = true;
+            home-manager.useUserPackages = true;
+            home-manager.users.brandon = {
+              imports = [
+                inputs.catppuccin.homeModules.catppuccin
+                ./machines/earth/home.nix
                 self.homeModules.home
               ];
             };

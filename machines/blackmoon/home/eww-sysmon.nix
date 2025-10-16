@@ -8,18 +8,24 @@ ewwProcs = pkgs.writeShellScriptBin "eww-procs" ''
 normalize_top() {
   local label="$1"
   local cpu="$2"
-  printf "%-15s: %s%%" "$label" "$cpu"
+  printf "%-15.15s: %s%%" "$label" "$cpu"
 }
 
 while true; do
-  ps_output=$(ps -eo stat,comm,%cpu --sort=-pcpu --no-headers)
+  ps_output=$(ps -eo stat=,pcpu=,comm= --sort=-pcpu | awk '
+    {
+      stat = $1
+      cpu = $2
+      sub(/^[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+/, "")
+      printf "%s|%s|%s\n", stat, cpu, $0
+    }')
   total=$(printf '%s\n' "$ps_output" | wc -l)
-  running=$(printf '%s\n' "$ps_output" | awk '{ if ($1 ~ /^R/) run++ } END { printf "%d", run + 0 }')
+  running=$(printf '%s\n' "$ps_output" | awk -F'|' '{ if ($1 ~ /^R/) run++ } END { printf "%d", run + 0 }')
 
   top_json=""
   idx=1
   while IFS= read -r line && [ "$idx" -le 7 ]; do
-    read -r stat comm cpu <<< "$line"
+    IFS='|' read -r stat cpu comm <<< "$line"
     [ -z "$stat" ] && continue
     top_json="$top_json,\"top$idx\":\"$(normalize_top "$comm" "$cpu")\""
     idx=$((idx + 1))
