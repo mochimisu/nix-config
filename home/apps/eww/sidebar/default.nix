@@ -4,9 +4,10 @@
   config,
   ...
 }: let
+  variables = config.variables or {};
   sidebarScreens =
-    if pkgs.stdenv.isLinux && builtins.hasAttr "ewwSidebarScreens" config.variables
-    then config.variables.ewwSidebarScreens
+    if pkgs.stdenv.isLinux && builtins.hasAttr "ewwSidebarScreens" variables
+    then variables.ewwSidebarScreens
     else ["0"];
   configDir = "~/.config/eww/sidebar";
   barCommands =
@@ -60,11 +61,11 @@ in {
       )}
     '';
     inherit cavaBin clockBin networkBin batteryBin bluetoothBin audioSinksBin volBin toggleWindow;
-    iconSize = config.variables.ewwSidebarIconSize or "16";
+    iconSize = variables.ewwSidebarIconSize or "16";
   };
 
   home.file.".config/eww/sidebar/eww.scss".source = pkgs.replaceVars ./eww.scss {
-    fontSize = config.variables.ewwSidebarFontSize or "13px";
+    fontSize = variables.ewwSidebarFontSize or "13px";
   };
 
   wayland.windowManager.hyprland.settings."exec-once" = [
