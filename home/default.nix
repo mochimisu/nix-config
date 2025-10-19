@@ -17,6 +17,7 @@ in {
   ];
 
   imports = [
+    ./variables.nix
     ./apps/tmux.nix
     ./apps/nixvim
     ./apps/zsh
