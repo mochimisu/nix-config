@@ -1,2 +1,3 @@
 {...}: {
+  variables.isGui = false;
 }

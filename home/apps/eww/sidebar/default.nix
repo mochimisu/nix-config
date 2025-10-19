@@ -5,6 +5,7 @@
   ...
 }: let
   variables = config.variables or {};
+  isGui = config.variables.isGui or true;
   sidebarScreens =
     if pkgs.stdenv.isLinux && builtins.hasAttr "ewwSidebarScreens" variables
     then variables.ewwSidebarScreens
@@ -28,48 +29,51 @@
   volBin = "${pkgs.writeShellScriptBin "eww-volume" (builtins.readFile ./scripts/vol.sh)}/bin/eww-volume";
   toggleWindow = "EWW_CONFIG=${configDir} ${pkgs.writeShellScriptBin "eww-toggle-window" (builtins.readFile ./scripts/toggle-window.sh)}/bin/eww-toggle-window";
 in {
-  programs.eww = {
-    enable = lib.mkIf pkgs.stdenv.isLinux true;
-  };
+  programs.eww.enable = pkgs.stdenv.isLinux && isGui;
 
-  home.packages = with pkgs;
-    lib.optionals pkgs.stdenv.isLinux [
+  home = lib.mkIf (pkgs.stdenv.isLinux && isGui) {
+    packages = with pkgs; [
       cava
       hyprland-workspaces
       hyprland-activewindow
       hyprland-monitor-attached
     ];
 
-  home.file.".config/eww/sidebar/eww.yuck".source = pkgs.replaceVars ./eww.yuck {
-    generatedWidgets = ''
-      ; Also just define bar_0, bar_1, etc. for each screen.
-      ${builtins.concatStringsSep "\n" (
-        lib.map (screen: ''
-          (defwindow bar_${screen}
-            :exclusive true
-            :monitor "${screen}"
-            :windowtype "dock"
-            :geometry (geometry :x "0%"
-                        :y "0%"
-                        :width "20px"
-                        :height "100%"
-                        :anchor "right center"
-                        )
-            (bar :monitor "${screen}"))
-        '')
-        sidebarScreens
-      )}
-    '';
-    inherit cavaBin clockBin networkBin batteryBin bluetoothBin audioSinksBin volBin toggleWindow;
-    iconSize = variables.ewwSidebarIconSize or "16";
+    file = {
+      ".config/eww/sidebar/eww.yuck".source = pkgs.replaceVars ./eww.yuck {
+        generatedWidgets = ''
+          ; Also just define bar_0, bar_1, etc. for each screen.
+          ${builtins.concatStringsSep "\n" (
+            lib.map (screen: ''
+              (defwindow bar_${screen}
+                :exclusive true
+                :monitor "${screen}"
+                :windowtype "dock"
+                :geometry (geometry :x "0%"
+                            :y "0%"
+                            :width "20px"
+                            :height "100%"
+                            :anchor "right center"
+                            )
+                (bar :monitor "${screen}"))
+            '')
+            sidebarScreens
+          )}
+        '';
+        inherit cavaBin clockBin networkBin batteryBin bluetoothBin audioSinksBin volBin toggleWindow;
+        iconSize = variables.ewwSidebarIconSize or "16";
+      };
+
+      ".config/eww/sidebar/eww.scss".source = pkgs.replaceVars ./eww.scss {
+        fontSize = variables.ewwSidebarFontSize or "13px";
+      };
+    };
   };
 
-  home.file.".config/eww/sidebar/eww.scss".source = pkgs.replaceVars ./eww.scss {
-    fontSize = variables.ewwSidebarFontSize or "13px";
+  wayland.windowManager.hyprland = lib.mkIf (pkgs.stdenv.isLinux && isGui) {
+    settings."exec-once" = [
+      startupCommand
+      "hyprland-monitor-attached ${onAttachScript}"
+    ];
   };
-
-  wayland.windowManager.hyprland.settings."exec-once" = [
-    startupCommand
-    "hyprland-monitor-attached ${onAttachScript}"
-  ];
 }

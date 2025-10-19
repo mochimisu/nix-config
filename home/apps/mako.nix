@@ -1,14 +1,14 @@
 { lib, config, pkgs, ... }:
-
 let
   # Grab everything Catppuccin exposes
   inherit (config.catppuccin) flavor accent sources;
   # `palette` now equals the colour set for your chosen flavour
   palette = (lib.importJSON "${sources.palette}/palette.json").${flavor}.colors;
+  isGui = config.variables.isGui or true;
 in
 {
 
-  services.mako = lib.mkIf pkgs.stdenv.isLinux {
+  services.mako = lib.mkIf (pkgs.stdenv.isLinux && isGui) {
     enable = true;
     
     settings =  {
@@ -36,7 +36,9 @@ in
   };
 
   # on startup
-  wayland.windowManager.hyprland.settings."exec-once" = [
-    "mako"
-  ];
+  wayland.windowManager.hyprland = lib.mkIf isGui {
+    settings."exec-once" = [
+      "mako"
+    ];
+  };
 }
