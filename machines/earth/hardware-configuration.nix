@@ -1,12 +1,15 @@
-{ config, lib, modulesPath, ... }:
-
 {
+  config,
+  lib,
+  modulesPath,
+  ...
+}: {
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
   ];
 
   fileSystems."/" = {
-    device = "/dev/disk/by-uuid/005e6b02-2b4f-40e3-8d1e-d3960d677e4e";
+    device = "/dev/disk/by-uuid/54f66482-8716-4ee5-9f4d-52a508fcde34";
     fsType = "ext4";
     options = [
       "relatime"
