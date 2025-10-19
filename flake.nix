@@ -43,39 +43,38 @@
   } @ inputs: {
     defaultPackage.x86_64-linux = home-manager.defaultPackage.x86_64-linux;
     packages.x86_64-linux = {
-      earth-iso =
-        let
-          isoSystem = nixpkgs.lib.nixosSystem {
-            specialArgs = { inherit inputs; };
-            system = "x86_64-linux";
-            modules = [
-              "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
-              ./vars.nix
-              ({ lib, ... }: {
-                boot.supportedFilesystems = lib.mkForce [
-                  "ext4"
-                  "vfat"
-                  "btrfs"
-                  "xfs"
-                ];
-                boot.initrd.supportedFilesystems = lib.mkForce [
-                  "ext4"
-                  "vfat"
-                  "btrfs"
-                  "xfs"
-                ];
-              })
-              ./common.nix
-              ./machines/earth/configuration.nix
-            ];
-          };
-        in isoSystem.config.system.build.isoImage;
+      earth-iso = let
+        isoSystem = nixpkgs.lib.nixosSystem {
+          specialArgs = {inherit inputs;};
+          system = "x86_64-linux";
+          modules = [
+            "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
+            ./vars.nix
+            ({lib, ...}: {
+              boot.supportedFilesystems = lib.mkForce [
+                "ext4"
+                "vfat"
+                "btrfs"
+                "xfs"
+              ];
+              boot.initrd.supportedFilesystems = lib.mkForce [
+                "ext4"
+                "vfat"
+                "btrfs"
+                "xfs"
+              ];
+            })
+            ./common.nix
+            ./machines/earth/configuration.nix
+          ];
+        };
+      in
+        isoSystem.config.system.build.isoImage;
     };
 
     homeModules.home = {
       imports = [
         inputs.nixvim.homeModules.nixvim
-        ./home/variables.nix
         ./home
       ];
     };
