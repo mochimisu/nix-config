@@ -75,6 +75,7 @@
     homeModules.home = {
       imports = [
         inputs.nixvim.homeModules.nixvim
+        ./home/variables.nix
         ./home
       ];
     };
