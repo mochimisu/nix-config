@@ -6,6 +6,7 @@
 }: let
   configsDir = "${config.home.homeDirectory}/stuff/nix-config";
   isLinux = pkgs.stdenv.isLinux;
+  isGui = config.variables.isGui or true;
 in {
   home.stateVersion = "24.11";
   home.packages = with pkgs; [
@@ -17,6 +18,7 @@ in {
   ];
 
   imports = [
+    ../vars.nix
     ./apps/tmux.nix
     ./apps/nixvim
     ./apps/zsh
@@ -60,13 +62,13 @@ in {
   };
 
   # Dark mode
-  dconf.settings = {
+  dconf.settings = lib.mkIf isGui {
     "org/gnome/desktop/interface" = {
       color-scheme = "prefer-dark";
     };
   };
 
-  gtk = {
+  gtk = lib.mkIf isGui {
     enable = true;
     gtk3.extraConfig = {
       "gtk-application-prefer-dark-theme" = "1";

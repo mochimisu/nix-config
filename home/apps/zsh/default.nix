@@ -9,8 +9,14 @@
     # Set the minimum terminal width required to display the logo
     MIN_WIDTH=80
 
-    # Get the current terminal width
-    TERM_WIDTH=$(tput cols)
+    # Safely detect terminal width; fall back if tput is unavailable
+    TERM_WIDTH=0
+    if command -v tput >/dev/null 2>&1; then
+      TERM_OUTPUT=$(tput cols 2>/dev/null || true)
+      if [[ "$TERM_OUTPUT" =~ ^[0-9]+$ ]]; then
+        TERM_WIDTH=$TERM_OUTPUT
+      fi
+    fi
 
     # Check if the terminal width meets the minimum requirement
     if [ "$TERM_WIDTH" -ge "$MIN_WIDTH" ]; then
@@ -55,7 +61,7 @@ in {
       # disable ctrl s/q
       stty -ixon
       # local zsh for things like keys
-      source ~/.zshrc-local
+      [ -f ~/.zshrc-local ] && source ~/.zshrc-local
       ${thinFastfetch}/bin/thin-fastfetch
     '';
   };
