@@ -247,7 +247,7 @@
             home-manager.users.brandon = {
               imports = [
                 inputs.catppuccin.homeModules.catppuccin
-                ./machines/earth/home.nix
+                ./machines/earth/home
                 self.homeModules.home
               ];
             };
