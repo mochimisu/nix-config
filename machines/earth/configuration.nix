@@ -21,7 +21,7 @@ let
       exit 0
     fi
 
-    exec ${pkgs.encfs}/bin/encfs "$ENC_DIR" "$MOUNT_DIR" "$@"
+    exec ${pkgs.gocryptfs}/bin/gocryptfs "$ENC_DIR" "$MOUNT_DIR" "$@"
   '';
 
   umountDocs = pkgs.writeShellScriptBin "umountdocs" ''
@@ -55,7 +55,7 @@ in
 
   environment.systemPackages = [
     pkgs.kitty.terminfo
-    pkgs.encfs
+    pkgs.gocryptfs
     pkgs.fuse
     mountDocs
     umountDocs
