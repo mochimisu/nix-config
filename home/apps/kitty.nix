@@ -1,8 +1,9 @@
-{ config, lib, ... }:
+{ config, lib, pkgs, ... }:
 let
-  isGui = config.variables.isGui or true;
+  variables = config.variables or {};
+  isLinuxGui = pkgs.stdenv.isLinux && (variables.isGui or true);
 in {
-  programs.kitty = lib.mkIf isGui {
+  programs.kitty = lib.mkIf isLinuxGui {
     enable = true;
     font = {
       name = "Cascadia Code";

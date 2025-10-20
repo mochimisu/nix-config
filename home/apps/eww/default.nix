@@ -4,12 +4,13 @@
   config,
   ...
 }: let
-  isGui = config.variables.isGui or true;
+  variables = config.variables or {};
+  isLinuxGui = pkgs.stdenv.isLinux && (variables.isGui or true);
 in {
   imports = [
     ./sidebar
   ];
-  programs.eww = lib.mkIf (pkgs.stdenv.isLinux && isGui) {
+  programs.eww = lib.mkIf isLinuxGui {
     enable = true;
   };
 }

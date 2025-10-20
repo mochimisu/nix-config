@@ -7,6 +7,7 @@
   configsDir = "${config.home.homeDirectory}/stuff/nix-config";
   isLinux = pkgs.stdenv.isLinux;
   isGui = config.variables.isGui or true;
+  isLinuxGui = isLinux && isGui;
 in {
   home.stateVersion = "24.11";
   home.packages = with pkgs; [
@@ -62,13 +63,13 @@ in {
   };
 
   # Dark mode
-  dconf.settings = lib.mkIf isGui {
+  dconf.settings = lib.mkIf isLinuxGui {
     "org/gnome/desktop/interface" = {
       color-scheme = "prefer-dark";
     };
   };
 
-  gtk = lib.mkIf isGui {
+  gtk = lib.mkIf isLinuxGui {
     enable = true;
     gtk3.extraConfig = {
       "gtk-application-prefer-dark-theme" = "1";
@@ -80,27 +81,29 @@ in {
   };
 
   # per-app translucency
-  xdg.configFile."gtk-3.0/gtk.css".source = builtins.toFile "gtk.css" ''
-    .thunar .sidebar .view {
-      background-color: rgba(0,0,0,0.3);
-    }
-    .thunar .standard-view .view {
-      background-color: rgba(0,0,0,0.2);
-    }
-    .thunar toolbar {
-      background-color: rgba(0,0,0,0.1);
-    }
-    .thunar,
-    .thunar menubar,
-    .thunar .shortcuts-pane
-    {
-      background-color: rgba(0,0,0,0.5);
-    }
-    .thunar toolbar > * > * > * > *
-    {
-      background-color: rgba(0,0,0,0.3);
-    }
-  '';
+  xdg.configFile."gtk-3.0/gtk.css" = lib.mkIf isLinuxGui {
+    source = builtins.toFile "gtk.css" ''
+      .thunar .sidebar .view {
+        background-color: rgba(0,0,0,0.3);
+      }
+      .thunar .standard-view .view {
+        background-color: rgba(0,0,0,0.2);
+      }
+      .thunar toolbar {
+        background-color: rgba(0,0,0,0.1);
+      }
+      .thunar,
+      .thunar menubar,
+      .thunar .shortcuts-pane
+      {
+        background-color: rgba(0,0,0,0.5);
+      }
+      .thunar toolbar > * > * > * > *
+      {
+        background-color: rgba(0,0,0,0.3);
+      }
+    '';
+  };
 
   home.activation = {
     cloneRepo = lib.hm.dag.entryAfter ["writeBoundary"] ''
@@ -113,7 +116,7 @@ in {
     '';
   };
 
-  xdg.desktopEntries = lib.mkIf isLinux {
+  xdg.desktopEntries = lib.mkIf isLinuxGui {
     "xivlauncher-rb" = {
       name = "XIVLauncher-RB";
       icon = "xivlauncher";

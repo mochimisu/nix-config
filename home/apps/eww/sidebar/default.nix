@@ -5,7 +5,7 @@
   ...
 }: let
   variables = config.variables or {};
-  isGui = config.variables.isGui or true;
+  isLinuxGui = pkgs.stdenv.isLinux && (variables.isGui or true);
   sidebarScreens =
     if pkgs.stdenv.isLinux && builtins.hasAttr "ewwSidebarScreens" variables
     then variables.ewwSidebarScreens
@@ -29,9 +29,9 @@
   volBin = "${pkgs.writeShellScriptBin "eww-volume" (builtins.readFile ./scripts/vol.sh)}/bin/eww-volume";
   toggleWindow = "EWW_CONFIG=${configDir} ${pkgs.writeShellScriptBin "eww-toggle-window" (builtins.readFile ./scripts/toggle-window.sh)}/bin/eww-toggle-window";
 in {
-  programs.eww.enable = pkgs.stdenv.isLinux && isGui;
+  programs.eww.enable = isLinuxGui;
 
-  home = lib.mkIf (pkgs.stdenv.isLinux && isGui) {
+  home = lib.mkIf isLinuxGui {
     packages = with pkgs; [
       cava
       hyprland-workspaces
@@ -70,7 +70,7 @@ in {
     };
   };
 
-  wayland.windowManager.hyprland = lib.mkIf (pkgs.stdenv.isLinux && isGui) {
+  wayland.windowManager.hyprland = lib.mkIf isLinuxGui {
     settings."exec-once" = [
       startupCommand
       "hyprland-monitor-attached ${onAttachScript}"

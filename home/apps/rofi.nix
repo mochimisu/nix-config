@@ -6,9 +6,10 @@
 }: let
   inherit (config.catppuccin) flavor accent sources;
   palette = (lib.importJSON "${sources.palette}/palette.json").${flavor}.colors;
-  isGui = config.variables.isGui or true;
+  variables = config.variables or {};
+  isLinuxGui = pkgs.stdenv.isLinux && (variables.isGui or true);
 in {
-  programs.rofi = lib.mkIf (pkgs.stdenv.isLinux && isGui) {
+  programs.rofi = lib.mkIf isLinuxGui {
     enable = true;
     extraConfig = {
       modi = "drun,run,window,ssh,calc";
@@ -26,7 +27,7 @@ in {
       rofi-calc
     ];
   };
-  xdg = lib.mkIf isGui {
+  xdg = lib.mkIf isLinuxGui {
     configFile."rofi/themes/mochi.rasi".text = ''
       /* Theme based off of Nord-Dark-Rounded by Newman Sanchez (https://github.com/newmanls) */
       * {
@@ -131,7 +132,7 @@ in {
       }  '';
   };
 
-  wayland.windowManager.hyprland = lib.mkIf isGui {
+  wayland.windowManager.hyprland = lib.mkIf isLinuxGui {
     settings = {
       "$menu" = "rofi-toggle -show drun";
       "$menuAll" = "rofi-toggle -show run";
@@ -144,7 +145,7 @@ in {
     };
   };
   # catppuccin.rofi.enable = true;
-  home = lib.mkIf isGui {
+  home = lib.mkIf isLinuxGui {
     packages = with pkgs; [
       (writeShellScriptBin "rofi-toggle" ''
         #!/usr/bin/env bash
