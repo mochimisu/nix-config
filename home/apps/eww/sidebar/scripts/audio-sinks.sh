@@ -13,20 +13,47 @@ EOF
   )
 fi
 
-print_sinks() {
-  pactl --format=json list sinks \
-    | jq -c --unbuffered \
-      --argjson blocklist "$blocklist_json" \
-      '[.[] | select(.index != null) | select((($blocklist | length) == 0) or (($blocklist | index(.description)) == null)) | {name, description, state}]'
+wait_for_pulse() {
+  # Retry until PulseAudio/PipeWire is accepting connections.
+  until pactl info >/dev/null 2>&1; do
+    sleep 1
+  done
 }
 
-# print current sinks once at startup
-print_sinks
+collect_sinks_json() {
+  pactl --format=json list sinks 2>/dev/null \
+    | jq -c --unbuffered \
+      --argjson blocklist "$blocklist_json" \
+      '[.[] | select(.index != null)
+            | (.description // .name) as $desc
+            | select((($blocklist | length) == 0) or (($blocklist | index($desc)) == null))
+            | {name, description: $desc, state}]'
+}
 
-# then subscribe to PulseAudio events and re-print on any sink change
-pactl subscribe \
-  | grep --line-buffered "on sink" \
-  | while read -r _ _ _ _ _ _; do
-      # whenever you see “on sink” (new, remove, change), re-list
-      print_sinks
-    done
+emit_sinks() {
+  local sinks_json
+
+  while true; do
+    if sinks_json="$(collect_sinks_json)"; then
+      printf '%s\n' "$sinks_json"
+      return 0
+    fi
+
+    sleep 1
+  done
+}
+
+# Ensure the audio server is reachable before we start emitting data.
+wait_for_pulse
+emit_sinks
+
+while true; do
+  wait_for_pulse
+
+  if ! pactl subscribe 2>/dev/null | while IFS= read -r line; do
+    [[ "$line" == *"on sink"* ]] || continue
+    emit_sinks
+  done; then
+    sleep 1
+  fi
+done
