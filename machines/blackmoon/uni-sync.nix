@@ -4,7 +4,7 @@
 
     devices = [
       {
-        device_id = "VID:3314/PID:41218/SN:6243168001";
+        device_id = "VID:3314/PID:41218/SN:6243168001/PATH:1-10.2.2:1.1";
         sync_rgb = true;
         channels = [
           {
