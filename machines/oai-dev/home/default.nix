@@ -19,6 +19,7 @@
     watch
     fx
     autoraise
+    lazygit
 
     nerd-fonts.caskaydia-cove
     source-sans
