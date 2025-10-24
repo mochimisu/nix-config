@@ -45,8 +45,10 @@ in {
   programs = {
     git = {
       enable = true;
-      userName = "mochimisu";
-      userEmail = "brandonwang@me.com";
+      settings = {
+        user.name = "mochimisu";
+        user.email = "brandonwang@me.com";
+      };
     };
     spotify-player.enable = true;
   };
