@@ -61,8 +61,8 @@ in {
     };
 
     "exec-once" = [
-      "discordcanary"
-      # "vesktop"
+      # "discordcanary"
+      "vesktop"
       # set DP-3 as primary
       "wlr-randr --output DP-3 --primary"
       # todo moon profile

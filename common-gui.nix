@@ -42,9 +42,9 @@ in {
     pulseaudio
 
     # Apps
-    discord-canary
+    # discord-canary
     # High CPU usage
-    # vesktop
+    vesktop
     proton-pass
     caprine
     hyprpicker
