@@ -21,7 +21,6 @@ END {
 print_status
 
 upower --monitor-detail | while IFS= read -r line; do
-  [[ $line == Device:* ]] || continue
   case $line in
     *"$battery_path"*) print_status ;;
   esac
