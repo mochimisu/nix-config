@@ -1,6 +1,9 @@
-{ config, lib, pkgs, ... }:
-
-let
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}: let
   settingsPath = "/var/lib/transmission/.config/transmission-daemon/settings.json";
   secretPath = "/etc/secret/transmission-rpc-password";
 
@@ -55,7 +58,7 @@ let
   postProcessScript = pkgs.writeShellScriptBin "transmission-postprocess" ''
     set -eo pipefail
 
-    PATH="${lib.makeBinPath [ pkgs.coreutils pkgs.findutils pkgs.unrar pkgs.unzip ]}:$PATH"
+    PATH="${lib.makeBinPath [pkgs.coreutils pkgs.findutils pkgs.unrar pkgs.unzip]}:$PATH"
 
     torrent_dir="$TR_TORRENT_DIR"
     torrent_name="$TR_TORRENT_NAME"
@@ -105,8 +108,7 @@ let
     "rpc-host-whitelist-enabled" = false;
     "rpc-whitelist-enabled" = false;
     "script-torrent-done-enabled" = true;
-    "script-torrent-done-filename" =
-      "${postProcessScript}/bin/transmission-postprocess";
+    "script-torrent-done-filename" = "${postProcessScript}/bin/transmission-postprocess";
   };
 
   settingsSeed = pkgs.writeTextFile {
@@ -115,14 +117,13 @@ let
     executable = false;
     destination = "/transmission/settings.json";
   };
-in
-{
+in {
   environment.systemPackages = [
     pkgs.transmission_4
     ensureSecretScript
   ];
 
-  users.groups.media.members = [ "brandon" "transmission" ];
+  users.groups.media.members = ["brandon" "transmission"];
 
   systemd.tmpfiles.rules = [
     "d /earth 0775 root media - -"
@@ -152,6 +153,10 @@ in
     package = pkgs.transmission_4;
     settings = transmissionSettings;
   };
+
+  systemd.services.transmission-daemon.serviceConfig.ReadWritePaths = [
+    "/earth/transmission"
+  ];
 
   systemd.services.transmission.preStart = lib.mkAfter ''
     SECRET_PATH='${secretPath}'
