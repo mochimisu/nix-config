@@ -1,6 +1,12 @@
-{ config, lib, pkgs, specialArgs, variables, inputs, ... }:
-
-let
+{
+  config,
+  lib,
+  pkgs,
+  specialArgs,
+  variables,
+  inputs,
+  ...
+}: let
   mountDocs = pkgs.writeShellScriptBin "mountdocs" ''
     set -euo pipefail
 
@@ -40,8 +46,7 @@ let
       exec ${pkgs.fuse}/bin/fusermount -u "$MOUNT_DIR"
     fi
   '';
-in
-{
+in {
   imports = [
     ./transmission.nix
   ];
@@ -83,7 +88,16 @@ in
     };
   };
 
-  users.users.brandon.extraGroups = [ "fuse" ];
+  services.immich = {
+    enable = true;
+    host = "0.0.0.0";
+    port = 2283;
+    openFirewall = true;
+    mediaLocation = "/earth/immich-app";
+    accelerationDevices = null;
+  };
+
+  users.users.brandon.extraGroups = ["fuse"];
 
   systemd.tmpfiles.rules = [
     "d /earth/documents 0770 brandon media - -"
