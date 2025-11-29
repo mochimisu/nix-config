@@ -14,6 +14,7 @@ in {
     ./keymap.nix
     inputs.catppuccin.nixosModules.catppuccin
     inputs.flatpaks.nixosModules.nix-flatpak
+    inputs.aagl.nixosModules.default
   ];
 
   # Packages
@@ -164,4 +165,8 @@ in {
     enable = true;
     flavor = "mocha";
   };
+
+  # zzz
+  nix.settings = inputs.aagl.nixConfig;
+  programs.sleepy-launcher.enable = true;
 }

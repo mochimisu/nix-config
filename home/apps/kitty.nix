@@ -11,6 +11,8 @@ in {
     };
     settings = {
       background_opacity = 0.6;
+      # Show a brief trail when the cursor moves to a new location
+      cursor_trail = 1;
     };
   };
 }
