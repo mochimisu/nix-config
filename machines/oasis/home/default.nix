@@ -31,7 +31,6 @@
 
     "exec-once" = [
       "mangohud steam -silent"
-      "heroic"
       "iio-hyprland"
       "protonvpn-app"
     ];

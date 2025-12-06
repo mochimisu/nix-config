@@ -61,7 +61,6 @@ in {
 
     # Games
     mangohud
-    heroic
     inputs.nixos-xivlauncher-rb.packages.${pkgs.system}.default
     parsec-bin
     itch

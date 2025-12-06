@@ -68,7 +68,6 @@ in {
       # todo moon profile
       "openrgb --profile /home/brandon/.config/OpenRGB/moon.orp"
       "mangohud steam -silent"
-      "mangohud heroic"
     ];
 
     # nvidia stuff, move to shared
