@@ -11,6 +11,7 @@
       (bar :monitor screen))
 
     @generatedWidgets@
+    @pttDefs@
 
     (defwidget bar [monitor]
       (centerbox :orientation "v"
@@ -52,6 +53,7 @@
           (bluetooth)
           (net-indicator)
           (vol :monitor monitor)
+          @pttWidget@
           (battery)
           (clock)
           ))

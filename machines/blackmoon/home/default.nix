@@ -14,6 +14,7 @@ in {
     hiddenMonitors = ["0"];
     cpuTempSensor = "/dev/highflow_next/temp1_input";
   };
+  variables.ewwPttStateFile = "${config.home.homeDirectory}/.local/state/hypr-ptt/state";
   home.file.".config/hypr/moon.jpg".source = moonWallpaper;
   variables.hyprpaper-config = ''
     preload = ${config.home.homeDirectory}/.config/hypr/moon.jpg
@@ -34,9 +35,9 @@ in {
   wayland.windowManager.hyprland.settings = {
     monitors = {
       monitor = [
-        "DP-1,2560x1440@120,-2560x0,1"
+        "DP-1,2560x1440@120,3440x-560,1,transform,1"
         "DP-3,3440x1440@175,0x0,1"
-        "HDMI-A-1,480x1920@60,3440x1400,1,transform,1"
+        "HDMI-A-1,480x1920@60,4880x1400,1,transform,1"
       ];
       workspace = [
         "1, monitor:DP-3, default:true"
@@ -108,10 +109,11 @@ in {
     };
     bind = [
       "$mod, F2, exec, ~/.config/hypr/gamemode2.sh"
-      ", mouse:275, exec, pactl set-source-mute @DEFAULT_SOURCE@ 0"
+      "$mod, F3, exec, ~/.config/hypr/toggle-ptt.sh"
+      ", mouse:275, exec, ~/.config/hypr/ptt-mouse.sh press"
     ];
     bindr = [
-      ", mouse:275, exec, pactl set-source-mute @DEFAULT_SOURCE@ 1"
+      ", mouse:275, exec, ~/.config/hypr/ptt-mouse.sh release"
     ];
   };
   home.file.".config/hypr/gamemode2.sh" = {
@@ -127,12 +129,61 @@ in {
               keyword general:gaps_out 0;\
               keyword general:border_size 1;\
               keyword decoration:rounding 0;\
-              keyword monitor DP-1,2560x1440@120,-3000x0,1;\
+              keyword monitor DP-1,2560x1440@120,3440x-560,1,transform,1;\
               keyword monitor DP-3,3440x1440@175,0x0,1;\
-              keyword monitor HDMI-A-1,480x1920@60,4000x1200,1,transform,1"
+              keyword monitor HDMI-A-1,480x1920@60,4880x1200,1,transform,1"
           exit
       fi
       hyprctl reload
+    '';
+  };
+  home.file.".config/hypr/ptt-mouse.sh" = {
+    executable = true;
+    text = ''
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      state_file="''${XDG_STATE_HOME:-$HOME/.local/state}/hypr-ptt/state"
+
+      state="enabled"
+      if [ -f "$state_file" ]; then
+        state=$(tr -d '[:space:]' <"$state_file")
+      fi
+
+      if [ "$state" != "enabled" ]; then
+        exit 0
+      fi
+
+      case "''${1:-}" in
+        press)
+          pactl set-source-mute @DEFAULT_SOURCE@ 0
+          ;;
+        release)
+          pactl set-source-mute @DEFAULT_SOURCE@ 1
+          ;;
+      esac
+    '';
+  };
+  home.file.".config/hypr/toggle-ptt.sh" = {
+    executable = true;
+    text = ''
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      state_file="''${XDG_STATE_HOME:-$HOME/.local/state}/hypr-ptt/state"
+      mkdir -p "$(dirname "$state_file")"
+
+      current="enabled"
+      if [ -f "$state_file" ]; then
+        current=$(tr -d '[:space:]' <"$state_file")
+      fi
+
+      if [ "$current" = "enabled" ]; then
+        echo "disabled" >"$state_file"
+        pactl set-source-mute @DEFAULT_SOURCE@ 0
+      else
+        echo "enabled" >"$state_file"
+      fi
     '';
   };
 
