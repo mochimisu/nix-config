@@ -1,6 +1,6 @@
 { pkgs, ... }:
 let
-  earthLogo = pkgs.writeText "earth.txt" ''
+  gaiaLogo = pkgs.writeText "gaia.txt" ''
                     ▓▓██████████▓▓                  
               ░░░░░░░░▒▒██████████████▓▓            
             ▒▒░░░░░░▓▓████████████████████░░        
@@ -26,13 +26,12 @@ let
               ██████████████████████████░░          
                   ▓▓████████████████                
   '';
-in
-{
+in {
   programs.fastfetch = {
     enable = true;
     settings = {
       logo = {
-        source = earthLogo;
+        source = gaiaLogo;
         type = "file";
         height = 26;
         padding = {

@@ -100,8 +100,8 @@
   '';
 
   transmissionSettings = {
-    "download-dir" = "/earth/transmission";
-    "incomplete-dir" = "/earth/transmission/incomplete";
+    "download-dir" = "/gaia/transmission";
+    "incomplete-dir" = "/gaia/transmission/incomplete";
     "incomplete-dir-enabled" = true;
     "umask" = 2;
     "rpc-bind-address" = "0.0.0.0";
@@ -126,9 +126,9 @@ in {
   users.groups.media.members = ["brandon" "transmission"];
 
   systemd.tmpfiles.rules = [
-    "d /earth 0775 root media - -"
-    "d /earth/transmission 0775 transmission media - -"
-    "d /earth/transmission/incomplete 0775 transmission media - -"
+    "d /gaia 0775 root media - -"
+    "d /gaia/transmission 0775 transmission media - -"
+    "d /gaia/transmission/incomplete 0775 transmission media - -"
     "d /etc/secret 0750 root media - -"
     "d /var/lib/transmission 0750 transmission media - -"
     "d /var/lib/transmission/.config 0750 transmission media - -"
@@ -155,7 +155,7 @@ in {
   };
 
   systemd.services.transmission-daemon.serviceConfig.ReadWritePaths = [
-    "/earth/transmission"
+    "/gaia/transmission"
   ];
 
   systemd.services.transmission.preStart = lib.mkAfter ''

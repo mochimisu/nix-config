@@ -47,7 +47,7 @@
   } @ inputs: {
     defaultPackage.x86_64-linux = home-manager.defaultPackage.x86_64-linux;
     packages.x86_64-linux = {
-      earth-iso = let
+      gaia-iso = let
         isoSystem = nixpkgs.lib.nixosSystem {
           specialArgs = {inherit inputs;};
           system = "x86_64-linux";
@@ -69,7 +69,7 @@
               ];
             })
             ./common.nix
-            ./machines/earth/configuration.nix
+            ./machines/gaia/configuration.nix
           ];
         };
       in
@@ -187,30 +187,6 @@
           }
         ];
       };
-      gaia = nixpkgs.lib.nixosSystem {
-        specialArgs = {inherit inputs;};
-        system = "x86_64-linux";
-        modules = [
-          ./vars.nix
-          # ./machines/gaia/hardware-configuration.nix
-          ./machines/gaia/configuration.nix
-          ./boot-efi.nix
-          ./common.nix
-          home-manager.nixosModules.home-manager
-          {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-            home-manager.users.brandon = {
-              imports = [
-                inputs.catppuccin.homeModules.catppuccin
-                ./machines/gaia/home
-                self.homeModules.home
-              ];
-            };
-          }
-        ];
-      };
-
       oasis = nixpkgs.lib.nixosSystem {
         specialArgs = {inherit inputs;};
         system = "x86_64-linux";
@@ -235,13 +211,13 @@
           }
         ];
       };
-      earth = nixpkgs.lib.nixosSystem {
+      gaia = nixpkgs.lib.nixosSystem {
         specialArgs = {inherit inputs;};
         system = "x86_64-linux";
         modules = [
           ./vars.nix
-          ./machines/earth/hardware-configuration.nix
-          ./machines/earth/configuration.nix
+          ./machines/gaia/hardware-configuration.nix
+          ./machines/gaia/configuration.nix
           ./boot-efi.nix
           ./common.nix
           home-manager.nixosModules.home-manager
@@ -251,7 +227,7 @@
             home-manager.users.brandon = {
               imports = [
                 inputs.catppuccin.homeModules.catppuccin
-                ./machines/earth/home
+                ./machines/gaia/home
                 self.homeModules.home
               ];
             };
