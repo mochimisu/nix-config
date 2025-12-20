@@ -14,6 +14,7 @@ in {
     ./keymap.nix
     inputs.catppuccin.nixosModules.catppuccin
     inputs.flatpaks.nixosModules.nix-flatpak
+    inputs.aagl.nixosModules.default
   ];
 
   # Packages
@@ -60,7 +61,6 @@ in {
 
     # Games
     mangohud
-    heroic
     inputs.nixos-xivlauncher-rb.packages.${pkgs.system}.default
     parsec-bin
     itch
@@ -164,4 +164,8 @@ in {
     enable = true;
     flavor = "mocha";
   };
+
+  # zzz
+  nix.settings = inputs.aagl.nixConfig;
+  programs.sleepy-launcher.enable = true;
 }

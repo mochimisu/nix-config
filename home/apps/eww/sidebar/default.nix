@@ -28,6 +28,24 @@
   audioSinksBin = "${pkgs.writeShellScriptBin "eww-audio-sinks" (builtins.readFile ./scripts/audio-sinks.sh)}/bin/eww-audio-sinks";
   volBin = "${pkgs.writeShellScriptBin "eww-volume" (builtins.readFile ./scripts/vol.sh)}/bin/eww-volume";
   toggleWindow = "EWW_CONFIG=${configDir} ${pkgs.writeShellScriptBin "eww-toggle-window" (builtins.readFile ./scripts/toggle-window.sh)}/bin/eww-toggle-window";
+  pttStateFile = variables.ewwPttStateFile or "";
+  pttDefs =
+    if pttStateFile == ""
+    then ""
+    else ''
+      (defpoll ptt-state
+        :interval "0.5s"
+        "STATE_FILE=${pttStateFile}; if [ -f \"$STATE_FILE\" ]; then tr -d '[:space:]' < \"$STATE_FILE\"; else echo enabled; fi")
+
+      (defwidget ptt-status []
+        (box :class { "ptt-status " + (ptt-state == "enabled" ? "ptt-on" : "ptt-off") }
+             :orientation "v"
+             :halign "center"
+             :space-evenly false
+             (label :text "󰍬" :class "ptt-label")
+             (label :text {ptt-state == "enabled" ? "PTT" : "OPEN"} :class "ptt-value")))
+    '';
+  pttWidget = if pttStateFile == "" then "" else "(ptt-status)\n";
 in {
   programs.eww.enable = isLinuxGui;
 
@@ -61,6 +79,7 @@ in {
           )}
         '';
         inherit cavaBin clockBin networkBin batteryBin bluetoothBin audioSinksBin volBin toggleWindow;
+        inherit pttDefs pttWidget;
         iconSize = variables.ewwSidebarIconSize or "16";
       };
 
