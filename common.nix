@@ -26,6 +26,7 @@
   environment.systemPackages = with pkgs; [
     dhcpcd
     networkmanager
+    tailscale
     neovim
     wget
     git
@@ -59,6 +60,11 @@
 
   # Networking
   networking.networkmanager.enable = true;
+
+  services.tailscale = {
+    enable = true;
+    openFirewall = true;
+  };
 
   # Power
   services.upower.enable = true;
