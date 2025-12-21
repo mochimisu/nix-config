@@ -49,6 +49,7 @@
 in {
   imports = [
     ./transmission.nix
+    ./home-assistant.nix
   ];
 
   networking.hostName = "gaia";
