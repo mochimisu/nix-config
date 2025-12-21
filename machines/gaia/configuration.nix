@@ -10,8 +10,8 @@
   mountDocs = pkgs.writeShellScriptBin "mountdocs" ''
     set -euo pipefail
 
-    ENC_DIR=/gaia/documents_enc
-    MOUNT_DIR=/gaia/documents
+    ENC_DIR=/earth/documents_enc
+    MOUNT_DIR=/earth/documents
 
     if ! [ -d "$ENC_DIR" ]; then
       echo "Encrypted directory $ENC_DIR does not exist." >&2
@@ -33,7 +33,7 @@
   umountDocs = pkgs.writeShellScriptBin "umountdocs" ''
     set -euo pipefail
 
-    MOUNT_DIR=/gaia/documents
+    MOUNT_DIR=/earth/documents
 
     if ! ${pkgs.util-linux}/bin/mountpoint -q "$MOUNT_DIR"; then
       echo "$MOUNT_DIR is not currently mounted."
@@ -76,7 +76,7 @@ in {
         "map to guest" = "Bad User";
       };
       gaia = {
-        path = "/gaia";
+        path = "/earth";
         browseable = "yes";
         "read only" = "no";
         "guest ok" = "no";
@@ -93,15 +93,27 @@ in {
     host = "0.0.0.0";
     port = 2283;
     openFirewall = true;
-    mediaLocation = "/gaia/immich-app";
+    mediaLocation = "/earth/immich-app";
     accelerationDevices = null;
+  };
+
+  # Keep the Immich database on the same disk as the media so it can be moved as
+  # a unit (note: raw PGDATA reuse requires the same Postgres major version).
+  services.postgresql = {
+    # Immich module enables PostgreSQL; we override the storage location.
+    # Keep it outside the Immich media folder to avoid permission/cleanup issues.
+    dataDir = "/earth/immich-db";
+    package = pkgs.postgresql_16;
   };
 
   users.users.brandon.extraGroups = ["fuse"];
 
   systemd.tmpfiles.rules = [
-    "d /gaia/documents 0770 brandon media - -"
-    "d /gaia/documents_enc 0770 brandon media - -"
+    "d /earth/documents 0770 brandon media - -"
+    "d /earth/documents_enc 0770 brandon media - -"
+    "d /earth/immich-app 0775 immich media - -"
+    "d /earth/immich-app/library 0775 immich media - -"
+    "d /earth/immich-db 0700 postgres postgres - -"
   ];
 
   system.stateVersion = "24.11";

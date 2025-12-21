@@ -36,7 +36,7 @@
     }
   ];
 
-  fileSystems."/gaia" = {
+  fileSystems."/earth" = {
     device = "/dev/disk/by-uuid/b0ab60d8-938b-41af-8b02-781154ed8f4e";
     fsType = "btrfs";
     options = [
