@@ -4,6 +4,9 @@
     openFirewall = true;
     configDir = "/earth/home-assistant";
     extraComponents = [
+      "met"
+      "samsungtv"
+      "tesla_wall_connector"
       "unifiprotect"
     ];
     extraPackages = ps: [

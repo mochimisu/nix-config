@@ -46,10 +46,40 @@
       exec ${pkgs.fuse}/bin/fusermount -u "$MOUNT_DIR"
     fi
   '';
+
+  win11Restart = pkgs.writeShellScriptBin "win11-restart" ''
+    set -euo pipefail
+
+    if [ "$(${pkgs.coreutils}/bin/id -u)" -ne 0 ]; then
+      exec sudo "$0" "$@"
+    fi
+
+    name="''${1:-win11}"
+    uri="qemu:///system"
+
+    ${pkgs.systemd}/bin/systemctl start libvirtd.service
+    if ${pkgs.systemd}/bin/systemctl status libvirt-default-network.service >/dev/null 2>&1; then
+      ${pkgs.systemd}/bin/systemctl start libvirt-default-network.service || true
+    fi
+    ${pkgs.systemd}/bin/systemctl start "win11-$name-disk.service" || true
+
+    if ${pkgs.libvirt}/bin/virsh -c "$uri" dominfo "$name" >/dev/null 2>&1; then
+      state="$(${pkgs.libvirt}/bin/virsh -c "$uri" domstate "$name" | ${pkgs.coreutils}/bin/tr -d '\r')"
+      if [ "$state" = "running" ]; then
+        ${pkgs.libvirt}/bin/virsh -c "$uri" destroy "$name" || true
+      fi
+      ${pkgs.libvirt}/bin/virsh -c "$uri" undefine --nvram "$name" || true
+    fi
+
+    ${pkgs.systemd}/bin/systemctl reset-failed "win11-$name-define.service" || true
+    ${pkgs.systemd}/bin/systemctl start "win11-$name-define.service"
+    ${pkgs.libvirt}/bin/virsh -c "$uri" start "$name"
+  '';
 in {
   imports = [
     ./transmission.nix
     ./home-assistant.nix
+    ./win11-vfio.nix
   ];
 
   networking.hostName = "gaia";
@@ -65,6 +95,7 @@ in {
     pkgs.fuse
     mountDocs
     umountDocs
+    win11Restart
   ];
 
   services.samba = {
@@ -96,6 +127,27 @@ in {
     openFirewall = true;
     mediaLocation = "/earth/immich-app";
     accelerationDevices = null;
+  };
+
+  virtualisation.win11Vfio = {
+    enable = true;
+    iommu = "amd";
+    attachInstallMedia = false;
+    network = {
+      type = "direct";
+      directDev = "enp5s0";
+    };
+    gpuDeviceIds = [
+      "10de:1b81" # GTX 1070
+      "10de:10f0" # HDMI/DP audio
+    ];
+    gpuDevices = [
+      "0000:06:00.0"
+      "0000:06:00.1"
+    ];
+    winIsoPath = "/earth/libvirt/iso/Win11.iso";
+    virtioIsoPath = "/earth/libvirt/iso/virtio-win.iso";
+    diskPath = "/earth/libvirt/images/win11.qcow2";
   };
 
   # Keep the Immich database on the same disk as the media so it can be moved as
