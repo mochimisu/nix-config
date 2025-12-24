@@ -47,6 +47,7 @@ in {
     # High CPU usage
     vesktop
     proton-pass
+    remmina
     caprine
     hyprpicker
     inputs.zen-browser.packages.${pkgs.system}.default
