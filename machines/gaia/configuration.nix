@@ -89,6 +89,10 @@ in {
   services.pipewire.enable = lib.mkForce false;
   variables.isGui = lib.mkForce false;
 
+  # Don't block activation on "online" detection (the VM networking + bridges can
+  # confuse nm-online and make rebuilds fail).
+  systemd.services.NetworkManager-wait-online.enable = lib.mkForce false;
+
   environment.systemPackages = [
     pkgs.kitty.terminfo
     pkgs.gocryptfs
@@ -137,6 +141,10 @@ in {
       type = "direct";
       directDev = "enp5s0";
     };
+    hostAccess = {
+      enable = true;
+      networkName = "default";
+    };
     gpuDeviceIds = [
       "10de:1b81" # GTX 1070
       "10de:10f0" # HDMI/DP audio
@@ -148,6 +156,7 @@ in {
     winIsoPath = "/earth/libvirt/iso/Win11.iso";
     virtioIsoPath = "/earth/libvirt/iso/virtio-win.iso";
     diskPath = "/earth/libvirt/images/win11.qcow2";
+    diskSizeGiB = 500;
   };
 
   # Keep the Immich database on the same disk as the media so it can be moved as

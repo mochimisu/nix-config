@@ -67,6 +67,13 @@
       </interface>
     '';
 
+  hostAccessInterfaceXml = lib.optionalString cfg.hostAccess.enable ''
+    <interface type='network'>
+      <source network='${cfg.hostAccess.networkName}'/>
+      <model type='virtio'/>
+    </interface>
+  '';
+
   defaultNetworkXml = pkgs.writeText "libvirt-default-network.xml" ''
     <network>
       <name>default</name>
@@ -163,6 +170,7 @@
         <controller type='pci' model='pcie-root'/>
 
         ${interfaceXml}
+        ${hostAccessInterfaceXml}
 
         <tpm model='tpm-crb'>
           <backend type='emulator' version='2.0'/>
@@ -288,6 +296,20 @@ in {
       };
     };
 
+    hostAccess = {
+      enable = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = "Add a second NIC on a libvirt network (default: 'default') so the VM can always reach the host (useful with macvtap/direct, where host<->guest traffic is blocked).";
+      };
+
+      networkName = lib.mkOption {
+        type = lib.types.str;
+        default = "default";
+        description = "libvirt network name for the host-access NIC.";
+      };
+    };
+
     gpuDeviceIds = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [];
@@ -396,7 +418,10 @@ in {
     ];
 
     networking.firewall.trustedInterfaces = lib.mkAfter (
-      lib.optionals (cfg.network.type == "network" && cfg.network.networkName == "default") ["virbr0"]
+      lib.optionals (
+        (cfg.network.type == "network" && cfg.network.networkName == "default")
+        || (cfg.hostAccess.enable && cfg.hostAccess.networkName == "default")
+      ) ["virbr0"]
     );
 
     systemd.tmpfiles.rules = [
@@ -410,7 +435,10 @@ in {
       "libvirtd"
     ];
 
-    systemd.services.libvirt-default-network = lib.mkIf (cfg.network.type == "network" && cfg.network.networkName == "default") {
+    systemd.services.libvirt-default-network = lib.mkIf (
+      (cfg.network.type == "network" && cfg.network.networkName == "default")
+      || (cfg.hostAccess.enable && cfg.hostAccess.networkName == "default")
+    ) {
       description = "Ensure libvirt 'default' network is defined and active";
       wantedBy = ["multi-user.target"];
       after = ["libvirtd.service"];

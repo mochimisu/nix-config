@@ -49,3 +49,4 @@ During setup, load storage/network drivers from the VirtIO ISO when Windows asks
 - Windows 11 checks for TPM 2.0 + Secure Boot; this VM includes a virtual TPM but does not enable Secure Boot.
 - If you use Parsec/Moonlight and hit capture/encoder errors, consider disabling the SPICE/QXL console by setting `virtualisation.win11Vfio.spice.enable = false;` and re-defining the domain.
 - After Windows is installed, set `virtualisation.win11Vfio.attachInstallMedia = false;` to remove the ISO drives from the VM.
+- If the VM uses `network.type = "direct"` (macvtap), it cannot talk to the host over that interface; enable `virtualisation.win11Vfio.hostAccess.enable = true;` and access host services via the extra NIC (typically `\\192.168.122.1\\...`).
