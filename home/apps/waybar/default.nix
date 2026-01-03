@@ -222,7 +222,7 @@ in {
 
     # blur waybar
     layerrule = [
-      "blur, ^(waybar)$"
+      "match:namespace ^(waybar)$, blur on"
     ];
 
     windowrulev2 = [

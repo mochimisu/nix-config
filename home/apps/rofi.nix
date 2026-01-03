@@ -137,10 +137,7 @@ in {
       "$menu" = "rofi-toggle -show drun";
       "$menuAll" = "rofi-toggle -show run";
       layerrule = [
-        "animation fade, ^(rofi)$"
-        "blur, ^(rofi)$"
-        "ignorezero, ^(rofi)$"
-        "dimaround, ^(rofi)$"
+        "match:namespace ^(rofi)$, animation fade, blur on, ignore_alpha 0, dim_around on"
       ];
     };
   };

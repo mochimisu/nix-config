@@ -45,16 +45,15 @@ in {
         "3, monitor:DP-3, default:true"
         "10, monitor:HDMI-A-1, default:true"
       ];
-      defaultwindows = {
-        windowrule = [
-          "workspace 2 silent, class:^(steam)$"
-          "workspace 2 silent, class:^(discord)$"
-          "workspace 2 silent, class:^(vesktop)$"
-          "renderunfocused, class:^(Monster Hunter Wilds)$"
-          "monitor DP-3 tile, class:^(ffxiv_dx11.exe)$"
-        ];
-      };
     };
+
+    windowrulev2 = [
+      "workspace 2 silent, class:^(steam)$"
+      "workspace 2 silent, class:^(discord)$"
+      "workspace 2 silent, class:^(vesktop)$"
+      "renderunfocused, class:^(Monster Hunter Wilds)$"
+      "monitor DP-3 tile, class:^(ffxiv_dx11.exe)$"
+    ];
 
     input = {
       kb_layout = "us,us";
