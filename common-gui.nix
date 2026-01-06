@@ -45,7 +45,8 @@ in {
     # Apps
     # discord-canary
     # High CPU usage
-    vesktop
+    # vesktop
+    discord
     proton-pass
     remmina
     caprine
