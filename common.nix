@@ -29,6 +29,7 @@
     dhcpcd
     networkmanager
     tailscale
+    cloudflare-warp
     neovim
     wget
     git
@@ -67,6 +68,8 @@
     enable = true;
     openFirewall = true;
   };
+
+  services.cloudflare-warp.enable = true;
 
   # Power
   services.upower.enable = true;
