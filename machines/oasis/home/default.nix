@@ -8,7 +8,10 @@
     cpuTempSensor = "/sys/devices/pci0000:00/0000:00:08.1/0000:c4:00.0/hwmon/hwmon9/temp1_input";
   };
   variables.hyprpaper-config = ''
-    wallpaper = DP-2, ${config.home.homeDirectory}/.config/hypr/black.png
+    wallpaper {
+      monitor = DP-2
+      path = ${config.home.homeDirectory}/.config/hypr/black.png
+    }
   '';
   variables.ewwSidebarFontSize = "24px";
   variables.ewwSidebarIconSize = "32";

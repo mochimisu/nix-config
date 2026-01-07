@@ -17,8 +17,10 @@ in {
   variables.ewwPttStateFile = "${config.home.homeDirectory}/.local/state/hypr-ptt/state";
   home.file.".config/hypr/moon.jpg".source = moonWallpaper;
   variables.hyprpaper-config = ''
-    preload = ${config.home.homeDirectory}/.config/hypr/moon.jpg
-    wallpaper = DP-3, ${config.home.homeDirectory}/.config/hypr/moon.jpg
+    wallpaper {
+      monitor = DP-3
+      path = ${config.home.homeDirectory}/.config/hypr/moon.jpg
+    }
   '';
 
   imports = [

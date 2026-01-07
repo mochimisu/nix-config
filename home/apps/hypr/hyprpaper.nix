@@ -16,14 +16,22 @@ in
   home.file.".config/hypr/dusk.jpg".source = dusk;
   home.file.".config/hypr/black.png".source = ./black.png;
   home.file.".config/hypr/hyprpaper.conf".source = pkgs.writeText "hyprpaper.conf" ''
-    preload = ${config.home.homeDirectory}/.config/hypr/turquoiseTree.jpg
-    preload = ${config.home.homeDirectory}/.config/hypr/dusk.jpg
-    preload = ${config.home.homeDirectory}/.config/hypr/black.png
-    wallpaper = eDP-1, ${config.home.homeDirectory}/.config/hypr/turquoiseTree.jpg
-    wallpaper = DP-1, ${config.home.homeDirectory}/.config/hypr/dusk.jpg
-    wallpaper = DP-3, ${config.home.homeDirectory}/.config/hypr/dusk.jpg
-    wallpaper = HDMI-A-1, ${config.home.homeDirectory}/.config/hypr/turquoiseTree.jpg
+    wallpaper {
+      monitor = eDP-1
+      path = ${config.home.homeDirectory}/.config/hypr/turquoiseTree.jpg
+    }
+    wallpaper {
+      monitor = DP-1
+      path = ${config.home.homeDirectory}/.config/hypr/dusk.jpg
+    }
+    wallpaper {
+      monitor = DP-3
+      path = ${config.home.homeDirectory}/.config/hypr/dusk.jpg
+    }
+    wallpaper {
+      monitor = HDMI-A-1
+      path = ${config.home.homeDirectory}/.config/hypr/turquoiseTree.jpg
+    }
     ${variables.hyprpaper-config or ""}
     '';
 }
-
