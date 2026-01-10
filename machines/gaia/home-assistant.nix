@@ -10,6 +10,7 @@
       "unifiprotect"
     ];
     extraPackages = ps: [
+      ps.aiohomeconnect
       ps.pychromecast
       ps.uiprotect
     ];
