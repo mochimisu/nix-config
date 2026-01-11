@@ -11,15 +11,20 @@
     ];
     extraPackages = ps: [
       ps.aiohomeconnect
+      ps.androidtvremote2
+      ps.gtts
+      ps.python-roborock
       ps.pychromecast
+      ps.python-otbr-api
       ps.uiprotect
     ];
     config = {
       default_config = {};
+      automation = "!include automations.yaml";
       http = {
-        server_host = "0.0.0.0";
         server_port = 8123;
       };
+      scene = "!include scenes.yaml";
     };
   };
 
