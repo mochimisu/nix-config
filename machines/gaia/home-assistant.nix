@@ -1,4 +1,4 @@
-{...}: {
+{pkgs, ...}: {
   services.home-assistant = {
     enable = true;
     openFirewall = true;
@@ -7,18 +7,30 @@
       "met"
       "samsungtv"
       "tesla_wall_connector"
+      "thread"
       "unifiprotect"
     ];
     extraPackages = ps: [
+      ps.aiohomeconnect
+      ps.androidtvremote2
+      ps.beautifulsoup4
+      ps.gtts
+      ps.python-roborock
       ps.pychromecast
+      ps.python-otbr-api
       ps.uiprotect
+    ];
+    customComponents = [
+      pkgs.home-assistant-custom-components.ac_infinity
+      pkgs.home-assistant-custom-components.bambu_lab
     ];
     config = {
       default_config = {};
+      automation = "!include automations.yaml";
       http = {
-        server_host = "0.0.0.0";
         server_port = 8123;
       };
+      scene = "!include scenes.yaml";
     };
   };
 
@@ -49,6 +61,7 @@
       ];
       volumes = [
         "/earth/home-assistant/matter-server:/data"
+        "/earth/home-assistant/matter-server/.matter_server:/root/.matter_server"
       ];
       extraOptions = [
         "--network=host"
@@ -59,5 +72,10 @@
   systemd.tmpfiles.rules = [
     "d /earth/home-assistant 0750 hass hass - -"
     "d /earth/home-assistant/matter-server 0755 root root - -"
+    "d /earth/home-assistant/matter-server/.matter_server 0755 root root - -"
   ];
+
+  systemd.services."podman-matter-server".preStart = ''
+    ${pkgs.coreutils}/bin/mkdir -p /earth/home-assistant/matter-server/.matter_server
+  '';
 }
