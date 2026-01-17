@@ -13,6 +13,7 @@
     extraPackages = ps: [
       ps.aiohomeconnect
       ps.androidtvremote2
+      ps.beautifulsoup4
       ps.gtts
       ps.python-roborock
       ps.pychromecast
@@ -21,6 +22,7 @@
     ];
     customComponents = [
       pkgs.home-assistant-custom-components.ac_infinity
+      pkgs.home-assistant-custom-components.bambu_lab
     ];
     config = {
       default_config = {};
