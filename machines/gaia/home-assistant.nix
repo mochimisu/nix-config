@@ -1,4 +1,4 @@
-{...}: {
+{pkgs, ...}: {
   services.home-assistant = {
     enable = true;
     openFirewall = true;
@@ -7,6 +7,7 @@
       "met"
       "samsungtv"
       "tesla_wall_connector"
+      "thread"
       "unifiprotect"
     ];
     extraPackages = ps: [
@@ -17,6 +18,9 @@
       ps.pychromecast
       ps.python-otbr-api
       ps.uiprotect
+    ];
+    customComponents = [
+      pkgs.home-assistant-custom-components.ac_infinity
     ];
     config = {
       default_config = {};
@@ -55,6 +59,7 @@
       ];
       volumes = [
         "/earth/home-assistant/matter-server:/data"
+        "/earth/home-assistant/matter-server/.matter_server:/root/.matter_server"
       ];
       extraOptions = [
         "--network=host"
@@ -65,5 +70,10 @@
   systemd.tmpfiles.rules = [
     "d /earth/home-assistant 0750 hass hass - -"
     "d /earth/home-assistant/matter-server 0755 root root - -"
+    "d /earth/home-assistant/matter-server/.matter_server 0755 root root - -"
   ];
+
+  systemd.services."podman-matter-server".preStart = ''
+    ${pkgs.coreutils}/bin/mkdir -p /earth/home-assistant/matter-server/.matter_server
+  '';
 }

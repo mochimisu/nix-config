@@ -18,6 +18,7 @@
     (import ./overlays/toluapp.nix)
     # Patch butler to avoid build failure in nixpkgs (sevenzip-go glue.c).
     (import ./overlays/butler-patch.nix)
+    (import ./overlays/ha-ac-infinity.nix)
   ];
 
   nixpkgs.config = {
