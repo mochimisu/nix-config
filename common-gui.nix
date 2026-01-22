@@ -74,6 +74,7 @@ in {
     obs-studio
     appimage-run
     seventeenlands
+    protonplus
   ];
 
   environment.sessionVariables = {

@@ -25,6 +25,7 @@
       "$mod SHIFT, 9, movetoworkspace, 9"
       "$mod SHIFT, 0, movetoworkspace, 10"
       "$mod CONTROL, 4, exec, ~/.config/hypr/screenshot.sh"
+      "$mod, F4, exec, ~/.config/hypr/screenshot.sh"
 
       # Example special workspace (scratchpad)
       "$mod, S, togglespecialworkspace, magic"
@@ -68,6 +69,7 @@
       # keybinds further down will be global again...
 
       "$mod, F1, exec, ~/.config/hypr/gamemode.sh"
+      "$mod, F5, exec, ~/.config/hypr/keyboard-toggle.sh"
 
       ",XF86MonBrightnessDown,exec,brightnessctl set 5%-"
       ",XF86MonBrightnessUp,exec,brightnessctl set +5%"
@@ -119,6 +121,27 @@
       file="$dir/$timestamp.png"
 
       grim -g "$geometry" - | tee "$file" | wl-copy
+    '';
+  };
+
+  home.file.".config/hypr/keyboard-toggle.sh" = {
+    executable = true;
+    text = ''
+      #!/usr/bin/env sh
+
+      current="$(hyprctl getoption input:kb_variant | awk 'NR==1{print $2}')"
+      case "$current" in
+        dvorak*)
+          hyprctl --batch "\
+            keyword input:kb_layout us,us;\
+            keyword input:kb_variant ,"
+          ;;
+        *)
+          hyprctl --batch "\
+            keyword input:kb_layout us,us;\
+            keyword input:kb_variant dvorak,"
+          ;;
+      esac
     '';
   };
 }
