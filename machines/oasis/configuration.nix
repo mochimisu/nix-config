@@ -83,11 +83,15 @@
     KEYBOARD_KEY_5f=f13
   '';
 
-  # services.logind.extraConfig = ''
-  #   HandlePowerKey=suspend
-  #   HandleLidSwitch=suspend
-  #   HandleLidSwitchDocked=ignore
-  # '';
+  services.logind.settings = {
+    Login = {
+      HandlePowerKey = "suspend";
+      HandlePowerKeyLongPress = "ignore";
+      HandleLidSwitch = "suspend";
+      HandleLidSwitchExternalPower = "suspend";
+      HandleLidSwitchDocked = "suspend";
+    };
+  };
 
   systemd.services.fprintd = {
     wantedBy = ["multi-user.target"];
