@@ -12,6 +12,7 @@
   ];
 
   networking.hostName = "oasis";
+  networking.networkmanager.wifi.powersave = false;
   environment.systemPackages = with pkgs; [
     brightnessctl
     bolt
@@ -151,7 +152,6 @@
     xserver.enable = lib.mkForce true; # force X11
   };
 
-  home-manager.extraSpecialArgs = {inherit inputs;};
 
 
 

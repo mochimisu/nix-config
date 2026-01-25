@@ -99,6 +99,8 @@ in {
       package = inputs.hyprland.packages.${pkgs.system}.hyprland;
     };
   };
+
+  home-manager.extraSpecialArgs = {inherit inputs;};
   services.hypridle.enable = true;
   hardware.bluetooth = {
     enable = true;
