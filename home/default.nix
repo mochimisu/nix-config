@@ -119,15 +119,6 @@ in {
   };
 
   xdg.desktopEntries = lib.mkIf isLinuxGui {
-    # Looks like something broke chromium default desktop entry, replace
-    "chromium" = {
-      name = "Chromium";
-      icon = "chromium";
-      exec = "chromium %U";
-      terminal = false;
-      type = "Application";
-      categories = ["Network" "WebBrowser"];
-    };
     "xivlauncher-rb" = {
       name = "XIVLauncher-RB";
       icon = "xivlauncher";

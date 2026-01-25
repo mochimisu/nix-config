@@ -53,7 +53,7 @@ in {
       "workspace 2 silent, match:class ^(steam)$"
       "workspace 2 silent, match:class ^(discord)$"
       "workspace 2 silent, match:class ^(vesktop)$"
-      "render_unfocused, match:class ^(Monster Hunter Wilds)$"
+      "render_unfocused 1, match:class ^(Monster Hunter Wilds)$"
       "monitor DP-3 tile, match:class ^(ffxiv_dx11.exe)$"
     ];
 
