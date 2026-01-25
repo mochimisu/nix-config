@@ -44,8 +44,8 @@
     enable = true;
   };
 
-  # fix kernel hang on suspend
-  boot.kernelParams = ["amdgpu.gpu_recovery=1"];
+  # fix kernel hang on suspend + prevent EC from waking on AC power changes
+  boot.kernelParams = ["amdgpu.gpu_recovery=1" "acpi.ec_no_wakeup=1"];
 
   # fix trackpad
   environment.etc."scripts/touchpad-fix.sh".source = pkgs.writeScript "touchpad-fix" ''
@@ -90,6 +90,27 @@
       HandleLidSwitch = "suspend";
       HandleLidSwitchExternalPower = "suspend";
       HandleLidSwitchDocked = "suspend";
+    };
+  };
+
+  # Prevent USB/USB4 power events (like AC unplug) from waking the system.
+  systemd.services.disable-ac-wakeup = {
+    description = "Disable AC-related wakeup sources before sleep";
+    wantedBy = ["multi-user.target" "sleep.target"];
+    before = ["sleep.target"];
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = pkgs.writeShellScript "disable-ac-wakeup" ''
+        set -eu
+        while read -r dev state status rest; do
+          [ "$dev" = "Device" ] && continue
+          [ "$status" = "*enabled" ] || continue
+          case "$dev" in
+            PBTN|LID|SLPB) continue ;;
+          esac
+          echo "$dev" > /proc/acpi/wakeup || true
+        done < /proc/acpi/wakeup
+      '';
     };
   };
 

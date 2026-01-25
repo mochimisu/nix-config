@@ -85,7 +85,7 @@
   # User
   users.users.brandon = {
     isNormalUser = true;
-    extraGroups = ["wheel"]; # Enable ‘sudo’ for the user.
+    extraGroups = ["wheel" "networkmanager"]; # Enable sudo + NetworkManager without admin auth.
     packages = with pkgs; [
       tree
     ];
