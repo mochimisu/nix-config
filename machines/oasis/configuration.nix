@@ -9,7 +9,6 @@
 }: {
   nixpkgs.overlays = [
     (import ../../overlays/wvkbd.nix)
-    (import ../../overlays/hyprgrass.nix)
   ];
 
   networking.hostName = "oasis";

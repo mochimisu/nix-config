@@ -37,19 +37,11 @@
       "iio-hyprland"
       "protonvpn-app"
     ];
-
-    plugin = {
-      "touch_gestures" = {
-        "hyprgrass-bind" = [
-          ",swipe:4:d,exec,pkill wvkbd-mobintl"
-          ",swipe:4:u,exec,wvkbd-mobintl -L 300"
-        ];
-      };
-    };
+    gesture = [
+      "4, down, dispatcher, exec, pkill wvkbd-mobintl"
+      "4, up, dispatcher, exec, wvkbd-mobintl -L 300"
+    ];
   };
-  wayland.windowManager.hyprland.plugins = [
-    pkgs.hyprlandPlugins.hyprgrass
-  ];
 
   imports = [
     ../../../home/common-linux.nix

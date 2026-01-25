@@ -1,9 +1,6 @@
 { config, lib, pkgs, specialArgs, variables, inputs, ... }:
 
 {
-  nixpkgs.overlays = [
-    (import ../../overlays/hyprgrass.nix)
-  ];
 
   networking.hostName = "espresso";
   environment.systemPackages = with pkgs; [

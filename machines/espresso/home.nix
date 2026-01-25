@@ -23,18 +23,11 @@
     "exec-once" = [
       "mangohud steam"
     ];
-    plugin = {
-      "touch_gestures" = {
-        "hyprgrass-bind" = [
-          ",swipe:3:l,exec,hyprctl dispatch workspace e-1"
-          ",swipe:3:r,exec,hyprctl dispatch workspace e+1"
-        ];
-      };
-    };
+    gesture = [
+      "3, left, dispatcher, workspace, e-1"
+      "3, right, dispatcher, workspace, e+1"
+    ];
   };
-  wayland.windowManager.hyprland.plugins = [
-    pkgs.hyprlandPlugins.hyprgrass
-  ];
   imports = [
     ../../home/common-linux.nix
   ];
