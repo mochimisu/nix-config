@@ -225,19 +225,19 @@ in {
       "match:namespace ^(waybar)$, blur on"
     ];
 
-    windowrulev2 = [
+    windowrule = [
       # pwvucontrol to top right
-      "float, class:^(com.saivert.pwvucontrol)$"
-      "size 700 600, class:^(com.saivert.pwvucontrol)$"
-      "move 100%-700 30, class:^(com.saivert.pwvucontrol)$"
+      "float, match:class ^(com.saivert.pwvucontrol)$"
+      "size 700 600, match:class ^(com.saivert.pwvucontrol)$"
+      "move 100%-700 30, match:class ^(com.saivert.pwvucontrol)$"
       # blueman to top right
-      "float, class:^(.blueman-manager-wrapped)$"
-      "size 500 600, class:^(.blueman-manager-wrapped)$"
-      "move 100%-510 30, class:^(.blueman-manager-wrapped)$"
+      "float, match:class ^(.blueman-manager-wrapped)$"
+      "size 500 600, match:class ^(.blueman-manager-wrapped)$"
+      "move 100%-510 30, match:class ^(.blueman-manager-wrapped)$"
       # karlender to top right
-      "float, class:^(codes.loers.Karlender)$"
-      "size 400 500, class:^(codes.loers.Karlender)$"
-      "move 100%-400 30, class:^(codes.loers.Karlender)$"
+      "float, match:class ^(codes.loers.Karlender)$"
+      "size 400 500, match:class ^(codes.loers.Karlender)$"
+      "move 100%-400 30, match:class ^(codes.loers.Karlender)$"
     ];
   };
 }

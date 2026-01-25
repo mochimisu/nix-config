@@ -151,6 +151,10 @@
     xserver.enable = lib.mkForce true; # force X11
   };
 
+  home-manager.extraSpecialArgs = {inherit inputs;};
+
+
+
   # orientation sensor
   hardware.sensor.iio.enable = true;
 

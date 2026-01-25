@@ -22,7 +22,7 @@ in {
     bluez
     mesa
     # greetd.tuigreet
-    hyprpaper
+    pkgs.hyprpaper
     networkmanagerapplet
     (chromium.override {enableWideVine = true;})
     cliphist
@@ -32,7 +32,7 @@ in {
     wf-recorder
     wl-clipboard
     inputs.rose-pine-hyprcursor.packages.${pkgs.system}.default
-    xdg-desktop-portal-hyprland
+    pkgs.xdg-desktop-portal-hyprland
 
     hyprpolkitagent
     gnome-keyring
@@ -94,7 +94,10 @@ in {
       ];
     };
     gamemode.enable = true;
-    hyprland.enable = true;
+    hyprland = {
+      enable = true;
+      package = inputs.hyprland.packages.${pkgs.system}.hyprland;
+    };
   };
   services.hypridle.enable = true;
   hardware.bluetooth = {

@@ -49,12 +49,12 @@ in {
       ];
     };
 
-    windowrulev2 = [
-      "workspace 2 silent, class:^(steam)$"
-      "workspace 2 silent, class:^(discord)$"
-      "workspace 2 silent, class:^(vesktop)$"
-      "renderunfocused, class:^(Monster Hunter Wilds)$"
-      "monitor DP-3 tile, class:^(ffxiv_dx11.exe)$"
+    windowrule = [
+      "workspace 2 silent, match:class ^(steam)$"
+      "workspace 2 silent, match:class ^(discord)$"
+      "workspace 2 silent, match:class ^(vesktop)$"
+      "render_unfocused, match:class ^(Monster Hunter Wilds)$"
+      "monitor DP-3 tile, match:class ^(ffxiv_dx11.exe)$"
     ];
 
     input = {

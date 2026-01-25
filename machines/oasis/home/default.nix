@@ -1,6 +1,7 @@
 {
   config,
   pkgs,
+  inputs,
   ...
 }: {
   variables.keyboardLayout = "dvorak";
@@ -37,11 +38,23 @@
       "iio-hyprland"
       "protonvpn-app"
     ];
-    gesture = [
-      "4, down, dispatcher, exec, pkill wvkbd-mobintl"
-      "4, up, dispatcher, exec, wvkbd-mobintl -L 300"
-    ];
+    plugin = {
+      touch_gestures = {
+        hyprgrass-bind = [
+          ",swipe:4:u,exec,wvkbd-mobintl -L 300"
+          ",swipe:4:d,exec,pkill wvkbd-mobintl"
+        ];
+      };
+    };
   };
+
+  wayland.windowManager.hyprland.plugins = [
+    inputs.hyprgrass.packages.${pkgs.system}.default
+  ];
+
+  wayland.windowManager.hyprland.extraConfig = ''
+    plugin = ${inputs.hyprgrass.packages.${pkgs.system}.default}/lib/libhyprgrass.so
+  '';
 
   imports = [
     ../../../home/common-linux.nix
