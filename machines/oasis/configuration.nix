@@ -152,7 +152,11 @@
       Type = "oneshot";
       ExecStart = pkgs.writeShellScript "asus-fan-curve" ''
         set -eu
+        ${pkgs.asusctl}/bin/asusctl profile set Balanced -a -b
+        ${pkgs.asusctl}/bin/asusctl profile set Balanced
         ${pkgs.asusctl}/bin/asusctl fan-curve --mod-profile balanced --enable-fan-curves true
+        ${pkgs.asusctl}/bin/asusctl fan-curve --mod-profile balanced --enable-fan-curve true --fan cpu
+        ${pkgs.asusctl}/bin/asusctl fan-curve --mod-profile balanced --enable-fan-curve true --fan gpu
         ${pkgs.asusctl}/bin/asusctl fan-curve --mod-profile balanced --fan cpu --data "25:2,30:4,40:8,55:18,70:60,80:85,90:100,95:100"
         ${pkgs.asusctl}/bin/asusctl fan-curve --mod-profile balanced --fan gpu --data "25:2,30:4,45:10,60:22,75:70,85:90,90:100,95:100"
       '';
