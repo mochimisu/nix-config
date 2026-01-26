@@ -150,6 +150,21 @@ in {
     enable = true;
     package = pkgs.kdePackages.sddm;
     wayland.enable = true;
+    settings = {
+      General = {
+        InputMethod = "qtvirtualkeyboard";
+        GreeterEnvironment = "QT_VIRTUALKEYBOARD_STYLE=compact,QT_VIRTUALKEYBOARD_LAYOUT_PATH=/etc/xdg/qtvirtualkeyboard/layouts,QML2_IMPORT_PATH=/etc/xdg/qtvirtualkeyboard/qml";
+      };
+    };
+    extraPackages = with pkgs; [
+      qt6.qtvirtualkeyboard
+    ];
+  };
+
+  environment.etc = {
+    "xdg/qtvirtualkeyboard/layouts/en_US/main.qml".source = ./apps/qtvirtualkeyboard/layouts/en_US/main.qml;
+    "xdg/qtvirtualkeyboard/qml/QtQuick/VirtualKeyboard/Styles/compact/style.qml".source =
+      ./apps/qtvirtualkeyboard/qml/QtQuick/VirtualKeyboard/Styles/compact/style.qml;
   };
 
   # login to start ssh-agent

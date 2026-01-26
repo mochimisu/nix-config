@@ -7,10 +7,6 @@
   inputs,
   ...
 }: {
-  nixpkgs.overlays = [
-    (import ../../overlays/wvkbd.nix)
-  ];
-
   networking.hostName = "oasis";
   networking.networkmanager.wifi.powersave = false;
   environment.systemPackages = with pkgs; [
@@ -141,16 +137,7 @@
       jack.enable = true;
     };
     displayManager.sddm = {
-      settings = {
-        # TODO: fix this
-        # "General" = {
-        #   "InputMethod" = "qtvirtualkeyboard";
-        # };
-      };
       wayland.enable = lib.mkForce false; # force X11
-      extraPackages = with pkgs; [
-        qt6.qtvirtualkeyboard
-      ];
     };
     xserver.enable = lib.mkForce true; # force X11
   };

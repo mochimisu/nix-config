@@ -20,6 +20,7 @@
     (import ./overlays/butler-patch.nix)
     (import ./overlays/ha-ac-infinity.nix)
     (import ./overlays/ha-bambulab.nix)
+    (import ./overlays/wvkbd.nix)
   ];
 
   nixpkgs.config = {
