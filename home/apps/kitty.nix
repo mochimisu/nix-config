@@ -13,6 +13,9 @@ in {
       background_opacity = 0.6;
       # Show a brief trail when the cursor moves to a new location
       cursor_trail = 1;
+      # Wheel-based scrolling (low precision devices like synthetic wheel events)
+      wheel_scroll_multiplier = "1.0";
+      wheel_scroll_min_lines = "1";
     };
   };
 }

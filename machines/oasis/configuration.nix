@@ -19,6 +19,7 @@
     bash
     acpid
     asusctl
+    ydotool
 
     # adjust tdp
     ryzenadj
@@ -64,6 +65,7 @@
   services.udev.extraRules = ''
     ACTION=="add", KERNEL=="0003:0B05:1A30.*", SUBSYSTEM=="hid", \
     RUN+="${config.environment.etc."scripts/touchpad-fix.sh".source}"
+    SUBSYSTEM=="input", KERNEL=="event*", ENV{ID_INPUT_TOUCHSCREEN}=="1", SYMLINK+="input/touchscreen"
   '';
 
   # palm rejection
@@ -153,6 +155,8 @@
     xserver.enable = lib.mkForce true; # force X11
   };
 
+  users.users.brandon.extraGroups = lib.mkAfter ["input"];
+
   systemd.services.asus-fan-curve = {
     description = "Apply custom Asus fan curve";
     wantedBy = ["multi-user.target"];
@@ -165,6 +169,15 @@
         ${pkgs.asusctl}/bin/asusctl fan-curve --mod-profile balanced --fan cpu --data "25:2,30:4,40:8,55:18,70:60,80:85,90:100,95:100"
         ${pkgs.asusctl}/bin/asusctl fan-curve --mod-profile balanced --fan gpu --data "25:2,30:4,45:10,60:22,75:70,85:90,90:100,95:100"
       '';
+    };
+  };
+
+  systemd.services.ydotoold = {
+    description = "ydotool daemon";
+    wantedBy = ["multi-user.target"];
+    serviceConfig = {
+      ExecStart = "${pkgs.ydotool}/bin/ydotoold --socket-path=/run/ydotoold.socket --socket-perm=0666";
+      Restart = "on-failure";
     };
   };
 

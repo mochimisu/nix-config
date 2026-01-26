@@ -61,6 +61,30 @@
     ./fastfetch.nix
   ];
 
+  home.sessionVariables = {
+    YDOTOOL_SOCKET = "/run/ydotoold.socket";
+  };
+
+  home.packages = with pkgs; [
+    lisgd
+  ];
+
+  systemd.user.services.lisgd = {
+    Unit = {
+      Description = "lisgd touchscreen gesture daemon";
+      After = ["graphical-session.target"];
+    };
+    Service = {
+      Environment = "YDOTOOL_SOCKET=/run/ydotoold.socket";
+      ExecStart = "${pkgs.lisgd}/bin/lisgd -d /dev/input/touchscreen -t 60 -T 20 -m 1200 -r 20 -g \"1,DU,*,*,P,ydotool mousemove --wheel -- 0 -1\" -g \"1,UD,*,*,P,ydotool mousemove --wheel -- 0 1\"";
+      Restart = "on-failure";
+    };
+    Install = {
+      WantedBy = ["graphical-session.target"];
+    };
+  };
+
+
   # custom full remapped keyboard
   wayland.windowManager.hyprland.settings.input = {
     kb_layout = "custom";
