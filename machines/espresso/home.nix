@@ -1,6 +1,4 @@
 {
-  config,
-  pkgs,
   ...
 }: {
   variables.keyboardLayout = "qwerty";
@@ -9,6 +7,12 @@
   };
   variables.ewwSidebarFontSize = "18px";
   variables.ewwSidebarIconSize = "24";
+  variables.touchscreen = {
+    enable = true;
+    enableHyprgrass = true;
+    enableScroll = true;
+    onScreenKeyboard = false;
+  };
   wayland.windowManager.hyprland.settings = {
     monitors = {
       monitor = [
@@ -30,6 +34,7 @@
   };
   imports = [
     ../../home/common-linux.nix
+    ../../home/apps/touchscreen.nix
   ];
   home.shellAliases = {
   };

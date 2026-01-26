@@ -1,7 +1,5 @@
 {
   config,
-  pkgs,
-  inputs,
   ...
 }: {
   variables.keyboardLayout = "dvorak";
@@ -20,6 +18,12 @@
     "eDP-1"
     "DP-1"
   ];
+  variables.touchscreen = {
+    enable = true;
+    enableHyprgrass = true;
+    enableScroll = true;
+    onScreenKeyboard = true;
+  };
   wayland.windowManager.hyprland.settings = {
     monitors = {
       monitor = [
@@ -38,51 +42,13 @@
       "iio-hyprland"
       "protonvpn-app"
     ];
-    plugin = {
-      touch_gestures = {
-        hyprgrass-bind = [
-          ",swipe:4:u,exec,wvkbd-mobintl -L 300"
-          ",swipe:4:d,exec,pkill wvkbd-mobintl"
-        ];
-      };
-    };
   };
-
-  wayland.windowManager.hyprland.plugins = [
-    inputs.hyprgrass.packages.${pkgs.system}.default
-  ];
-
-  wayland.windowManager.hyprland.extraConfig = ''
-    plugin = ${inputs.hyprgrass.packages.${pkgs.system}.default}/lib/libhyprgrass.so
-  '';
 
   imports = [
     ../../../home/common-linux.nix
+    ../../../home/apps/touchscreen.nix
     ./fastfetch.nix
   ];
-
-  home.sessionVariables = {
-    YDOTOOL_SOCKET = "/run/ydotoold.socket";
-  };
-
-  home.packages = with pkgs; [
-    lisgd
-  ];
-
-  systemd.user.services.lisgd = {
-    Unit = {
-      Description = "lisgd touchscreen gesture daemon";
-      After = ["graphical-session.target"];
-    };
-    Service = {
-      Environment = "YDOTOOL_SOCKET=/run/ydotoold.socket";
-      ExecStart = "${pkgs.lisgd}/bin/lisgd -d /dev/input/touchscreen -t 60 -T 20 -m 1200 -r 20 -g \"1,DU,*,*,P,ydotool mousemove --wheel -- 0 -1\" -g \"1,UD,*,*,P,ydotool mousemove --wheel -- 0 1\"";
-      Restart = "on-failure";
-    };
-    Install = {
-      WantedBy = ["graphical-session.target"];
-    };
-  };
 
 
   # custom full remapped keyboard
