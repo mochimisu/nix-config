@@ -35,6 +35,9 @@
         };
       };
     };
+    plugins.lsp.capabilities = ''
+      capabilities.workspace.didChangeWatchedFiles.dynamicRegistration = false
+    '';
   };
   programs.wofi.enable = lib.mkForce false;
   programs.spotify-player.enable = lib.mkForce false;
@@ -57,6 +60,10 @@
         "typescript.autoClosingTags": false,
         "python.pythonPath": "/Users/brandonw/.virtualenvs/openai/bin/python",
     }
+  '';
+  home.file.".config/lazygit/config.yml".text = ''
+    git:
+      autoFetch: false
   '';
 
   home.shellAliases = {
