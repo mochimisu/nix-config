@@ -7,17 +7,15 @@
   inputs,
   ...
 }: {
-  nixpkgs.overlays = [
-    (import ../../overlays/wvkbd.nix)
-    (import ../../overlays/hyprgrass.nix)
-  ];
-
   networking.hostName = "oasis";
+  networking.networkmanager.wifi.powersave = false;
   environment.systemPackages = with pkgs; [
     brightnessctl
     bolt
     bash
     acpid
+    asusctl
+    ydotool
 
     # adjust tdp
     ryzenadj
@@ -45,8 +43,8 @@
     enable = true;
   };
 
-  # fix kernel hang on suspend
-  boot.kernelParams = ["amdgpu.gpu_recovery=1"];
+  # fix kernel hang on suspend + prevent EC from waking on AC power changes
+  boot.kernelParams = ["amdgpu.gpu_recovery=1" "acpi.ec_no_wakeup=1"];
 
   # fix trackpad
   environment.etc."scripts/touchpad-fix.sh".source = pkgs.writeScript "touchpad-fix" ''
@@ -63,6 +61,7 @@
   services.udev.extraRules = ''
     ACTION=="add", KERNEL=="0003:0B05:1A30.*", SUBSYSTEM=="hid", \
     RUN+="${config.environment.etc."scripts/touchpad-fix.sh".source}"
+    SUBSYSTEM=="input", KERNEL=="event*", ENV{ID_INPUT_TOUCHSCREEN}=="1", SYMLINK+="input/touchscreen"
   '';
 
   # palm rejection
@@ -84,11 +83,36 @@
     KEYBOARD_KEY_5f=f13
   '';
 
-  # services.logind.extraConfig = ''
-  #   HandlePowerKey=suspend
-  #   HandleLidSwitch=suspend
-  #   HandleLidSwitchDocked=ignore
-  # '';
+  services.logind.settings = {
+    Login = {
+      HandlePowerKey = "suspend";
+      HandlePowerKeyLongPress = "ignore";
+      HandleLidSwitch = "suspend";
+      HandleLidSwitchExternalPower = "suspend";
+      HandleLidSwitchDocked = "suspend";
+    };
+  };
+
+  # Prevent USB/USB4 power events (like AC unplug) from waking the system.
+  systemd.services.disable-ac-wakeup = {
+    description = "Disable AC-related wakeup sources before sleep";
+    wantedBy = ["multi-user.target" "sleep.target"];
+    before = ["sleep.target"];
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = pkgs.writeShellScript "disable-ac-wakeup" ''
+        set -eu
+        while read -r dev state status rest; do
+          [ "$dev" = "Device" ] && continue
+          [ "$status" = "*enabled" ] || continue
+          case "$dev" in
+            PBTN|LID|SLPB) continue ;;
+          esac
+          echo "$dev" > /proc/acpi/wakeup || true
+        done < /proc/acpi/wakeup
+      '';
+    };
+  };
 
   systemd.services.fprintd = {
     wantedBy = ["multi-user.target"];
@@ -113,19 +137,43 @@
       jack.enable = true;
     };
     displayManager.sddm = {
-      settings = {
-        # TODO: fix this
-        # "General" = {
-        #   "InputMethod" = "qtvirtualkeyboard";
-        # };
-      };
       wayland.enable = lib.mkForce false; # force X11
-      extraPackages = with pkgs; [
-        qt6.qtvirtualkeyboard
-      ];
     };
     xserver.enable = lib.mkForce true; # force X11
   };
+
+  users.users.brandon.extraGroups = lib.mkAfter ["input"];
+
+  systemd.services.asus-fan-curve = {
+    description = "Apply custom Asus fan curve";
+    wantedBy = ["multi-user.target"];
+    after = ["asusd.service"];
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = pkgs.writeShellScript "asus-fan-curve" ''
+        set -eu
+        ${pkgs.asusctl}/bin/asusctl profile set Balanced -a -b
+        ${pkgs.asusctl}/bin/asusctl profile set Balanced
+        ${pkgs.asusctl}/bin/asusctl fan-curve --mod-profile balanced --enable-fan-curves true
+        ${pkgs.asusctl}/bin/asusctl fan-curve --mod-profile balanced --enable-fan-curve true --fan cpu
+        ${pkgs.asusctl}/bin/asusctl fan-curve --mod-profile balanced --enable-fan-curve true --fan gpu
+        ${pkgs.asusctl}/bin/asusctl fan-curve --mod-profile balanced --fan cpu --data "25:2,30:4,40:8,55:18,70:60,80:85,90:100,95:100"
+        ${pkgs.asusctl}/bin/asusctl fan-curve --mod-profile balanced --fan gpu --data "25:2,30:4,45:10,60:22,75:70,85:90,90:100,95:100"
+      '';
+    };
+  };
+
+  systemd.services.ydotoold = {
+    description = "ydotool daemon";
+    wantedBy = ["multi-user.target"];
+    serviceConfig = {
+      ExecStart = "${pkgs.ydotool}/bin/ydotoold --socket-path=/run/ydotoold.socket --socket-perm=0666";
+      Restart = "on-failure";
+    };
+  };
+
+
+
 
   # orientation sensor
   hardware.sensor.iio.enable = true;

@@ -58,6 +58,22 @@ tooltip,
   font-stretch: condensed;
 }
 
+.ptt-status {
+  margin: 0.2em 0;
+}
+
+.ptt-status.ptt-on { color: #a6e3a1; }
+.ptt-status.ptt-off { color: #f38ba8; }
+
+.ptt-label {
+  font-size: 0.6em;
+}
+
+.ptt-value {
+  font-size: 0.55em;
+  font-weight: bold;
+}
+
 // Systray {
 .systray > widget > image {
   margin: 0.4em 0;

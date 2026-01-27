@@ -1,6 +1,5 @@
 {
   config,
-  pkgs,
   ...
 }: {
   variables.keyboardLayout = "dvorak";
@@ -8,7 +7,10 @@
     cpuTempSensor = "/sys/devices/pci0000:00/0000:00:08.1/0000:c4:00.0/hwmon/hwmon9/temp1_input";
   };
   variables.hyprpaper-config = ''
-    wallpaper = DP-2, ${config.home.homeDirectory}/.config/hypr/black.png
+    wallpaper {
+      monitor = DP-2
+      path = ${config.home.homeDirectory}/.config/hypr/black.png
+    }
   '';
   variables.ewwSidebarFontSize = "24px";
   variables.ewwSidebarIconSize = "32";
@@ -16,6 +18,12 @@
     "eDP-1"
     "DP-1"
   ];
+  variables.touchscreen = {
+    enable = true;
+    enableHyprgrass = true;
+    enableScroll = true;
+    onScreenKeyboard = true;
+  };
   wayland.windowManager.hyprland.settings = {
     monitors = {
       monitor = [
@@ -31,28 +39,17 @@
 
     "exec-once" = [
       "mangohud steam -silent"
-      "heroic"
       "iio-hyprland"
       "protonvpn-app"
     ];
-
-    plugin = {
-      "touch_gestures" = {
-        "hyprgrass-bind" = [
-          ",swipe:4:d,exec,pkill wvkbd-mobintl"
-          ",swipe:4:u,exec,wvkbd-mobintl -L 300"
-        ];
-      };
-    };
   };
-  wayland.windowManager.hyprland.plugins = [
-    pkgs.hyprlandPlugins.hyprgrass
-  ];
 
   imports = [
     ../../../home/common-linux.nix
+    ../../../home/apps/touchscreen.nix
     ./fastfetch.nix
   ];
+
 
   # custom full remapped keyboard
   wayland.windowManager.hyprland.settings.input = {

@@ -127,5 +127,14 @@ in {
       type = "Application";
       categories = ["Game"];
     };
+    "sleepy-launcher" = {
+      # Force dark theme by disabling the portal-provided theme
+      name = "Sleepy Launcher";
+      icon = "moe.launcher.sleepy-launcher";
+      exec = "env ADW_DISABLE_PORTAL=1 ${pkgs.sleepy-launcher}/bin/sleepy-launcher";
+      terminal = false;
+      type = "Application";
+      categories = ["Game"];
+    };
   };
 }

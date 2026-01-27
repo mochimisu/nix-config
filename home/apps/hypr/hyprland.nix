@@ -62,6 +62,10 @@
       misc = {
         force_default_wallpaper = 0;
       };
+      # Keep FFXIV running when unfocused or on another monitor.
+      windowrule = [
+        "idle_inhibit always, match:class ^(ffxiv_dx11.exe|ffxiv.exe)$"
+      ];
       env = [
         "XDG_SESSION_TYPE,wayland"
         "NIXOS_OZONE_WL=1"

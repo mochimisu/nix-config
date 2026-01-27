@@ -16,6 +16,11 @@
   };
   nixpkgs.overlays = [
     (import ./overlays/toluapp.nix)
+    # Patch butler to avoid build failure in nixpkgs (sevenzip-go glue.c).
+    (import ./overlays/butler-patch.nix)
+    (import ./overlays/ha-ac-infinity.nix)
+    (import ./overlays/ha-bambulab.nix)
+    (import ./overlays/wvkbd.nix)
   ];
 
   nixpkgs.config = {
@@ -26,6 +31,8 @@
   environment.systemPackages = with pkgs; [
     dhcpcd
     networkmanager
+    tailscale
+    cloudflare-warp
     neovim
     wget
     git
@@ -60,6 +67,13 @@
   # Networking
   networking.networkmanager.enable = true;
 
+  services.tailscale = {
+    enable = true;
+    openFirewall = true;
+  };
+
+  services.cloudflare-warp.enable = true;
+
   # Power
   services.upower.enable = true;
 
@@ -72,7 +86,7 @@
   # User
   users.users.brandon = {
     isNormalUser = true;
-    extraGroups = ["wheel"]; # Enable ‘sudo’ for the user.
+    extraGroups = ["wheel" "networkmanager"]; # Enable sudo + NetworkManager without admin auth.
     packages = with pkgs; [
       tree
     ];

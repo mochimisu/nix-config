@@ -14,6 +14,7 @@ in {
     ./keymap.nix
     inputs.catppuccin.nixosModules.catppuccin
     inputs.flatpaks.nixosModules.nix-flatpak
+    inputs.aagl.nixosModules.default
   ];
 
   # Packages
@@ -21,7 +22,7 @@ in {
     bluez
     mesa
     # greetd.tuigreet
-    hyprpaper
+    pkgs.hyprpaper
     networkmanagerapplet
     (chromium.override {enableWideVine = true;})
     cliphist
@@ -31,7 +32,7 @@ in {
     wf-recorder
     wl-clipboard
     inputs.rose-pine-hyprcursor.packages.${pkgs.system}.default
-    xdg-desktop-portal-hyprland
+    pkgs.xdg-desktop-portal-hyprland
 
     hyprpolkitagent
     gnome-keyring
@@ -42,10 +43,12 @@ in {
     pulseaudio
 
     # Apps
-    discord-canary
+    # discord-canary
     # High CPU usage
     # vesktop
+    discord
     proton-pass
+    remmina
     caprine
     hyprpicker
     inputs.zen-browser.packages.${pkgs.system}.default
@@ -60,7 +63,6 @@ in {
 
     # Games
     mangohud
-    heroic
     inputs.nixos-xivlauncher-rb.packages.${pkgs.system}.default
     parsec-bin
     itch
@@ -72,6 +74,7 @@ in {
     obs-studio
     appimage-run
     seventeenlands
+    protonplus
   ];
 
   environment.sessionVariables = {
@@ -91,8 +94,13 @@ in {
       ];
     };
     gamemode.enable = true;
-    hyprland.enable = true;
+    hyprland = {
+      enable = true;
+      package = inputs.hyprland.packages.${pkgs.system}.hyprland;
+    };
   };
+
+  home-manager.extraSpecialArgs = {inherit inputs;};
   services.hypridle.enable = true;
   hardware.bluetooth = {
     enable = true;
@@ -142,6 +150,21 @@ in {
     enable = true;
     package = pkgs.kdePackages.sddm;
     wayland.enable = true;
+    settings = {
+      General = {
+        InputMethod = "qtvirtualkeyboard";
+        GreeterEnvironment = "QT_VIRTUALKEYBOARD_STYLE=compact,QT_VIRTUALKEYBOARD_LAYOUT_PATH=/etc/xdg/qtvirtualkeyboard/layouts,QML2_IMPORT_PATH=/etc/xdg/qtvirtualkeyboard/qml";
+      };
+    };
+    extraPackages = with pkgs; [
+      qt6.qtvirtualkeyboard
+    ];
+  };
+
+  environment.etc = {
+    "xdg/qtvirtualkeyboard/layouts/en_US/main.qml".source = ./apps/qtvirtualkeyboard/layouts/en_US/main.qml;
+    "xdg/qtvirtualkeyboard/qml/QtQuick/VirtualKeyboard/Styles/compact/style.qml".source =
+      ./apps/qtvirtualkeyboard/qml/QtQuick/VirtualKeyboard/Styles/compact/style.qml;
   };
 
   # login to start ssh-agent
@@ -164,4 +187,8 @@ in {
     enable = true;
     flavor = "mocha";
   };
+
+  # zzz
+  nix.settings = inputs.aagl.nixConfig;
+  programs.sleepy-launcher.enable = true;
 }
