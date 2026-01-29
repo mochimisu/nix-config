@@ -2,9 +2,9 @@
 let
   macAppWrappers = [
     {
-      name = "Alacritty";
+      name = "Kitty";
       kind = "app";
-      path = "${pkgs.alacritty}/Applications/Alacritty.app";
+      path = "${pkgs.kitty}/Applications/kitty.app";
     }
     {
       name = "Obsidian";
