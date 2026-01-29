@@ -128,20 +128,74 @@
     executable = true;
     text = ''
       #!/usr/bin/env sh
+      set -eu
 
-      current="$(hyprctl getoption input:kb_variant | awk 'NR==1{print $2}')"
-      case "$current" in
-        dvorak*)
-          hyprctl --batch "\
-            keyword input:kb_layout us,us;\
-            keyword input:kb_variant ,"
-          ;;
-        *)
-          hyprctl --batch "\
-            keyword input:kb_layout us,us;\
-            keyword input:kb_variant dvorak,"
+      state_dir="''${XDG_STATE_HOME:-$HOME/.local/state}/hypr"
+      state_file="''${state_dir}/keyboard-toggle"
+      mkdir -p "''${state_dir}"
+
+      get_opt() {
+        hyprctl getoption "$1" | awk 'NR==1 {
+          if (match($0, /[=:] /)) { print substr($0, RSTART+RLENGTH); exit }
+          print $2
+        }'
+      }
+
+      trim() {
+        printf '%s' "$1" | tr -d '[:space:]'
+      }
+
+      normalize_variant() {
+        case "$1" in
+          ""|"null"|"none")
+            printf ","
+            ;;
+          *)
+            printf "%s" "$1"
+            ;;
+        esac
+      }
+
+      current_layout="$(trim "$(get_opt input:kb_layout)")"
+      current_variant="$(normalize_variant "$(trim "$(get_opt input:kb_variant)")")"
+
+      qwerty_layout="us,us"
+      qwerty_variant=","
+
+      is_qwerty=0
+      case "$current_layout" in
+        us|us,us)
+          case "$current_variant" in
+            ""|",") is_qwerty=1 ;;
+          esac
           ;;
       esac
+
+      if [ "$is_qwerty" -eq 1 ]; then
+        saved_layout=""
+        saved_variant=""
+        if [ -f "$state_file" ]; then
+          saved_layout="$(awk -F= '/^layout=/{print $2}' "$state_file")"
+          saved_variant="$(awk -F= '/^variant=/{print $2}' "$state_file")"
+        fi
+
+        if [ -z "$saved_layout" ]; then
+          saved_layout="us,us"
+          saved_variant="dvorak,"
+        fi
+
+        # Switch back to the saved layout/variant.
+        hyprctl --batch "\
+          keyword input:kb_layout ''${saved_layout};\
+          keyword input:kb_variant ''${saved_variant}"
+      else
+        printf 'layout=%s\nvariant=%s\n' "$current_layout" "$current_variant" > "$state_file"
+
+        # Switch to qwerty; clear variant first to avoid mismatched custom variants.
+        hyprctl --batch "\
+          keyword input:kb_variant ''${qwerty_variant};\
+          keyword input:kb_layout ''${qwerty_layout}"
+      fi
     '';
   };
 }
