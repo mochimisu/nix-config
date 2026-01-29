@@ -17,6 +17,7 @@ in {
     ./keymap.nix
     inputs.catppuccin.nixosModules.catppuccin
     inputs.flatpaks.nixosModules.nix-flatpak
+    # AAGL is for Zenless Zone Zero
     inputs.aagl.nixosModules.default
   ];
 
@@ -54,7 +55,6 @@ in {
     remmina
     caprine
     hyprpicker
-    inputs.zen-browser.packages.${pkgs.system}.default
     vlc
     signal-desktop
     ani-cli

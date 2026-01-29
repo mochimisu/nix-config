@@ -1,4 +1,8 @@
-{pkgs, ...}: {
+{
+  pkgs,
+  inputs,
+  ...
+}: {
   # Nix
   nix = {
     package = pkgs.nixVersions.stable;
@@ -52,7 +56,7 @@
 
     pulsemixer
     spotify-player
-    codex
+    inputs.codex-cli-nix.packages.${pkgs.system}.default
   ];
 
   programs = {

@@ -16,10 +16,7 @@
       url = "github:nix-community/nixvim";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    zen-browser = {
-      url = "github:0xc000022070/zen-browser-flake";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    codex-cli-nix.url = "github:sadjow/codex-cli-nix";
     flatpaks = {
       url = "github:gmodena/nix-flatpak";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -34,10 +31,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     catppuccin.url = "github:catppuccin/nix";
-    nix-snapd = {
-      url = "github:nix-community/nix-snapd";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     aagl = {
       url = "github:ezKEa/aagl-gtk-on-nix";
       inputs.nixpkgs.follows = "nixpkgs";
