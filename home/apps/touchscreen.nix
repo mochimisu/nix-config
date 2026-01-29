@@ -20,6 +20,8 @@ let
 in {
   config = lib.mkIf (pkgs.stdenv.isLinux && enable) (lib.mkMerge [
     {
+      variables.touchscreen.sddmKeyboard = true;
+
       home.sessionVariables = lib.mkIf enableScroll {
         YDOTOOL_SOCKET = ydotoolSocket;
       };

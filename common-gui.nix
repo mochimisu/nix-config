@@ -1,9 +1,12 @@
 {
+  config,
   pkgs,
   inputs,
   lib,
   ...
 }: let
+  touchscreenVars = lib.attrByPath ["touchscreen"] {} config.variables;
+  enableSddmKeyboard = touchscreenVars.sddmKeyboard or false;
   # pkgsPinned = import (builtins.fetchTarball {
   #   # walker broken on 2/13/2025, use a commit from 2/3/2025
   #   url = "https://github.com/NixOS/nixpkgs/archive/9d962cd4ad268f64d125aa8c5599a87a374af78a.tar.gz";
@@ -146,22 +149,25 @@ in {
 
   # sddm
   services.xserver.enable = false;
-  services.displayManager.sddm = {
-    enable = true;
-    package = pkgs.kdePackages.sddm;
-    wayland.enable = true;
-    settings = {
-      General = {
-        InputMethod = "qtvirtualkeyboard";
-        GreeterEnvironment = "QT_VIRTUALKEYBOARD_STYLE=compact,QT_VIRTUALKEYBOARD_LAYOUT_PATH=/etc/xdg/qtvirtualkeyboard/layouts,QML2_IMPORT_PATH=/etc/xdg/qtvirtualkeyboard/qml";
+  services.displayManager.sddm =
+    {
+      enable = true;
+      package = pkgs.kdePackages.sddm;
+      wayland.enable = true;
+    }
+    // lib.optionalAttrs enableSddmKeyboard {
+      settings = {
+        General = {
+          InputMethod = "qtvirtualkeyboard";
+          GreeterEnvironment = "QT_VIRTUALKEYBOARD_STYLE=compact,QT_VIRTUALKEYBOARD_LAYOUT_PATH=/etc/xdg/qtvirtualkeyboard/layouts,QML2_IMPORT_PATH=/etc/xdg/qtvirtualkeyboard/qml";
+        };
       };
+      extraPackages = with pkgs; [
+        qt6.qtvirtualkeyboard
+      ];
     };
-    extraPackages = with pkgs; [
-      qt6.qtvirtualkeyboard
-    ];
-  };
 
-  environment.etc = {
+  environment.etc = lib.mkIf enableSddmKeyboard {
     "xdg/qtvirtualkeyboard/layouts/en_US/main.qml".source = ./apps/qtvirtualkeyboard/layouts/en_US/main.qml;
     "xdg/qtvirtualkeyboard/qml/QtQuick/VirtualKeyboard/Styles/compact/style.qml".source =
       ./apps/qtvirtualkeyboard/qml/QtQuick/VirtualKeyboard/Styles/compact/style.qml;
