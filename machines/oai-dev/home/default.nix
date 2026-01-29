@@ -26,7 +26,7 @@
 
     discord
   ];
-  programs.aerospace.userSettings.start-at-login = true;
+  programs.aerospace.settings.start-at-login = true;
   programs.nixvim = {
     plugins.fzf-lua = {
       settings = {
