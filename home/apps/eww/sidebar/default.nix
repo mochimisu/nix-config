@@ -10,15 +10,9 @@
     if pkgs.stdenv.isLinux && builtins.hasAttr "ewwSidebarScreens" variables
     then variables.ewwSidebarScreens
     else ["0"];
-  configDir = "~/.config/eww/sidebar";
-  barCommands =
-    lib.map (
-      screen: "eww --config ${configDir} open bar_${screen}"
-    )
-    sidebarScreens;
-  startupCommand = ''
-    eww daemon --config ${configDir} && \
-    ${builtins.concatStringsSep " && " barCommands}'';
+  configDir = "${config.home.homeDirectory}/.config/eww/sidebar";
+  startupScript = "${pkgs.writeShellScriptBin "eww-startup" (builtins.readFile ./scripts/startup.sh)}/bin/eww-startup";
+  startupCommand = "${startupScript} ${builtins.concatStringsSep " " (lib.map lib.escapeShellArg sidebarScreens)}";
   onAttachScript = "${pkgs.writeShellScriptBin "eww-on-attach" (builtins.readFile ./scripts/on-attach.sh)}/bin/eww-on-attach";
   cavaBin = "${pkgs.writeShellScriptBin "eww-cava" (builtins.readFile ./scripts/cava.sh)}/bin/eww-cava";
   clockBin = "${pkgs.writeShellScriptBin "eww-clock" (builtins.readFile ./scripts/clock.sh)}/bin/eww-clock";

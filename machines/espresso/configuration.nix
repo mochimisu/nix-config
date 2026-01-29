@@ -3,6 +3,7 @@
 {
 
   networking.hostName = "espresso";
+  variables.touchscreen.sddmKeyboard = true;
   environment.systemPackages = with pkgs; [
     brightnessctl
     bolt

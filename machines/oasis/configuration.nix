@@ -8,6 +8,7 @@
   ...
 }: {
   networking.hostName = "oasis";
+  variables.touchscreen.sddmKeyboard = true;
   networking.networkmanager.wifi.powersave = false;
   environment.systemPackages = with pkgs; [
     brightnessctl

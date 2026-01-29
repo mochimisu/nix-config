@@ -27,6 +27,11 @@ xkb_symbols "dvorak-custom" {
 
     include "level3(ralt_switch)"
 };
+
+xkb_symbols "basic" {
+    include "custom(dvorak-custom)"
+    name[Group1]= "English (Dvorak, custom)";
+};
   '';
 in
 {

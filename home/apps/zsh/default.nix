@@ -55,6 +55,11 @@ in {
       SSH_AUTH_SOCK = lib.optionalString pkgs.stdenv.isLinux "/run/user/$(id -u)/gcr/ssh";
     };
 
+    shellAliases = {
+      cdx = "codex --search --dangerously-bypass-approvals-and-sandbox";
+      cdxr = "cdx resume";
+    };
+
     initContent = ''
       bindkey "^[[A" up-line-or-search
       bindkey "^[[B" down-line-or-search
