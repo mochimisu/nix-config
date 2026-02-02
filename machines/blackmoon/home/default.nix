@@ -50,8 +50,6 @@ in {
     };
 
     windowrule = [
-      "workspace 1 silent, match:class ^(steam_(app_0|proton))$, match:title ^(GRYPHLINK)$"
-      "monitor DP-3, match:class ^(steam_(app_0|proton))$, match:title ^(GRYPHLINK)$"
       "workspace 2 silent, match:class ^(steam)$"
       "workspace 2 silent, match:class ^(discord)$"
       "render_unfocused 1, match:class ^(Monster Hunter Wilds)$"
@@ -69,6 +67,8 @@ in {
       "discord"
       # set DP-3 as primary
       "wlr-randr --output DP-3 --primary"
+      # set Xwayland primary so Proton/Wine sees DP-3 as primary
+      "DISPLAY=:1 xrandr --output DP-3 --primary"
       # todo moon profile
       "openrgb --profile /home/brandon/.config/OpenRGB/moon.orp"
       "mangohud steam -silent"
