@@ -9,6 +9,10 @@
         hiddenMonitors = [];
         cpuTempSensor = "/dev/hwmon_aquaflow_water_temp_sensor/temp1_input";
       };
+      kitty = {
+        sshBackground = "";
+        sshForeground = "";
+      };
       hyprpaper-config = "";
     };
   };
