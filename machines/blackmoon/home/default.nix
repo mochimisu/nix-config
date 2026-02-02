@@ -52,7 +52,7 @@ in {
     windowrule = [
       "workspace 2 silent, match:class ^(steam)$"
       "workspace 2 silent, match:class ^(discord)$"
-      "workspace 2 silent, match:class ^(vesktop)$"
+      "monitor DP-3, match:class ^(steam_app_0)$, title:^(GRYPHLINK)$"
       "render_unfocused 1, match:class ^(Monster Hunter Wilds)$"
       "monitor DP-3 tile, match:class ^(ffxiv_dx11.exe)$"
     ];
