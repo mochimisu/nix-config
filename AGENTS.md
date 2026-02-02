@@ -12,3 +12,7 @@
 - Prefer gating at the NixOS module level using `networking.hostName` from `config`.
 - Example pattern: `lib.mkIf (config.networking.hostName == "<hostname>") { ... }`
 - Alternatively, place the change in `machines/<host>/...` and import it only for that host.
+
+### Workflow notes
+- When adding new Nix files, make sure they are `git add`'d so the flake can build.
+- Store useful information in this `AGENTS.md` for subsequent runs.

@@ -74,6 +74,22 @@ tooltip,
   font-weight: bold;
 }
 
+.qwerty-status {
+  margin: 0.2em 0;
+}
+
+.qwerty-status.qwerty-on { color: #a6e3a1; }
+.qwerty-status.qwerty-off { color: #f38ba8; }
+
+.qwerty-label {
+  font-size: 0.6em;
+}
+
+.qwerty-value {
+  font-size: 0.55em;
+  font-weight: bold;
+}
+
 // Systray {
 .systray > widget > image {
   margin: 0.4em 0;
