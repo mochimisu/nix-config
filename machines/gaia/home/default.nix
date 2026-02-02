@@ -1,6 +1,6 @@
 { ... }: {
   variables.isGui = false;
-  variables.kitty.sshBackground = "#0b2a1f";
+  variables.kitty.sshBackground = "#0a3a21";
 
   imports = [
     ./fastfetch.nix
