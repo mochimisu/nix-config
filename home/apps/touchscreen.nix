@@ -47,11 +47,11 @@ in {
     }
     (lib.mkIf enableHyprgrass {
       wayland.windowManager.hyprland.plugins = [
-        inputs.hyprgrass.packages.${pkgs.system}.default
+        inputs.hyprgrass.packages.${pkgs.stdenv.hostPlatform.system}.default
       ];
 
       wayland.windowManager.hyprland.extraConfig = ''
-        plugin = ${inputs.hyprgrass.packages.${pkgs.system}.default}/lib/libhyprgrass.so
+        plugin = ${inputs.hyprgrass.packages.${pkgs.stdenv.hostPlatform.system}.default}/lib/libhyprgrass.so
       '';
     })
     (lib.mkIf enableHyprgrassBinds {

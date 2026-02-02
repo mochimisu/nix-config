@@ -35,7 +35,7 @@ in {
     slurp
     wf-recorder
     wl-clipboard
-    inputs.rose-pine-hyprcursor.packages.${pkgs.system}.default
+    inputs.rose-pine-hyprcursor.packages.${pkgs.stdenv.hostPlatform.system}.default
     pkgs.xdg-desktop-portal-hyprland
 
     hyprpolkitagent
@@ -61,12 +61,12 @@ in {
     transmission-remote-gtk
     ledger-live-desktop
     protonvpn-gui
-    xfce.thunar
+    thunar
     signal-desktop
 
     # Games
     mangohud
-    inputs.nixos-xivlauncher-rb.packages.${pkgs.system}.default
+    inputs.nixos-xivlauncher-rb.packages.${pkgs.stdenv.hostPlatform.system}.default
     parsec-bin
     itch
     lutris
@@ -99,7 +99,7 @@ in {
     gamemode.enable = true;
     hyprland = {
       enable = true;
-      package = inputs.hyprland.packages.${pkgs.system}.hyprland;
+      package = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
     };
   };
 
