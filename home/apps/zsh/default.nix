@@ -65,6 +65,7 @@ in {
       bindkey "^[[B" down-line-or-search
       # disable ctrl s/q
       stty -ixon
+      export PATH="$HOME/.npm-global/bin:$PATH"
       # local zsh for things like keys
       [ -f ~/.zshrc-local ] && source ~/.zshrc-local
       ${thinFastfetch}/bin/thin-fastfetch

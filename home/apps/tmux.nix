@@ -10,15 +10,18 @@
       bind z choose-session
       bind b last-window
       bind u join-pane -s !
-      set -g default-terminal "screen-256color"
+      set -g default-terminal "tmux-256color"
+      set -ga terminal-overrides ",xterm-kitty:RGB"
 
-# status bar
+# status bar (powerline style)
       set -g status-bg colour236
       set -g status-fg white
-      set -g status-left '#[fg=blue]#S'
-
-# add load information to the right
-      set -g status-right '#[fg=gray]#(uptime | cut -d "," -f 2-)'
+      set -g status-left-length 60
+      set -g status-right-length 60
+      set -g @ssh_bg "colour241"
+      set -g @ssh_fg "white"
+      set -g status-left '#[fg=colour236,bg=blue,bold] #S #[fg=blue,bg=colour236]'
+      set -g status-right '#[fg=#{@ssh_bg},bg=colour236]#[fg=#{@ssh_fg},bg=#{@ssh_bg}] #H '
       set -g history-limit 100000
 
 # remove delay when hitting esc in vim

@@ -54,6 +54,7 @@
           (net-indicator)
           (vol :monitor monitor)
           @pttWidget@
+          (qwerty-indicator)
           (battery)
           (clock)
           ))
@@ -179,3 +180,15 @@
              (label :text {clock.ampm}))
            (box :class "clock-date"
              (label :text {clock.date}))))
+
+    (defpoll qwerty-state
+      :interval "1s"
+      "@qwertyBin@")
+
+    (defwidget qwerty-indicator []
+      (box :class { "qwerty-status " + (qwerty-state == "qwerty" ? "qwerty-on" : "qwerty-off") }
+           :orientation "v"
+           :halign "center"
+           :space-evenly false
+           (label :text "KEY" :class "qwerty-label")
+           (label :text {qwerty-state == "qwerty" ? "QWER" : "DEF"} :class "qwerty-value")))

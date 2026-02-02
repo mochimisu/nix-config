@@ -21,6 +21,7 @@
   bluetoothBin = "${pkgs.writeShellScriptBin "eww-bluetooth" (builtins.readFile ./scripts/bluetooth.sh)}/bin/eww-bluetooth";
   audioSinksBin = "${pkgs.writeShellScriptBin "eww-audio-sinks" (builtins.readFile ./scripts/audio-sinks.sh)}/bin/eww-audio-sinks";
   volBin = "${pkgs.writeShellScriptBin "eww-volume" (builtins.readFile ./scripts/vol.sh)}/bin/eww-volume";
+  qwertyBin = "${pkgs.writeShellScriptBin "eww-qwerty" (builtins.readFile ./scripts/qwerty.sh)}/bin/eww-qwerty";
   toggleWindow = "EWW_CONFIG=${configDir} ${pkgs.writeShellScriptBin "eww-toggle-window" (builtins.readFile ./scripts/toggle-window.sh)}/bin/eww-toggle-window";
   pttStateFile = variables.ewwPttStateFile or "";
   pttDefs =
@@ -72,7 +73,7 @@ in {
             sidebarScreens
           )}
         '';
-        inherit cavaBin clockBin networkBin batteryBin bluetoothBin audioSinksBin volBin toggleWindow;
+        inherit cavaBin clockBin networkBin batteryBin bluetoothBin audioSinksBin volBin qwertyBin toggleWindow;
         inherit pttDefs pttWidget;
         iconSize = variables.ewwSidebarIconSize or "16";
       };

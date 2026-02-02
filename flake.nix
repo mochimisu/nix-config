@@ -19,7 +19,6 @@
     codex-cli-nix.url = "github:sadjow/codex-cli-nix";
     flatpaks = {
       url = "github:gmodena/nix-flatpak";
-      inputs.nixpkgs.follows = "nixpkgs";
     };
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
     nix-darwin = {

@@ -52,7 +52,6 @@ in {
     windowrule = [
       "workspace 2 silent, match:class ^(steam)$"
       "workspace 2 silent, match:class ^(discord)$"
-      "workspace 2 silent, match:class ^(vesktop)$"
       "render_unfocused 1, match:class ^(Monster Hunter Wilds)$"
       "monitor DP-3 tile, match:class ^(ffxiv_dx11.exe)$"
     ];
@@ -68,6 +67,8 @@ in {
       "discord"
       # set DP-3 as primary
       "wlr-randr --output DP-3 --primary"
+      # set Xwayland primary so Proton/Wine sees DP-3 as primary
+      "DISPLAY=:1 xrandr --output DP-3 --primary"
       # todo moon profile
       "openrgb --profile /home/brandon/.config/OpenRGB/moon.orp"
       "mangohud steam -silent"
@@ -89,16 +90,6 @@ in {
       nvidia_anti_flicker = 0;
     };
 
-    # These were once needed for fixing stutter frames in games but seems like its been fixed
-    # debug = {
-    #   # whole screen is re-rendered every frame, but reduces flickering
-    #   damage_tracking = 0;
-    # };
-    # render = {
-    #   # both needed to be disabled to prevent stutter frames in ff14
-    #   explicit_sync = 0;
-    #   explicit_sync_kms = 0;
-    # };
     # misc = {
     #   # potentially reducing flicker in electron apps
     #   # vrr = "0";
