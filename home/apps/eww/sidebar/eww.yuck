@@ -186,7 +186,9 @@
       "@qwertyBin@")
 
     (defwidget qwerty-indicator []
-      (box :class { "qwerty-status " + (qwerty-state == "qwerty" ? "qwerty-on" : "qwerty-off") }
+      (box
+           :visible {qwerty-state == "qwerty"}
+           :class { "qwerty-status " + (qwerty-state == "qwerty" ? "qwerty-on" : "qwerty-off") }
            :orientation "v"
            :halign "center"
            :space-evenly false
