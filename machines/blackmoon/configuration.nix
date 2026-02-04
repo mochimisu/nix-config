@@ -61,5 +61,20 @@
   # flatpak
   services.flatpak.enable = true;
 
+  systemd.services.nvidia-undervolt = {
+    description = "Apply slight RTX 4090 underclock/undervolt";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "multi-user.target" "nvidia-persistenced.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = [
+        "${config.system.path}/bin/nvidia-smi -pm 1"
+        "${config.system.path}/bin/nvidia-smi -pl 430"
+        "${config.system.path}/bin/nvidia-smi --lock-gpu-clocks=2300,2390"
+      ];
+    };
+  };
+
   system.stateVersion = "24.11";
 }
