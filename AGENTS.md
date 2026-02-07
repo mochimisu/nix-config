@@ -16,3 +16,6 @@
 ### Workflow notes
 - When adding new Nix files, make sure they are `git add`'d so the flake can build.
 - Store useful information in this `AGENTS.md` for subsequent runs.
+
+### Host notes
+- Gaia runs the Openclaw NixOS container in `machines/gaia/openclaw-container.nix` (container name: `gaiaclaw`).

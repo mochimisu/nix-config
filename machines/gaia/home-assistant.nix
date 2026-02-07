@@ -4,7 +4,9 @@
     openFirewall = true;
     configDir = "/earth/home-assistant";
     extraComponents = [
+      "homeassistant_connect_zbt2"
       "met"
+      "otbr"
       "samsungtv"
       "tesla_wall_connector"
       "thread"
@@ -15,9 +17,11 @@
       ps.androidtvremote2
       ps.beautifulsoup4
       ps.gtts
+      ps.ha-silabs-firmware-client
       ps.python-roborock
       ps.pychromecast
       ps.python-otbr-api
+      ps.universal-silabs-flasher
       ps.uiprotect
     ];
     customComponents = [
@@ -33,6 +37,10 @@
       scene = "!include scenes.yaml";
     };
   };
+
+  users.users.hass.extraGroups = [
+    "dialout"
+  ];
 
   # mDNS is required for many Matter devices (discovery + commissioning).
   services.avahi = {
@@ -58,24 +66,74 @@
       cmd = [
         "--primary-interface"
         "enp5s0"
+        "--paa-root-cert-dir"
+        "/data/paa-root-certs"
       ];
       volumes = [
         "/earth/home-assistant/matter-server:/data"
         "/earth/home-assistant/matter-server/.matter_server:/root/.matter_server"
+        "/earth/home-assistant/matter-server/paa-root-certs:/data/paa-root-certs"
       ];
       extraOptions = [
         "--network=host"
       ];
     };
+    containers.otbr = {
+      image = "openthread/otbr:latest";
+      autoStart = true;
+      environment = {
+        BACKBONE_INTERFACE = "enp5s0";
+        FIREWALL = "0";
+        INFRA_IF_NAME = "enp5s0";
+        NAT64 = "0";
+      };
+      cmd = [
+        "--radio-url"
+        "spinel+hdlc+uart:///dev/ttyACM0?uart-baudrate=460800"
+      ];
+      volumes = [
+        "/earth/home-assistant/otbr:/data"
+      ];
+      extraOptions = [
+        "--network=host"
+        "--cap-add=NET_ADMIN"
+        "--cap-add=NET_RAW"
+        "--device=/dev/serial/by-id/usb-Nabu_Casa_ZBT-2_DCB4D9123AF0-if00:/dev/ttyACM0"
+        "--device=/dev/net/tun"
+      ];
+    };
   };
+
+  boot.kernel.sysctl = {
+    "net.ipv4.ip_forward" = 1;
+    "net.ipv6.conf.all.forwarding" = 1;
+    "net.ipv6.conf.default.forwarding" = 1;
+    "net.ipv6.conf.all.disable_ipv6" = 0;
+    "net.ipv6.conf.default.disable_ipv6" = 0;
+  };
+  boot.kernelModules = [
+    "ip6table_filter"
+    "ip6table_nat"
+    "iptable_filter"
+    "iptable_nat"
+    "nf_conntrack"
+    "nf_nat"
+  ];
 
   systemd.tmpfiles.rules = [
     "d /earth/home-assistant 0750 hass hass - -"
     "d /earth/home-assistant/matter-server 0755 root root - -"
     "d /earth/home-assistant/matter-server/.matter_server 0755 root root - -"
+    "d /earth/home-assistant/matter-server/paa-root-certs 0755 root root - -"
+    "d /earth/home-assistant/otbr 0755 root root - -"
   ];
 
   systemd.services."podman-matter-server".preStart = ''
     ${pkgs.coreutils}/bin/mkdir -p /earth/home-assistant/matter-server/.matter_server
+    ${pkgs.coreutils}/bin/mkdir -p /earth/home-assistant/matter-server/paa-root-certs
+  '';
+
+  systemd.services."podman-otbr".preStart = ''
+    ${pkgs.coreutils}/bin/mkdir -p /earth/home-assistant/otbr
   '';
 }
