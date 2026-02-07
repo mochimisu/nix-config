@@ -23,6 +23,9 @@
     enableHyprgrass = true;
     enableScroll = true;
     onScreenKeyboard = true;
+    hyprgrassBinds = [
+      ",tap:3,exec,${config.home.homeDirectory}/.config/hypr/three-finger-double-tap.sh"
+    ];
   };
   wayland.windowManager.hyprland.settings = {
     monitors = {
@@ -73,6 +76,28 @@
 
       hyprctl --batch "keyword monitor DP-1,1920x1080@120,0x0,1; keyword monitor eDP-1,2560x1600@180,1920x0,1.25"
       touch "''${STATE_FILE}"
+    '';
+  };
+
+  home.file.".config/hypr/three-finger-double-tap.sh" = {
+    executable = true;
+    text = ''
+      #!/usr/bin/env sh
+      set -eu
+
+      STATE_FILE="''${XDG_RUNTIME_DIR:-/tmp}/hyprgrass-3tap"
+      now="$(date +%s%3N)"
+
+      if [ -f "$STATE_FILE" ]; then
+        last="$(cat "$STATE_FILE" 2>/dev/null || echo 0)"
+        delta=$((now - last))
+        if [ "$delta" -le 350 ]; then
+          rm -f "$STATE_FILE"
+          exec kitty
+        fi
+      fi
+
+      echo "$now" > "$STATE_FILE"
     '';
   };
 }
