@@ -33,7 +33,9 @@
         "STATE_FILE=${pttStateFile}; if [ -f \"$STATE_FILE\" ]; then tr -d '[:space:]' < \"$STATE_FILE\"; else echo enabled; fi")
 
       (defwidget ptt-status []
-        (box :class { "ptt-status " + (ptt-state == "enabled" ? "ptt-on" : "ptt-off") }
+        (box
+             :visible {ptt-state == "enabled"}
+             :class { "ptt-status " + (ptt-state == "enabled" ? "ptt-on" : "ptt-off") }
              :orientation "v"
              :halign "center"
              :space-evenly false

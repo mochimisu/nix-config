@@ -9,7 +9,7 @@ let
   ydotoolSocket = touchscreenVars.ydotoolSocket or "/run/ydotoold.socket";
   hyprgrassBinds = (touchscreenVars.hyprgrassBinds or [])
     ++ lib.optionals onScreenKeyboard [
-      ",swipe:4:u,exec,wvkbd-mobintl -L 300"
+      ",swipe:4:u,exec,wvkbd-mobintl -H 600 -L 600"
       ",swipe:4:d,exec,pkill wvkbd-mobintl"
     ];
   enableHyprgrassBinds = enableHyprgrass && hyprgrassBinds != [];
@@ -20,8 +20,6 @@ let
 in {
   config = lib.mkIf (pkgs.stdenv.isLinux && enable) (lib.mkMerge [
     {
-      variables.touchscreen.sddmKeyboard = true;
-
       home.sessionVariables = lib.mkIf enableScroll {
         YDOTOOL_SOCKET = ydotoolSocket;
       };

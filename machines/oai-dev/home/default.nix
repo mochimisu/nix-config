@@ -26,7 +26,7 @@
 
     discord
   ];
-  programs.aerospace.userSettings.start-at-login = true;
+  programs.aerospace.settings.start-at-login = true;
   programs.nixvim = {
     plugins.fzf-lua = {
       settings = {
@@ -35,6 +35,9 @@
         };
       };
     };
+    plugins.lsp.capabilities = ''
+      capabilities.workspace.didChangeWatchedFiles.dynamicRegistration = false
+    '';
   };
   programs.wofi.enable = lib.mkForce false;
   programs.spotify-player.enable = lib.mkForce false;
@@ -58,6 +61,10 @@
         "python.pythonPath": "/Users/brandonw/.virtualenvs/openai/bin/python",
     }
   '';
+  home.file.".config/lazygit/config.yml".text = ''
+    git:
+      autoFetch: false
+  '';
 
   home.shellAliases = {
     "nix-rs" = lib.mkForce "sudo nix run nix-darwin -- switch --flake ${config.home.homeDirectory}/stuff/nix-config#oai-dev";
@@ -74,45 +81,26 @@
     source ~/.zshenv-local
   '';
 
-  # Use alacritty over kitty on macOS
-  programs.kitty.enable = lib.mkForce false;
-  programs.alacritty = {
-    enable = true;
-
-    # Main Alacritty settings
+  # Prefer kitty on macOS for this machine.
+  programs.alacritty.enable = lib.mkForce false;
+  programs.kitty = {
+    enable = lib.mkForce true;
+    font = {
+      name = "CaskaydiaCove Nerd Font";
+      size = 13;
+    };
+    keybindings = {
+      "cmd+enter" = "toggle_fullscreen";
+    };
     settings = {
-      font = {
-        # Global font size
-        size = 13.0;
-
-        # Font faces
-        normal = {
-          family = "CaskaydiaCove Nerd Font";
-          style = "Regular";
-        };
-        bold = {
-          family = "CaskaydiaCove Nerd Font";
-          style = "Bold";
-        };
-        italic = {
-          family = "CaskaydiaCove Nerd Font";
-          style = "Italic";
-        };
-      };
-
-      # Custom key binding
-      keyboard.bindings = [
-        {
-          action = "ToggleSimpleFullscreen";
-          key = "Return";
-          mods = "Super";
-        }
-      ];
-
-      window = {
-        opacity = 0.8;
-        decorations = "transparent";
-      };
+      allow_remote_control = "yes";
+      background_opacity = 0.8;
+      font_family = "CaskaydiaCove Nerd Font";
+      bold_font = "CaskaydiaCove Nerd Font Bold";
+      italic_font = "CaskaydiaCove Nerd Font Italic";
+      hide_window_decorations = "yes";
+      macos_traditional_fullscreen = true;
+      macos_thicken_font = 0.05;
     };
   };
 }

@@ -1,0 +1,204 @@
+--- a/keyboard.c	2026-02-06 15:18:48.476689535 -0800
++++ b/keyboard.c	2026-02-06 15:19:09.830239630 -0800
+@@ -377,27 +377,11 @@
+ void
+ kbd_motion_key(struct kbd *kb, uint32_t time, uint32_t x, uint32_t y)
+ {
+-    // Output intersecting keys
+-    // (for external 'swiping'-based accelerators).
+-    if (kb->print_intersect) {
+-        if (kb->last_press) {
+-            kbd_unpress_key(kb, time);
+-            // Redraw last press as a swipe.
+-            kbd_draw_key(kb, kb->last_swipe, Swipe);
+-        }
+-        struct key *intersect_key;
+-        intersect_key = kbd_get_key(kb, x, y);
+-        if (intersect_key && (!kb->last_swipe ||
+-                              intersect_key->label != kb->last_swipe->label)) {
+-            kbd_print_key_stdout(kb, intersect_key);
+-            kb->last_swipe = intersect_key;
+-            kbd_draw_key(kb, kb->last_swipe, Swipe);
+-        }
+-    } else {
+-        kbd_unpress_key(kb, time);
+-    }
+-
+-    kbd_clear_last_popup(kb);
++    (void)kb;
++    (void)time;
++    (void)x;
++    (void)y;
++    return;
+ }
+ 
+ void
+@@ -618,22 +602,7 @@
+     drw_draw_text(kb->surf, scheme->text, k->x, k->y, k->w, k->h,
+                   KBD_KEY_BORDER, label, scheme->font_description);
+ 
+-    if (type == Press || type == Unpress) {
+-        kbd_clear_last_popup(kb);
+-
+-        kb->last_popup_x = k->x;
+-        kb->last_popup_y = kb->h + k->y - k->h;
+-        kb->last_popup_w = k->w;
+-        kb->last_popup_h = k->h;
+-
+-        drw_fill_rectangle(kb->popup_surf, scheme->bg, k->x,
+-                           kb->last_popup_y, k->w, k->h, scheme->rounding);
+-        draw_inset(kb->popup_surf, k->x, kb->last_popup_y, k->w, k->h,
+-                   KBD_KEY_BORDER, scheme->high, scheme->rounding);
+-        drw_draw_text(kb->popup_surf, scheme->text, k->x, kb->last_popup_y,
+-                      k->w, k->h, KBD_KEY_BORDER, label,
+-                      scheme->font_description);
+-    }
++    /* popups disabled */
+ }
+ 
+ void
+--- a/main.c	2026-02-06 15:18:48.481691948 -0800
++++ b/main.c	2026-02-06 15:19:24.202744090 -0800
+@@ -67,6 +67,7 @@
+ static bool run_display = true;
+ static int cur_x = -1, cur_y = -1;
+ static bool cur_press = false;
++static int32_t active_touch_id = -1;
+ static struct kbd keyboard;
+ static uint32_t height, normal_height, landscape_height;
+ static int rounding = DEFAULT_ROUNDING;
+@@ -235,6 +236,12 @@
+     touch_x = wl_fixed_to_int(x);
+     touch_y = wl_fixed_to_int(y);
+ 
++    if (active_touch_id != -1 && id != active_touch_id) {
++        return;
++    }
++
++    active_touch_id = id;
++
+     kbd_unpress_key(&keyboard, time);
+ 
+     next_key = kbd_get_key(&keyboard, touch_x, touch_y);
+@@ -255,6 +262,11 @@
+         return;
+     }
+ 
++    if (id != active_touch_id) {
++        return;
++    }
++
++    active_touch_id = -1;
+     kbd_release_key(&keyboard, time);
+ }
+ 
+@@ -271,6 +283,10 @@
+     touch_x = wl_fixed_to_int(x);
+     touch_y = wl_fixed_to_int(y);
+ 
++    if (id != active_touch_id) {
++        return;
++    }
++
+     kbd_motion_key(&keyboard, time, touch_x, touch_y);
+ }
+ 
+@@ -282,6 +298,10 @@
+ void
+ wl_touch_cancel(void *data, struct wl_touch *wl_touch)
+ {
++    if (active_touch_id != -1) {
++        active_touch_id = -1;
++        kbd_release_key(&keyboard, 0);
++    }
+ }
+ 
+ void
+@@ -307,6 +327,11 @@
+ wl_pointer_leave(void *data, struct wl_pointer *wl_pointer, uint32_t serial,
+                  struct wl_surface *surface)
+ {
++    if (cur_press) {
++        cur_press = false;
++        kbd_release_key(&keyboard, 0);
++    }
++
+     cur_x = cur_y = -1;
+ }
+ 
+@@ -314,56 +339,37 @@
+ wl_pointer_motion(void *data, struct wl_pointer *wl_pointer, uint32_t time,
+                   wl_fixed_t surface_x, wl_fixed_t surface_y)
+ {
+-    if(!layer_surface_configured || !popup_xdg_surface_configured) {
+-        return;
+-    }
+-
+-    cur_x = wl_fixed_to_int(surface_x);
+-    cur_y = wl_fixed_to_int(surface_y);
+-
+-    if (cur_press) {
+-        kbd_motion_key(&keyboard, time, cur_x, cur_y);
+-    }
++    (void)data;
++    (void)wl_pointer;
++    (void)time;
++    (void)surface_x;
++    (void)surface_y;
++    return;
+ }
+ 
+ void
+ wl_pointer_button(void *data, struct wl_pointer *wl_pointer, uint32_t serial,
+                   uint32_t time, uint32_t button, uint32_t state)
+ {
+-    if(!layer_surface_configured || !popup_xdg_surface_configured) {
+-        return;
+-    }
+-
+-    struct key *next_key;
+-    cur_press = state == WL_POINTER_BUTTON_STATE_PRESSED;
+-
+-    if (cur_press) {
+-        kbd_unpress_key(&keyboard, time);
+-    } else {
+-        kbd_release_key(&keyboard, time);
+-    }
+-
+-    if (cur_press && cur_x >= 0 && cur_y >= 0) {
+-        next_key = kbd_get_key(&keyboard, cur_x, cur_y);
+-        if (next_key) {
+-            kbd_press_key(&keyboard, next_key, time);
+-        } else if (keyboard.compose) {
+-            keyboard.compose = 0;
+-            kbd_switch_layout(&keyboard, keyboard.prevlayout,
+-                              keyboard.last_abc_index);
+-        }
+-    }
++    (void)data;
++    (void)wl_pointer;
++    (void)serial;
++    (void)time;
++    (void)button;
++    (void)state;
++    return;
+ }
+ 
+ void
+ wl_pointer_axis(void *data, struct wl_pointer *wl_pointer, uint32_t time,
+                 uint32_t axis, wl_fixed_t value)
+ {
+-    if(!layer_surface_configured || !popup_xdg_surface_configured) {
+-        return;
+-    }
+-
+-    kbd_next_layer(&keyboard, NULL, (value >= 0));
++    (void)data;
++    (void)wl_pointer;
++    (void)time;
++    (void)axis;
++    (void)value;
++    return;
+ }
+ 
+ void
