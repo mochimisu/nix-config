@@ -90,13 +90,10 @@ in {
       nvidia_anti_flicker = 0;
     };
 
-    # misc = {
-    #   # potentially reducing flicker in electron apps
-    #   # vrr = "0";
-    #   # vfr = "0" means every single frame is rendered, not great
-    #   # but allows nvidia_anti_flicker to be set to 0
-    #   # vfr = 0;
-    # };
+    misc = {
+      # VRR can introduce microstutter on NVIDIA; disable to test.
+      vrr = "0";
+    };
     cursor = {
       default_monitor = "DP-3";
     };
