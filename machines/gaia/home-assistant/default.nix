@@ -1,10 +1,15 @@
 {pkgs, ...}: {
+  imports = [
+    ./devices.nix
+  ];
+
   services.home-assistant = {
     enable = true;
     openFirewall = true;
     configDir = "/earth/home-assistant";
     extraComponents = [
       "homeassistant_connect_zbt2"
+      "mcp_server"
       "met"
       "otbr"
       "samsungtv"
@@ -13,11 +18,18 @@
       "unifiprotect"
     ];
     extraPackages = ps: [
+      ps."aiohttp-sse"
+      # Required for HomeKit Device / HomeKit Controller (e.g. Aqara FP2).
+      ps.aiohomekit
       ps.aiohomeconnect
       ps.androidtvremote2
       ps.beautifulsoup4
       ps.gtts
       ps.ha-silabs-firmware-client
+      # Required for HomeKit Bridge.
+      ps.hap-python
+      # Required for Apple TV integration config flow.
+      ps.pyatv
       ps.python-roborock
       ps.pychromecast
       ps.python-otbr-api

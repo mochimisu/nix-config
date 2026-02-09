@@ -16,6 +16,7 @@
 ### Workflow notes
 - When adding new Nix files, make sure they are `git add`'d so the flake can build.
 - Store useful information in this `AGENTS.md` for subsequent runs.
+- Store secrets (tokens, passwords, API keys) in `.AGENTS.LOCAL.md` only and keep it out of git.
 
 ### Host notes
 - Gaia runs the Openclaw NixOS container in `machines/gaia/openclaw-container.nix` (container name: `gaiaclaw`).

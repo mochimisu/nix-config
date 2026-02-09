@@ -78,7 +78,7 @@
 in {
   imports = [
     ./transmission.nix
-    ./home-assistant.nix
+    ./home-assistant
     ./openclaw-container.nix
     ./win11-vfio.nix
   ];
