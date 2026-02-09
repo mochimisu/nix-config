@@ -9,6 +9,9 @@
 }: {
   networking.hostName = "oasis";
   variables.touchscreen.sddmKeyboard = true;
+  # mt7925 stability: prefer iwd and avoid legacy wext path.
+  networking.networkmanager.wifi.backend = "iwd";
+  networking.wireless.driver = "nl80211";
   networking.networkmanager.wifi.powersave = false;
   environment.systemPackages = with pkgs; [
     brightnessctl
@@ -46,6 +49,10 @@
 
   # fix kernel hang on suspend + prevent EC from waking on AC power changes
   boot.kernelParams = ["amdgpu.gpu_recovery=1" "acpi.ec_no_wakeup=1"];
+  # MT7925 stability: disable PCIe ASPM on this device.
+  boot.extraModprobeConfig = ''
+    options mt7925e disable_aspm=Y
+  '';
 
   # fix trackpad
   environment.etc."scripts/touchpad-fix.sh".source = pkgs.writeScript "touchpad-fix" ''

@@ -19,6 +19,7 @@ in {
       sort = true;
       icon-theme = "Papirus-Dark";
       transparency = "real";
+      "click-to-exit" = false;
       "kb-mode-next" = "Super+Right";
       "kb-mode-previous" = "Super+Left";
     };
@@ -138,6 +139,8 @@ in {
       "$menuAll" = "rofi-toggle -show run";
       layerrule = [
         "match:namespace ^(rofi)$, animation fade, blur on, ignore_alpha 0, dim_around on"
+        "match:namespace ^(wvkbd)$, order 0"
+        "match:namespace ^(rofi)$, order 1"
       ];
     };
   };
@@ -149,7 +152,7 @@ in {
         if pgrep -x rofi > /dev/null; then
           pkill rofi
         else
-          rofi "$@"
+          rofi -no-click-to-exit "$@"
         fi
       '')
     ];
