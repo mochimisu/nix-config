@@ -38,7 +38,7 @@ in {
     monitors = {
       monitor = [
         "DP-1,2560x1440@120,3440x-560,1,transform,1"
-        "DP-3,3440x1440@175,0x0,1"
+        "DP-3,3440x1440@175,0x0,1,bitdepth,10"
         "HDMI-A-1,480x1920@60,4880x1400,1,transform,1"
       ];
       workspace = [
@@ -77,17 +77,34 @@ in {
     # nvidia stuff, move to shared
     nvidia = {
       env = [
+        # NVIDIA VA-API decode path.
         "LIBVA_DRIVER_NAME,nvidia"
         "XDG_SESSION_TYPE,wayland"
+        # Force GBM NVIDIA backend for Wayland.
         "GBM_BACKEND,nvidia-drm"
         "__GLX_VENDOR_LIBRARY_NAME,nvidia"
         "NVD_BACKEND,direct"
         "NIXOS_OZONE_WL=1"
+        # Enable HDR WSI path for Vulkan clients.
+        "ENABLE_HDR_WSI=1"
+        # Enable HDR metadata path for DXVK titles.
+        "DXVK_HDR=1"
+        # Enable HDR for vkd3d-proton (D3D12) titles.
+        "VKD3D_CONFIG=hdr"
       ];
     };
 
     opengl = {
       nvidia_anti_flicker = 0;
+    };
+
+    render = {
+      # Enable color-management pipeline required for HDR output.
+      cm_enabled = true;
+      # Fullscreen passthrough for direct HDR presentation.
+      cm_fs_passthrough = 2;
+      # Auto-enable HDR when the app advertises HDR output.
+      cm_auto_hdr = 2;
     };
 
     misc = {

@@ -38,6 +38,7 @@
     tailscale
     cloudflare-warp
     neovim
+    ripgrep
     wget
     git
     fastfetch
