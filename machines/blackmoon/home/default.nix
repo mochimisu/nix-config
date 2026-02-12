@@ -38,7 +38,7 @@ in {
     monitors = {
       monitor = [
         "DP-1,2560x1440@120,3440x-560,1,transform,1"
-        "DP-3,3440x1440@175,0x0,1,bitdepth,10,cm,hdr,sdrbrightness,1.2,sdrsaturation,1.08"
+        "DP-3,3440x1440@175,0x0,1,bitdepth,10,cm,hdr,sdrbrightness,1.25,sdrsaturation,1.15"
         "HDMI-A-1,480x1920@60,4880x1400,1,transform,1"
       ];
       workspace = [
