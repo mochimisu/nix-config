@@ -52,6 +52,7 @@
     fx
     unzip
     unrar
+    zlib
     sshfs
     lf
 
