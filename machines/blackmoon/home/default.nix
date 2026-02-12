@@ -117,6 +117,7 @@ in {
     bind = [
       "$mod, F2, exec, ~/.config/hypr/gamemode2.sh"
       "$mod, F3, exec, ~/.config/hypr/toggle-ptt.sh"
+      "$mod, F6, exec, ~/.config/hypr/toggle-hdr.sh"
       ", mouse:275, exec, ~/.config/hypr/ptt-mouse.sh press"
     ];
     bindr = [
@@ -142,6 +143,34 @@ in {
           exit
       fi
       hyprctl reload
+    '';
+  };
+
+  home.file.".config/hypr/toggle-hdr.sh" = {
+    executable = true;
+    text = ''
+      state_file="''${XDG_STATE_HOME:-$HOME/.local/state}/hypr/hdr-enabled"
+      mkdir -p "''${state_file%/*}"
+
+      HDR_MONITOR="DP-3,3440x1440@175,0x0,1,bitdepth,10,cm,hdr,sdrbrightness,1.25,sdrsaturation,1.15"
+      SDR_MONITOR="DP-3,3440x1440@175,0x0,1,bitdepth,10"
+
+      cm_enabled=$(hyprctl getoption render:cm_enabled | awk 'NR==1{print $2}')
+      if [ "''${cm_enabled:-0}" = "1" ]; then
+        printf "0" > "$state_file"
+        hyprctl --batch "\
+          keyword render:cm_enabled 0;\
+          keyword render:cm_fs_passthrough 0;\
+          keyword render:cm_auto_hdr 0;\
+          keyword monitor $SDR_MONITOR"
+      else
+        printf "1" > "$state_file"
+        hyprctl --batch "\
+          keyword render:cm_enabled 1;\
+          keyword render:cm_fs_passthrough 2;\
+          keyword render:cm_auto_hdr 2;\
+          keyword monitor $HDR_MONITOR"
+      fi
     '';
   };
   home.file.".config/hypr/ptt-mouse.sh" = {
