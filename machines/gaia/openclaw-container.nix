@@ -3,11 +3,23 @@ let
   containerName = "gaiaclaw";
   openclawUser = "openclaw";
   openclawHome = "/var/lib/openclaw";
+  hostMountRoot = "/home/brandon/containers/${containerName}";
+  hostContainerRoot = "/var/lib/nixos-containers/${containerName}";
 in {
+  systemd.tmpfiles.rules = [
+    "d /home/brandon/containers 0755 brandon users -"
+    "d ${hostMountRoot} 0755 brandon users -"
+    "L+ ${hostMountRoot}/rootfs - brandon users - ${hostContainerRoot}"
+  ];
+
   containers.${containerName} = {
     autoStart = true;
     privateNetwork = true;
     macvlans = [ "enp5s0" ];
+    extraVeths.host = {
+      hostAddress = "169.254.254.1";
+      localAddress = "169.254.254.2";
+    };
 
     config = { pkgs, ... }: {
       imports = [
@@ -16,6 +28,7 @@ in {
 
       networking.hostName = containerName;
       networking.useDHCP = lib.mkForce true;
+      networking.hosts."169.254.254.1" = [ "gaia-host" ];
       networking.firewall.allowedTCPPorts = [ 18789 ];
 
       nixpkgs.overlays = [

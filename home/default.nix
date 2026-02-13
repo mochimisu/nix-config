@@ -28,7 +28,7 @@ in {
     # status bar, choose one
     # ./apps/hyprpanel.nix # customization not as deep as id like
     # ./apps/waybar # horizontal only
-    ./apps/eww # high cpu usage
+    ./apps/quickshell
 
     # notification manager
     # (don't need with hyprpanel)
@@ -62,6 +62,15 @@ in {
     "nixpkgs" = "nix search nixpkgs";
     "nixdir" = "cd ${configsDir}";
     "steam" = "mangohud steam";
+  };
+
+  xdg.mimeApps = lib.mkIf isLinuxGui {
+    enable = true;
+    defaultApplications = {
+      "x-scheme-handler/http" = "chromium.desktop";
+      "x-scheme-handler/https" = "chromium.desktop";
+      "text/html" = "chromium.desktop";
+    };
   };
 
   # Dark mode
