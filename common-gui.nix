@@ -30,6 +30,7 @@ in {
     networkmanagerapplet
     (chromium.override {enableWideVine = true;})
     cliphist
+    xdg-utils
 
     grim
     slurp

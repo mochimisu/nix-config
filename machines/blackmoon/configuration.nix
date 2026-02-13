@@ -166,12 +166,25 @@
     "NVreg_EnableGpuFirmware=0"
   ];
 
+  # Pin CPU to performance governor for lower frametime variance during gaming.
+  powerManagement.cpuFreqGovernor = "performance";
+
+  # Use sched_ext with lavd policy for gaming-oriented scheduling behavior.
+  services.scx = {
+    enable = true;
+    scheduler = "scx_lavd";
+  };
+
   # services for fusion360
   # hardware.spacenavd.enable = true;
   # services.samba.enable = true;
   # consistent udev for highflownext
   services.udev.extraRules = ''
     ACTION=="add", SUBSYSTEM=="hwmon", ATTRS{idVendor}=="0c70", ATTRS{idProduct}=="f012", ATTRS{serial}=="03550-34834", RUN+="/bin/sh -c 'ln -s /sys$devpath /dev/highflow_next'"
+    # Prefer "none" for NVMe and "kyber" for non-rotational SATA/virt disks.
+    ACTION=="add", SUBSYSTEM=="block", KERNEL=="nvme[0-9]n[0-9]", ATTR{queue/rotational}=="0", ATTR{queue/scheduler}="none"
+    ACTION=="add", SUBSYSTEM=="block", KERNEL=="sd[a-z]", ATTR{queue/rotational}=="0", ATTR{queue/scheduler}="kyber"
+    ACTION=="add", SUBSYSTEM=="block", KERNEL=="vd[a-z]", ATTR{queue/rotational}=="0", ATTR{queue/scheduler}="kyber"
   '';
 
   # fix sddm, eDP-3 (ultrawide) doesnt show with wayland.

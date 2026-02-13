@@ -2,7 +2,22 @@
   pkgs,
   inputs,
   ...
-}: {
+}: let
+  codexBase = inputs.codex-cli-nix.packages.${pkgs.stdenv.hostPlatform.system}.default;
+  codexCli = pkgs.symlinkJoin {
+    name = "codex-cli-with-zlib";
+    paths = [codexBase];
+    nativeBuildInputs = [pkgs.makeWrapper];
+    postBuild = ''
+      if [ -f "$out/bin/codex" ]; then
+        wrapProgram "$out/bin/codex" --prefix LD_LIBRARY_PATH : ${pkgs.zlib}/lib
+      fi
+      if [ -f "$out/bin/codex-raw" ]; then
+        wrapProgram "$out/bin/codex-raw" --prefix LD_LIBRARY_PATH : ${pkgs.zlib}/lib
+      fi
+    '';
+  };
+in {
   # Nix
   nix = {
     package = pkgs.nixVersions.stable;
@@ -38,6 +53,7 @@
     tailscale
     cloudflare-warp
     neovim
+    ripgrep
     wget
     git
     fastfetch
@@ -51,12 +67,14 @@
     fx
     unzip
     unrar
+    zlib
     sshfs
     lf
 
     pulsemixer
     spotify-player
-    inputs.codex-cli-nix.packages.${pkgs.stdenv.hostPlatform.system}.default
+    # Codex CLI needs zlib at runtime for libz.so.1.
+    codexCli
   ];
 
   programs = {

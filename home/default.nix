@@ -64,6 +64,15 @@ in {
     "steam" = "mangohud steam";
   };
 
+  xdg.mimeApps = lib.mkIf isLinuxGui {
+    enable = true;
+    defaultApplications = {
+      "x-scheme-handler/http" = "chromium.desktop";
+      "x-scheme-handler/https" = "chromium.desktop";
+      "text/html" = "chromium.desktop";
+    };
+  };
+
   # Dark mode
   dconf.settings = lib.mkIf isLinuxGui {
     "org/gnome/desktop/interface" = {
