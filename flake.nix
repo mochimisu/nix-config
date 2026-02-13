@@ -123,6 +123,7 @@
           ./boot-efi.nix
           ./common.nix
           ./common-gui.nix
+          ./common-gaming.nix
           home-manager.nixosModules.home-manager
           {
             home-manager.useGlobalPkgs = true;
@@ -147,6 +148,7 @@
           ./boot-efi.nix
           ./common.nix
           ./common-gui.nix
+          ./common-gaming.nix
           home-manager.nixosModules.home-manager
           {
             home-manager.useGlobalPkgs = true;
@@ -171,6 +173,7 @@
           ./boot-efi.nix
           ./common.nix
           ./common-gui.nix
+          ./common-gaming.nix
           home-manager.nixosModules.home-manager
           {
             home-manager.useGlobalPkgs = true;
@@ -195,6 +198,7 @@
           ./boot-efi.nix
           ./common.nix
           ./common-gui.nix
+          ./common-gaming.nix
           home-manager.nixosModules.home-manager
           {
             home-manager.useGlobalPkgs = true;

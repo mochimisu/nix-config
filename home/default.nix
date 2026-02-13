@@ -28,7 +28,7 @@ in {
     # status bar, choose one
     # ./apps/hyprpanel.nix # customization not as deep as id like
     # ./apps/waybar # horizontal only
-    ./apps/eww # high cpu usage
+    ./apps/quickshell
 
     # notification manager
     # (don't need with hyprpanel)
