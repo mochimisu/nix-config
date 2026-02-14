@@ -14,7 +14,6 @@ ShellRoot {
     property var sidebarScreens: @sidebarScreensJson@
     readonly property bool pttEnabled: "@pttStateFile@" !== ""
 
-    readonly property int sidebarWidth: 20
     readonly property int iconSize: {
         const parsed = parseInt("@iconSize@", 10);
         return isNaN(parsed) ? 16 : parsed;
@@ -23,13 +22,21 @@ ShellRoot {
         const parsed = parseInt("@fontSize@", 10);
         return isNaN(parsed) ? 13 : parsed;
     }
+    // Keep panel width in sync with content scaling from icon/text size.
+    readonly property int sidebarWidth: Math.max(20, Math.round(Math.max(iconSize * 1.35, fontSizePx * 1.5)))
 
     // ----- Derived sizing / style -----
     readonly property color fgColor: "white"
     readonly property string baseFont: "Montserrat Bold"
     readonly property int tinyTextPx: Math.max(8, Math.round(fontSizePx * 0.65))
     readonly property int clockMainPx: Math.max(11, Math.round(fontSizePx * 1.2))
-    readonly property int statusIconPx: Math.max(10, fontSizePx)
+    readonly property int dateTextPx: Math.max(7, Math.round(fontSizePx * 0.55))
+    readonly property real clockLetterSpacing: -0.6
+    readonly property int trayIconPx: Math.max(16, Math.round(iconSize * 1.2))
+    readonly property int statusIconPx: Math.max(12, Math.round(Math.max(iconSize, fontSizePx * 1.3)))
+    readonly property int cavaTextPx: Math.max(10, Math.round(fontSizePx * 0.8))
+    readonly property int batteryIconPx: Math.max(statusIconPx + 4, Math.round(fontSizePx * 1.45))
+    readonly property int trayToStatusGapPx: Math.max(4, Math.round(trayIconPx * 0.3))
 
     // ----- Runtime state -----
     property var workspacesState: ({})
@@ -414,21 +421,28 @@ ShellRoot {
                                     required property var modelData
 
                                     readonly property bool hasNativeMenu: !!modelData && !!modelData.hasMenu
+                                    property bool longPressTriggered: false
 
                                     width: bottomSection.width
-                                    height: root.iconSize + 4
+                                    height: root.trayIconPx + 4
 
                                     IconImage {
                                         anchors.centerIn: parent
-                                        implicitSize: root.iconSize
+                                        implicitSize: root.trayIconPx
                                         source: root.trayIconSource(modelData.icon)
                                     }
 
                                     MouseArea {
                                         anchors.fill: parent
                                         acceptedButtons: Qt.AllButtons
+                                        pressAndHoldInterval: 400
 
                                         onClicked: function(mouse) {
+                                            if (trayItem.longPressTriggered) {
+                                                trayItem.longPressTriggered = false;
+                                                return;
+                                            }
+
                                             if (mouse.button === Qt.LeftButton) {
                                                 if (modelData.onlyMenu) {
                                                     if (!root.openTrayMenu(modelData, trayItem, panel, contentRoot)) {
@@ -445,9 +459,22 @@ ShellRoot {
                                                 modelData.secondaryActivate();
                                             }
                                         }
+
+                                        onPressAndHold: {
+                                            trayItem.longPressTriggered = true;
+                                            if (!root.openTrayMenu(modelData, trayItem, panel, contentRoot)) {
+                                                modelData.secondaryActivate();
+                                            }
+                                        }
                                     }
                                 }
                             }
+                        }
+
+                        // Gap between tray items and status icons.
+                        Item {
+                            width: parent.width
+                            height: root.trayToStatusGapPx
                         }
 
                         // Bluetooth icon + count
@@ -501,7 +528,7 @@ ShellRoot {
 
                                 Item {
                                     width: parent.width
-                                    height: 10
+                                    height: root.cavaTextPx
                                     clip: true
 
                                     Text {
@@ -509,7 +536,7 @@ ShellRoot {
                                         text: root.cavaBars
                                         color: root.fgColor
                                         font.family: "monospace"
-                                        font.pixelSize: 10
+                                        font.pixelSize: root.cavaTextPx
                                         renderType: Text.NativeRendering
                                         x: Math.round((parent.width - (cavaText.implicitWidth * 0.16)) / 2)
 
@@ -600,7 +627,7 @@ ShellRoot {
                         Item {
                             visible: String(root.batteryState.state || "") !== ""
                             width: parent.width
-                            height: visible ? 28 : 0
+                            height: visible ? Math.max(28, root.batteryIconPx + root.tinyTextPx) : 0
 
                             Column {
                                 anchors.centerIn: parent
@@ -610,7 +637,7 @@ ShellRoot {
                                     text: root.batteryIcon()
                                     color: root.fgColor
                                     font.family: root.baseFont
-                                    font.pixelSize: 13
+                                    font.pixelSize: root.batteryIconPx
                                     rotation: -90
                                     horizontalAlignment: Text.AlignHCenter
                                 }
@@ -636,6 +663,7 @@ ShellRoot {
                                 color: root.fgColor
                                 font.family: root.baseFont
                                 font.pixelSize: root.clockMainPx
+                                font.letterSpacing: root.clockLetterSpacing
                                 font.bold: true
                                 horizontalAlignment: Text.AlignHCenter
                                 renderType: Text.NativeRendering
@@ -647,6 +675,7 @@ ShellRoot {
                                 color: root.fgColor
                                 font.family: root.baseFont
                                 font.pixelSize: root.clockMainPx
+                                font.letterSpacing: root.clockLetterSpacing
                                 font.bold: true
                                 horizontalAlignment: Text.AlignHCenter
                                 renderType: Text.NativeRendering
@@ -658,7 +687,7 @@ ShellRoot {
                                 color: root.fgColor
                                 font.family: root.baseFont
                                 font.pixelSize: root.tinyTextPx
-                                horizontalAlignment: Text.AlignHCenter
+                                horizontalAlignment: Text.AlignRight
                             }
 
                             Text {
@@ -666,7 +695,7 @@ ShellRoot {
                                 text: String(root.clockState.date || "01/01")
                                 color: root.fgColor
                                 font.family: root.baseFont
-                                font.pixelSize: root.tinyTextPx
+                                font.pixelSize: root.dateTextPx
                                 horizontalAlignment: Text.AlignHCenter
                             }
                         }
