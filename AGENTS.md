@@ -20,3 +20,4 @@
 
 ### Host notes
 - Gaia runs the Openclaw NixOS container in `machines/gaia/openclaw-container.nix` (container name: `gaiaclaw`).
+- Gaia Matter declarative pairing reconcile lives at `machines/gaia/home-assistant/pairings.nix` and reads setup codes from `/etc/secret/matter-reconcile.env`.

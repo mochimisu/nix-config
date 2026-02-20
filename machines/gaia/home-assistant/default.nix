@@ -1,6 +1,8 @@
 {pkgs, ...}: {
   imports = [
     ./devices.nix
+    ./remote-actions.nix
+    ./pairings.nix
   ];
 
   services.home-assistant = {
@@ -54,6 +56,11 @@
     "dialout"
   ];
 
+  hardware.bluetooth = {
+    enable = true;
+    powerOnBoot = true;
+  };
+
   # mDNS is required for many Matter devices (discovery + commissioning).
   services.avahi = {
     enable = true;
@@ -73,21 +80,25 @@
   virtualisation.oci-containers = {
     backend = "podman";
     containers.matter-server = {
-      image = "ghcr.io/home-assistant-libs/python-matter-server:stable";
+      image = "ghcr.io/matter-js/python-matter-server:stable";
       autoStart = true;
       cmd = [
-        "--primary-interface"
-        "enp5s0"
         "--paa-root-cert-dir"
         "/data/paa-root-certs"
+        "--bluetooth-adapter"
+        "0"
+        "--primary-interface"
+        "enp5s0"
       ];
       volumes = [
         "/earth/home-assistant/matter-server:/data"
         "/earth/home-assistant/matter-server/.matter_server:/root/.matter_server"
         "/earth/home-assistant/matter-server/paa-root-certs:/data/paa-root-certs"
+        "/run/dbus:/run/dbus:ro"
       ];
       extraOptions = [
         "--network=host"
+        "--security-opt=apparmor=unconfined"
       ];
     };
     containers.otbr = {

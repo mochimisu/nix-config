@@ -12,6 +12,7 @@
     # SmartWings Window Covering (node_id may change; MAC is stable)
     "mac:88:13:bf:aa:50:df" = "Office Blinds";
     "mac:88:13:bf:aa:51:77" = "Nursery Blinds";
+    "mac:52:d8:7d:13:af:d2" = "Office Blinds Remote";
 
     # LED strip (shows up in HA as "ILMS"; Matter vendor/product: Nanoleaf NL72K3)
     "unique_id:1DC692B6244A7FDD" = "MBR Bed Light";
@@ -183,6 +184,7 @@ in {
     ];
     serviceConfig = {
       Type = "oneshot";
+      ExecStartPre = "${pkgs.bash}/bin/bash -c 'for i in {1..60}; do (echo > /dev/tcp/127.0.0.1/5580) >/dev/null 2>&1 && exit 0; sleep 1; done; echo matter-server ws not ready >&2; exit 1'";
       ExecStart = "${matterNodeLabelsTool}/bin/matter-node-labels";
     };
   };
