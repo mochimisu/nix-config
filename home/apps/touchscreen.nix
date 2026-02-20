@@ -7,12 +7,23 @@ let
   enableHyprgrass = touchscreenVars.enableHyprgrass or onScreenKeyboard;
   lisgdDevice = touchscreenVars.device or "/dev/input/touchscreen";
   ydotoolSocket = touchscreenVars.ydotoolSocket or "/run/ydotoold.socket";
-  hyprgrassBinds = (touchscreenVars.hyprgrassBinds or [])
+  defaultHyprgrassBinds = [
+    ",swipe:3:u,togglefloating"
+    ",swipe:3:d,fullscreen,1"
+    ",longpress:4,killactive"
+  ];
+  hyprgrassBinds = defaultHyprgrassBinds
+    ++ (touchscreenVars.hyprgrassBinds or [])
     ++ lib.optionals onScreenKeyboard [
       ",swipe:4:u,exec,wvkbd-mobintl -H 600 -L 600"
       ",swipe:4:d,exec,pkill wvkbd-mobintl"
     ];
+  hyprgrassBindm = touchscreenVars.hyprgrassBindm or [
+    ",longpress:2,movewindow"
+    ",longpress:3,resizewindow"
+  ];
   enableHyprgrassBinds = enableHyprgrass && hyprgrassBinds != [];
+  enableHyprgrassBindm = enableHyprgrass && hyprgrassBindm != [];
   lisgdScrollCmd = "${pkgs.ydotool}/bin/ydotool mousemove --wheel -- 0";
   lisgdScrollUp = "1,DU,*,*,P,${lisgdScrollCmd} -1";
   lisgdScrollDown = "1,UD,*,*,P,${lisgdScrollCmd} 1";
@@ -54,6 +65,9 @@ in {
     })
     (lib.mkIf enableHyprgrassBinds {
       wayland.windowManager.hyprland.settings.plugin.touch_gestures.hyprgrass-bind = hyprgrassBinds;
+    })
+    (lib.mkIf enableHyprgrassBindm {
+      wayland.windowManager.hyprland.settings.plugin.touch_gestures.hyprgrass-bindm = hyprgrassBindm;
     })
   ]);
 }

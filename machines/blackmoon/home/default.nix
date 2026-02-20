@@ -38,7 +38,7 @@ in {
     monitors = {
       monitor = [
         "DP-1,2560x1440@120,3440x-560,1,transform,1"
-        "DP-3,3440x1440@175,0x0,1,bitdepth,10,cm,hdr,sdrbrightness,1.25,sdrsaturation,1.15"
+        "DP-3,3440x1440@175,0x0,1,bitdepth,10"
         "HDMI-A-1,480x1920@60,4880x1400,1,transform,1"
       ];
       workspace = [
@@ -100,11 +100,11 @@ in {
 
     render = {
       # Enable color-management pipeline required for HDR output.
-      cm_enabled = true;
+      cm_enabled = false;
       # Fullscreen passthrough for direct HDR presentation.
-      cm_fs_passthrough = 2;
+      cm_fs_passthrough = 0;
       # Auto-enable HDR when the app advertises HDR output.
-      cm_auto_hdr = 2;
+      cm_auto_hdr = 0;
     };
 
     misc = {
@@ -152,7 +152,7 @@ in {
       state_file="''${XDG_STATE_HOME:-$HOME/.local/state}/hypr/hdr-enabled"
       mkdir -p "''${state_file%/*}"
 
-      HDR_MONITOR="DP-3,3440x1440@175,0x0,1,bitdepth,10,cm,hdr,sdrbrightness,1.25,sdrsaturation,1.15"
+      HDR_MONITOR="DP-3,3440x1440@175,0x0,1,bitdepth,10,cm,hdr,sdrbrightness,1.20"
       SDR_MONITOR="DP-3,3440x1440@175,0x0,1,bitdepth,10"
 
       cm_enabled=$(hyprctl getoption render:cm_enabled | awk 'NR==1{print $2}')
@@ -167,8 +167,8 @@ in {
         printf "1" > "$state_file"
         hyprctl --batch "\
           keyword render:cm_enabled 1;\
-          keyword render:cm_fs_passthrough 2;\
-          keyword render:cm_auto_hdr 2;\
+          keyword render:cm_fs_passthrough 0;\
+          keyword render:cm_auto_hdr 0;\
           keyword monitor $HDR_MONITOR"
       fi
     '';
