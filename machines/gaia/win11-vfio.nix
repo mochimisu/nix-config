@@ -449,6 +449,19 @@ in {
       };
     };
 
+    systemd.services.libvirt-guests = {
+      # Don't race /earth-backed disk availability.
+      after = [ "earth.mount" ];
+      requires = [ "earth.mount" ];
+      # VFIO passthrough guests cannot be "suspended" with libvirt save.
+      # Use shutdown semantics and avoid boot-time auto-start from libvirt-guests.
+      environment = {
+        ON_BOOT = lib.mkForce "ignore";
+        ON_SHUTDOWN = lib.mkForce "shutdown";
+        SHUTDOWN_TIMEOUT = lib.mkForce "45";
+      };
+    };
+
     systemd.services."win11-${cfg.name}-disk" = {
       description = "Create libvirt disk for ${cfg.name}";
       wantedBy = ["multi-user.target"];

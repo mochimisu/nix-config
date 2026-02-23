@@ -1,4 +1,4 @@
-{pkgs, ...}: let
+{pkgs, lib, ...}: let
   # Declarative desired pairings. Keep setup codes in /etc/secret/matter-reconcile.env
   # using the environment variable named in `code_env`.
   matterDesiredPairings = [
@@ -16,7 +16,115 @@
       code_env = "MATTER_CODE_OFFICE_BLINDS_REMOTE";
       network_only = false;
       match = {
-        mac = "52:d8:7d:13:af:d2";
+        mac = "96:fe:3c:95:81:67";
+      };
+    }
+
+    {
+      name = "Downstairs Thermostat";
+      code_env = "MATTER_CODE_DOWNSTAIRS_THERMOSTAT";
+      network_only = false;
+      match = {
+        unique_id = "2FEE8B19A9C9B651";
+      };
+    }
+
+    {
+      name = "Upstairs Thermostat";
+      code_env = "MATTER_CODE_UPSTAIRS_THERMOSTAT";
+      network_only = false;
+      match = {
+        unique_id = "F6463B0DBBD4130A";
+      };
+    }
+
+    {
+      name = "Office Light";
+      code_env = "MATTER_CODE_OFFICE_LIGHT";
+      network_only = false;
+      match = {
+        unique_id = "14285507501172f6ff50bbcd35a43879";
+      };
+    }
+
+    {
+      name = "MBR Bathroom Main";
+      code_env = "MATTER_CODE_MBR_BATHROOM_MAIN";
+      network_only = false;
+      match = {
+        unique_id = "ac274f08f79b750e30dc485f96fdee2f";
+      };
+    }
+
+    {
+      name = "MBR Bathroom Warm";
+      code_env = "MATTER_CODE_MBR_BATHROOM_WARM";
+      network_only = false;
+      match = {
+        unique_id = "0383480d4f0476afb1007333283762d6";
+      };
+    }
+
+    {
+      name = "MBR Bathroom Mirror";
+      code_env = "MATTER_CODE_MBR_BATHROOM_MIRROR";
+      network_only = false;
+      match = {
+        unique_id = "3817c88523e9263acbddedf321283ad5";
+      };
+    }
+
+    {
+      name = "MBR Bathroom Fan";
+      code_env = "MATTER_CODE_MBR_BATHROOM_FAN";
+      network_only = false;
+      match = {
+        unique_id = "f64b7b8fea979ebb48c915cbbc444261";
+      };
+    }
+
+    {
+      name = "MBR Shower";
+      code_env = "MATTER_CODE_MBR_SHOWER";
+      network_only = false;
+      match = {
+        unique_id = "f9da66c66a1a093459550ac0d11d9e98";
+      };
+    }
+
+    {
+      name = "MBR Bathtub";
+      code_env = "MATTER_CODE_MBR_BATHTUB";
+      network_only = false;
+      match = {
+        unique_id = "0039f05c787bcd10bdb2e648f5a8f2f8";
+      };
+    }
+
+    {
+      name = "Office Presence";
+      code_env = "MATTER_CODE_OFFICE_PRESENCE";
+      network_only = false;
+      match = {
+        unique_id = "26ADD8F211F1A97A";
+      };
+    }
+
+    {
+      name = "MBR Bathroom Presence";
+      code_env = "MATTER_CODE_MBR_BATHROOM_PRESENCE";
+      network_only = false;
+      match = {
+        unique_id = "3EBD38F2CC110F47";
+      };
+    }
+
+    {
+      name = "MBR Shower Presence";
+      code_env = "MATTER_CODE_MBR_SHOWER_PRESENCE";
+      network_only = false;
+      match = {
+        unique_id = "78FFD38C8E551431";
       };
     }
 
@@ -30,6 +138,39 @@
     #   };
     # }
   ];
+
+  # Keep device labels in this file too, so adding a device usually means
+  # touching only pairings.nix.
+  matterExtraNodeLabels = {
+    "mac:88:13:bf:aa:51:77" = "Nursery Blinds";
+    "unique_id:7D4B942B6330D1FB" = "MBR Dehumidifier";
+    "unique_id:1DC692B6244A7FDD" = "MBR Bed Light";
+  };
+
+  nodeLabelKeyFromMatch = match:
+    if match ? unique_id
+    then "unique_id:${match.unique_id}"
+    else if match ? serial
+    then "serial:${match.serial}"
+    else if match ? mac
+    then "mac:${match.mac}"
+    else null;
+
+  matterPairingNodeLabels =
+    lib.listToAttrs
+    (lib.filter (x: x != null) (map (pairing: let
+        key = nodeLabelKeyFromMatch (pairing.match or {});
+        label = pairing.name or null;
+      in
+        if key != null && label != null
+        then {
+          name = key;
+          value = label;
+        }
+        else null)
+      matterDesiredPairings));
+
+  matterNodeLabels = matterExtraNodeLabels // matterPairingNodeLabels;
   matterDesiredPairingsJson = builtins.toJSON matterDesiredPairings;
 
   pythonEnv = pkgs.python3.withPackages (ps: [
@@ -247,6 +388,9 @@
     '';
   };
 in {
+  # Export to sibling modules (devices.nix) so labeler and reconcile share one source.
+  _module.args.matterNodeLabels = matterNodeLabels;
+
   environment.systemPackages = [
     matterReconcileTool
   ];
@@ -261,17 +405,31 @@ in {
 # One variable per desired pairing `code_env` key.
 # Example:
 # MATTER_CODE_NURSERY_SENSOR=MT:Y.ABCD1234...
+# MATTER_CODE_OFFICE_LIGHT=MT:Y.ABCD1234...
+# MATTER_CODE_MBR_BATHROOM_MAIN=MT:Y.ABCD1234...
+# MATTER_CODE_MBR_BATHROOM_WARM=MT:Y.ABCD1234...
+# MATTER_CODE_MBR_BATHROOM_MIRROR=MT:Y.ABCD1234...
+# MATTER_CODE_MBR_BATHROOM_FAN=MT:Y.ABCD1234...
+# MATTER_CODE_MBR_SHOWER=MT:Y.ABCD1234...
+# MATTER_CODE_MBR_BATHTUB=MT:Y.ABCD1234...
+# MATTER_CODE_OFFICE_PRESENCE=MT:Y.ABCD1234...
 # Optional: set to seed Thread commissioning credentials.
 # MATTER_THREAD_DATASET_HEX=0e080000000000010000000300001235060004001fffe00208...
+# Optional: token for HA websocket API (used by matter-ha-namer).
+# MATTER_HA_TOKEN=eyJ...
+# Optional HA websocket URL override (default ws://127.0.0.1:8123/api/websocket).
+# HA_WS_URL=ws://127.0.0.1:8123/api/websocket
+# Optional: watchdog alert + thresholds.
+# MATTER_ALERT_EMAIL=you@example.com
+# MATTER_ALERT_FROM=gaia-watchdog@example.com
+# THREAD_WATCHDOG_OFFLINE_THRESHOLD=5
+# THREAD_WATCHDOG_RESTART_COOLDOWN_SEC=600
 EOT
     fi
   '';
 
   systemd.services.matter-reconcile = {
     description = "Reconcile declarative Matter pairings";
-    wantedBy = [
-      "multi-user.target"
-    ];
     after = [
       "podman-matter-server.service"
       "network-online.target"
