@@ -43,6 +43,27 @@ def _mac_from_attrs(attrs: dict) -> str | None:
     return None
 
 
+def _room_key_candidates(attrs: dict) -> list[str]:
+    out: list[str] = []
+    unique_id = attrs.get("0/40/18")
+    if isinstance(unique_id, str) and unique_id:
+        out.append(f"unique_id:{unique_id}")
+    serial = attrs.get("0/40/15")
+    if isinstance(serial, str) and serial:
+        out.append(f"serial:{serial}")
+    mac = _mac_from_attrs(attrs)
+    if mac:
+        out.append(f"mac:{mac.lower()}")
+    return out
+
+
+def _room_for_attrs(attrs: dict, rooms: dict[str, str]) -> str:
+    for key in _room_key_candidates(attrs):
+        if key in rooms and isinstance(rooms[key], str) and rooms[key]:
+            return rooms[key]
+    return "Ungrouped"
+
+
 def _parse_attr_path(path: str) -> tuple[int, int, int] | None:
     parts = path.split("/")
     if len(parts) != 3:
@@ -334,6 +355,7 @@ def _table_text(
     ws_url: str,
     interval: float,
     solar_data: dict | None,
+    rooms: dict[str, str],
 ) -> str:
     width = shutil.get_terminal_size((120, 40)).columns
     now = datetime.now().isoformat(timespec="seconds")
@@ -362,7 +384,7 @@ def _table_text(
                 f"Sun@Facade: az={az:.1f}° el={el:.1f}°  horiz={h:.1f}° vert={v:.1f}° ({front_text})"
             )
 
-    lines = [
+    lines: list[str] = [
         f"Matter device connectivity  ({now})",
         f"WS: {ws_url}",
         solar_line,
@@ -371,39 +393,77 @@ def _table_text(
         f"OTBR last started:   {_service_last_started('podman-otbr.service')}",
         f"Polling every {interval:.1f}s. Press Ctrl+C to stop.",
         "-" * min(width, 160),
-        f"{'Node':<6}  {'State':<5}  {'Status':<10}  {'LQI':<4}  {'RSSI':<5}  {'Label':<24}  {'MAC':<17}  Device",
-        f"{'----':<6}  {'-----':<5}  {'------':<10}  {'---':<4}  {'----':<5}  {'-----':<24}  {'---':<17}  ------",
     ]
 
+    grouped: dict[str, list[dict]] = {}
     for node in sorted(nodes, key=lambda n: n.get("node_id", 0)):
-        node_id = node.get("node_id")
-        available = bool(node.get("available"))
         attrs = node.get("attributes") or {}
-        label = attrs.get("0/40/5") or "(no label)"
-        vendor = attrs.get("0/40/1") or ""
-        product = attrs.get("0/40/3") or ""
-        mac = _mac_from_attrs(attrs) or ""
-        lqi, rssi = _thread_link_metrics(attrs)
-        lqi_text = _color_lqi(lqi, color)
-        rssi_text = _color_rssi(rssi, color)
-        state = _fmt_state(available, color)
-        status = _device_status(vendor, product, label, attrs, color)
-        label_text = label[:24]
-        if color:
-            label_colored = f"{GREEN}{label_text}{RESET}" if available else f"{RED}{label_text}{RESET}"
-        else:
-            label_colored = label_text
-        device = f"{vendor} {product}".strip()
-        lines.append(
-            f"{_pad(str(node_id), 6)}  "
-            f"{_pad(state, 5)}  "
-            f"{_pad(status, 10)}  "
-            f"{_pad(lqi_text, 4)}  "
-            f"{_pad(rssi_text, 5)}  "
-            f"{_pad(label_colored, 24)}  "
-            f"{_pad(mac, 17)}  "
-            f"{device}"
-        )
+        room = _room_for_attrs(attrs, rooms)
+        grouped.setdefault(room, []).append(node)
+
+    preferred_order = [
+        "Office",
+        "Nursery",
+        "MBR Bathroom",
+        "Downstairs",
+        "Upstairs",
+        "Network Closet",
+        "Ungrouped",
+    ]
+    room_order = sorted(
+        grouped.keys(),
+        key=lambda r: (preferred_order.index(r) if r in preferred_order else 1000, r),
+    )
+
+    header = (
+        f"{'Node':<6}  {'State':<5}  {'Status':<10}  "
+        f"{'LQI':<4}  {'RSSI':<5}  {'Label':<24}  {'MAC':<17}  Device"
+    )
+    header_sep = (
+        f"{'----':<6}  {'-----':<5}  {'------':<10}  "
+        f"{'---':<4}  {'----':<5}  {'-----':<24}  {'---':<17}  ------"
+    )
+
+    for room in room_order:
+        room_nodes = grouped.get(room, [])
+        row_lines: list[str] = [f"Room: {room}", header, header_sep]
+        for node in room_nodes:
+            node_id = node.get("node_id")
+            available = bool(node.get("available"))
+            attrs = node.get("attributes") or {}
+            label = attrs.get("0/40/5") or "(no label)"
+            vendor = attrs.get("0/40/1") or ""
+            product = attrs.get("0/40/3") or ""
+            mac = _mac_from_attrs(attrs) or ""
+            lqi, rssi = _thread_link_metrics(attrs)
+            lqi_text = _color_lqi(lqi, color)
+            rssi_text = _color_rssi(rssi, color)
+            state = _fmt_state(available, color)
+            status = _device_status(vendor, product, label, attrs, color)
+            label_text = label[:24]
+            if color:
+                label_colored = f"{GREEN}{label_text}{RESET}" if available else f"{RED}{label_text}{RESET}"
+            else:
+                label_colored = label_text
+            device = f"{vendor} {product}".strip()
+            row_lines.append(
+                f"{_pad(str(node_id), 6)}  "
+                f"{_pad(state, 5)}  "
+                f"{_pad(status, 10)}  "
+                f"{_pad(lqi_text, 4)}  "
+                f"{_pad(rssi_text, 5)}  "
+                f"{_pad(label_colored, 24)}  "
+                f"{_pad(mac, 17)}  "
+                f"{device}"
+            )
+
+        content_width = max((_display_width(x) for x in row_lines), default=0)
+        top = "┌" + ("─" * (content_width + 2)) + "┐"
+        bottom = "└" + ("─" * (content_width + 2)) + "┘"
+        lines.append(top)
+        for row in row_lines:
+            lines.append(f"│ {_pad(row, content_width)} │")
+        lines.append(bottom)
 
     return "\n".join(lines) + "\n"
 
@@ -419,12 +479,19 @@ async def main() -> int:
     use_color = (not args.no_color) and sys.stdout.isatty()
     first = True
 
+    try:
+        rooms_raw = os.getenv("MATTER_NODE_ROOMS_JSON", "{}")
+        parsed_rooms = json.loads(rooms_raw)
+        node_rooms = parsed_rooms if isinstance(parsed_rooms, dict) else {}
+    except Exception:
+        node_rooms = {}
+
     while True:
         try:
             nodes = await _poll(args.ws_url)
             solar_data = _fetch_solar(args.solar_api_url)
             _render(
-                _table_text(nodes, use_color, args.ws_url, args.interval, solar_data),
+                _table_text(nodes, use_color, args.ws_url, args.interval, solar_data, node_rooms),
                 first,
             )
             first = False

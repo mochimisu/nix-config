@@ -1,4 +1,4 @@
-{pkgs, lib, ...}: let
+{pkgs, lib, matterNodeRooms ? {}, ...}: let
   # Office bindings (Matter-over-Thread, handled directly through matter.js server API).
   remoteMac = "96:fe:3c:95:81:67";
   # Keep this zero so runtime resolves by MAC and survives node-id churn.
@@ -22,6 +22,7 @@
   matterEventsScript = ./scripts/matter-events.py;
   matterHealthScript = ./scripts/matter-health.py;
   matterWatchScript = ./scripts/matter-watch.py;
+  matterNodeRoomsJson = builtins.toJSON matterNodeRooms;
 
   matterRemoteActionsTool = pkgs.writeShellApplication {
     name = "matter-remote-actions";
@@ -57,6 +58,7 @@
     name = "matter-watch";
     runtimeInputs = [pythonEnv];
     text = ''
+      export MATTER_NODE_ROOMS_JSON='${matterNodeRoomsJson}'
       exec ${pythonEnv}/bin/python3 ${matterWatchScript} "$@"
     '';
   };

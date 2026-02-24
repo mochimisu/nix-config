@@ -4,6 +4,7 @@
   matterDesiredPairings = [
     {
       name = "Office Blinds";
+      room = "Office";
       code_env = "MATTER_CODE_OFFICE_BLINDS";
       network_only = false;
       match = {
@@ -13,6 +14,7 @@
 
     {
       name = "Office Blinds Remote";
+      room = "Office";
       code_env = "MATTER_CODE_OFFICE_BLINDS_REMOTE";
       network_only = false;
       match = {
@@ -22,6 +24,7 @@
 
     {
       name = "Downstairs Thermostat";
+      room = "Downstairs";
       code_env = "MATTER_CODE_DOWNSTAIRS_THERMOSTAT";
       network_only = false;
       match = {
@@ -31,6 +34,7 @@
 
     {
       name = "Upstairs Thermostat";
+      room = "Upstairs";
       code_env = "MATTER_CODE_UPSTAIRS_THERMOSTAT";
       network_only = false;
       match = {
@@ -40,6 +44,7 @@
 
     {
       name = "Office Light";
+      room = "Office";
       code_env = "MATTER_CODE_OFFICE_LIGHT";
       network_only = false;
       match = {
@@ -49,6 +54,7 @@
 
     {
       name = "MBR Bathroom Main";
+      room = "MBR Bathroom";
       code_env = "MATTER_CODE_MBR_BATHROOM_MAIN";
       network_only = false;
       match = {
@@ -58,6 +64,7 @@
 
     {
       name = "MBR Bathroom Warm";
+      room = "MBR Bathroom";
       code_env = "MATTER_CODE_MBR_BATHROOM_WARM";
       network_only = false;
       match = {
@@ -67,6 +74,7 @@
 
     {
       name = "MBR Bathroom Mirror";
+      room = "MBR Bathroom";
       code_env = "MATTER_CODE_MBR_BATHROOM_MIRROR";
       network_only = false;
       match = {
@@ -76,6 +84,7 @@
 
     {
       name = "MBR Bathroom Fan";
+      room = "MBR Bathroom";
       code_env = "MATTER_CODE_MBR_BATHROOM_FAN";
       network_only = false;
       match = {
@@ -85,6 +94,7 @@
 
     {
       name = "MBR Shower";
+      room = "MBR Bathroom";
       code_env = "MATTER_CODE_MBR_SHOWER";
       network_only = false;
       match = {
@@ -94,6 +104,7 @@
 
     {
       name = "MBR Bathtub";
+      room = "MBR Bathroom";
       code_env = "MATTER_CODE_MBR_BATHTUB";
       network_only = false;
       match = {
@@ -103,6 +114,7 @@
 
     {
       name = "Office Presence";
+      room = "Office";
       code_env = "MATTER_CODE_OFFICE_PRESENCE";
       network_only = false;
       match = {
@@ -112,6 +124,7 @@
 
     {
       name = "MBR Bathroom Presence";
+      room = "MBR Bathroom";
       code_env = "MATTER_CODE_MBR_BATHROOM_PRESENCE";
       network_only = false;
       match = {
@@ -121,10 +134,47 @@
 
     {
       name = "MBR Shower Presence";
+      room = "MBR Bathroom";
       code_env = "MATTER_CODE_MBR_SHOWER_PRESENCE";
       network_only = false;
       match = {
         unique_id = "78FFD38C8E551431";
+      };
+    }
+
+    {
+      name = "Nursery Blinds";
+      room = "Nursery";
+      network_only = false;
+      match = {
+        mac = "88:13:bf:aa:51:77";
+      };
+    }
+
+    {
+      name = "MBR Dehumidifier";
+      room = "MBR Bathroom";
+      network_only = false;
+      match = {
+        unique_id = "7D4B942B6330D1FB";
+      };
+    }
+
+    {
+      name = "MBR Bed Light";
+      room = "MBR Bathroom";
+      network_only = false;
+      match = {
+        unique_id = "1DC692B6244A7FDD";
+      };
+    }
+
+    {
+      name = "Aqara Hub M3";
+      room = "Network Closet";
+      network_only = false;
+      match = {
+        mac = "9e:b1:dc:1c:ec:f4";
       };
     }
 
@@ -141,11 +191,9 @@
 
   # Keep device labels in this file too, so adding a device usually means
   # touching only pairings.nix.
-  matterExtraNodeLabels = {
-    "mac:88:13:bf:aa:51:77" = "Nursery Blinds";
-    "unique_id:7D4B942B6330D1FB" = "MBR Dehumidifier";
-    "unique_id:1DC692B6244A7FDD" = "MBR Bed Light";
-  };
+  matterExtraNodeLabels = {};
+
+  matterExtraNodeRooms = {};
 
   nodeLabelKeyFromMatch = match:
     if match ? unique_id
@@ -170,7 +218,22 @@
         else null)
       matterDesiredPairings));
 
+  matterPairingNodeRooms =
+    lib.listToAttrs
+    (lib.filter (x: x != null) (map (pairing: let
+        key = nodeLabelKeyFromMatch (pairing.match or {});
+        room = pairing.room or null;
+      in
+        if key != null && room != null
+        then {
+          name = key;
+          value = room;
+        }
+        else null)
+      matterDesiredPairings));
+
   matterNodeLabels = matterExtraNodeLabels // matterPairingNodeLabels;
+  matterNodeRooms = matterExtraNodeRooms // matterPairingNodeRooms;
   matterDesiredPairingsJson = builtins.toJSON matterDesiredPairings;
 
   pythonEnv = pkgs.python3.withPackages (ps: [
@@ -390,6 +453,7 @@
 in {
   # Export to sibling modules (devices.nix) so labeler and reconcile share one source.
   _module.args.matterNodeLabels = matterNodeLabels;
+  _module.args.matterNodeRooms = matterNodeRooms;
 
   environment.systemPackages = [
     matterReconcileTool
