@@ -117,6 +117,7 @@
       environment = {
         BACKBONE_INTERFACE = "enp5s0";
         FIREWALL = "0";
+        OTBR_FIREWALL = "0";
         INFRA_IF_NAME = "enp5s0";
         NAT64 = "0";
       };
@@ -339,10 +340,35 @@
         cooldown_sec="''${THREAD_WATCHDOG_RESTART_COOLDOWN_SEC:-600}"
         alert_email="''${MATTER_ALERT_EMAIL:-home@bwang.dev}"
         alert_from="''${MATTER_ALERT_FROM:-home@bwang.dev}"
+        ot_state=""
 
         bad_reason=""
-        if ! podman exec otbr ot-ctl state >/dev/null 2>&1; then
-          bad_reason="ot-ctl unreachable"
+        if ! podman ps --format '{{.Names}}' | grep -qx otbr; then
+          bad_reason="otbr container missing"
+        fi
+
+        ot_state="$(podman exec otbr ot-ctl state 2>/dev/null | head -n1 | tr -d '\r' || true)"
+        if [ -z "$ot_state" ]; then
+          if [ -n "$bad_reason" ]; then
+            bad_reason="$bad_reason; ot-ctl unreachable"
+          else
+            bad_reason="ot-ctl unreachable"
+          fi
+        elif [ "$ot_state" != "child" ] && [ "$ot_state" != "router" ] && [ "$ot_state" != "leader" ]; then
+          if [ -n "$bad_reason" ]; then
+            bad_reason="$bad_reason; ot-state=$ot_state"
+          else
+            bad_reason="ot-state=$ot_state"
+          fi
+        fi
+
+        # Catch known RCP transport failures even when the service still looks active.
+        if journalctl -u podman-otbr.service --since "5 min ago" --no-pager 2>/dev/null | grep -q "RadioSpinelNoResponse"; then
+          if [ -n "$bad_reason" ]; then
+            bad_reason="$bad_reason; rcp-timeout"
+          else
+            bad_reason="rcp-timeout"
+          fi
         fi
 
         offline_thread_nodes=0
@@ -409,7 +435,7 @@ Action: restarted podman-otbr + podman-matter-server; started reconcile/label ti
       '';
     };
   in {
-    enable = false;
+    enable = true;
     description = "Watchdog for Matter/Thread bad states";
     wantedBy = [ "multi-user.target" ];
     after = [
@@ -433,7 +459,7 @@ Action: restarted podman-otbr + podman-matter-server; started reconcile/label ti
   };
 
   systemd.timers.matter-thread-watchdog = {
-    enable = false;
+    enable = true;
     wantedBy = [ "timers.target" ];
     timerConfig = {
       OnBootSec = "3min";

@@ -3,7 +3,9 @@
     ps.websockets
   ]);
 
-  matterPresenceActionsScript = ./scripts/matter-presence-actions.py;
+  matterScriptsDir = ./scripts;
+  matterPresenceActionsScript = "${matterScriptsDir}/matter-presence-actions.py";
+  matterSolarApiScript = "${matterScriptsDir}/matter-solar-api.py";
 
   # Rule-driven automation. Add more objects to this list to extend behavior.
   presenceRules = [
@@ -16,10 +18,19 @@
       on_command = "On";
       off_command = "Off";
       payload = {};
-      # Only turn on when the room is dark.
-      # Illuminance cluster uses a logarithmic measured value; script converts to lux.
+      # Turn on when either:
+      # 1) room is dark by sensor luminance, OR
+      # 2) current time is between sunset and next sunrise.
+      # (all still gated by presence=true)
+      on_eligibility_mode = "any";
       dark_when_lux_below = 20.0;
       require_luminance_for_on = true;
+      on_active_solar_window = {
+        mode = "sunset_to_sunrise";
+        latitude_env = "MATTER_SITE_LATITUDE";
+        longitude_env = "MATTER_SITE_LONGITUDE";
+        timezone_env = "MATTER_SITE_TIMEZONE";
+      };
       luminance_attribute_paths = [
         "1/1024/0"
         "2/1024/0"
@@ -108,13 +119,24 @@
     name = "matter-presence-actions";
     runtimeInputs = [pythonEnv];
     text = ''
+      export PYTHONPATH='${matterScriptsDir}':''${PYTHONPATH:-}
       export MATTER_PRESENCE_RULES_JSON='${presenceRulesJson}'
       exec ${pythonEnv}/bin/python3 ${matterPresenceActionsScript} "$@"
+    '';
+  };
+
+  matterSolarApiTool = pkgs.writeShellApplication {
+    name = "matter-solar-api";
+    runtimeInputs = [pythonEnv];
+    text = ''
+      export PYTHONPATH='${matterScriptsDir}':''${PYTHONPATH:-}
+      exec ${pythonEnv}/bin/python3 ${matterSolarApiScript} "$@"
     '';
   };
 in {
   environment.systemPackages = [
     matterPresenceActionsTool
+    matterSolarApiTool
   ];
 
   systemd.services.matter-presence-actions = {
@@ -134,8 +156,23 @@ in {
       Type = "simple";
       Restart = "always";
       RestartSec = "5s";
+      EnvironmentFile = "-/etc/secret/matter-reconcile.env";
       ExecStartPre = "${pkgs.bash}/bin/bash -c 'for i in {1..60}; do (echo > /dev/tcp/127.0.0.1/5580) >/dev/null 2>&1 && exit 0; sleep 1; done; echo matter-server ws not ready >&2; exit 1'";
       ExecStart = "${matterPresenceActionsTool}/bin/matter-presence-actions";
+    };
+  };
+
+  systemd.services.matter-solar-api = {
+    description = "Local solar geometry API for Matter tools";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "network-online.target" ];
+    wants = [ "network-online.target" ];
+    serviceConfig = {
+      Type = "simple";
+      Restart = "always";
+      RestartSec = "3s";
+      EnvironmentFile = "-/etc/secret/matter-reconcile.env";
+      ExecStart = "${matterSolarApiTool}/bin/matter-solar-api";
     };
   };
 }

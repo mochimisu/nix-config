@@ -5,9 +5,11 @@ import datetime
 import json
 import math
 import os
+from pathlib import Path
 import sys
 
 import websockets
+from solar_window import is_now_in_solar_window
 
 WS_URL_DEFAULT = "ws://127.0.0.1:5580/ws"
 DEFAULT_PRESENCE_PATHS = [
@@ -93,6 +95,15 @@ def _target_light_onoff_from_attrs(attrs: dict, preferred_path: str | None) -> b
     return None
 
 
+def _command_desired_onoff(command_name: str) -> bool | None:
+    name = (command_name or "").strip().lower()
+    if name == "on":
+        return True
+    if name == "off":
+        return False
+    return None
+
+
 def _as_float(value) -> float | None:
     if isinstance(value, (int, float)):
         return float(value)
@@ -128,6 +139,75 @@ def _parse_time_windows(raw_windows) -> list[tuple[int, int]]:
             continue
         windows.append((start, end))
     return windows
+
+
+def _as_nonempty_str(value) -> str | None:
+    if isinstance(value, str):
+        text = value.strip()
+        if text:
+            return text
+    return None
+
+
+def _parse_solar_window(raw) -> dict | None:
+    if not isinstance(raw, dict):
+        return None
+
+    mode = _as_nonempty_str(raw.get("mode")) or "sunset_to_sunrise"
+    latitude = _as_float(raw.get("latitude"))
+    longitude = _as_float(raw.get("longitude"))
+    timezone_name = _as_nonempty_str(raw.get("timezone"))
+
+    return {
+        "mode": mode,
+        "latitude": latitude,
+        "longitude": longitude,
+        "timezone": timezone_name,
+        "latitude_env": _as_nonempty_str(raw.get("latitude_env")),
+        "longitude_env": _as_nonempty_str(raw.get("longitude_env")),
+        "timezone_env": _as_nonempty_str(raw.get("timezone_env")),
+    }
+
+
+def _resolve_solar_window(raw_config: dict | None) -> dict | None:
+    if not raw_config:
+        return None
+
+    lat = raw_config.get("latitude")
+    lon = raw_config.get("longitude")
+    tz_name = raw_config.get("timezone")
+
+    if lat is None and raw_config.get("latitude_env"):
+        lat = _as_float(os.getenv(raw_config["latitude_env"], ""))
+    if lon is None and raw_config.get("longitude_env"):
+        lon = _as_float(os.getenv(raw_config["longitude_env"], ""))
+    if tz_name is None and raw_config.get("timezone_env"):
+        tz_name = _as_nonempty_str(os.getenv(raw_config["timezone_env"], ""))
+    if tz_name is None:
+        tz_name = _as_nonempty_str(os.getenv("TZ", ""))
+    if tz_name is None:
+        # Derive timezone name from /etc/localtime symlink when possible.
+        try:
+            localtime_target = Path("/etc/localtime").resolve()
+            parts = localtime_target.parts
+            if "zoneinfo" in parts:
+                idx = parts.index("zoneinfo")
+                candidate = "/".join(parts[idx + 1 :])
+                tz_name = _as_nonempty_str(candidate)
+        except Exception:
+            pass
+    if tz_name is None:
+        tz_name = "America/Los_Angeles"
+
+    if lat is None or lon is None or tz_name is None:
+        return None
+
+    return {
+        "mode": raw_config["mode"],
+        "latitude": lat,
+        "longitude": lon,
+        "timezone": tz_name,
+    }
 
 
 def _is_in_time_window(now_minute: int, start_minute: int, end_minute: int) -> bool:
@@ -221,6 +301,10 @@ def _normalize_rule(raw: dict, index: int) -> dict | None:
     if not isinstance(target_onoff_attribute_path, str):
         target_onoff_attribute_path = None
     on_active_windows = _parse_time_windows(raw.get("on_active_windows"))
+    on_eligibility_mode = str(raw.get("on_eligibility_mode", "all")).lower()
+    if on_eligibility_mode not in {"all", "any"}:
+        on_eligibility_mode = "all"
+    on_active_solar_window = _parse_solar_window(raw.get("on_active_solar_window"))
 
     return {
         "name": name,
@@ -239,6 +323,8 @@ def _normalize_rule(raw: dict, index: int) -> dict | None:
         "manual_override_sec": max(0, manual_override_sec),
         "target_onoff_attribute_path": target_onoff_attribute_path,
         "on_active_windows": on_active_windows,
+        "on_eligibility_mode": on_eligibility_mode,
+        "on_active_solar_window": on_active_solar_window,
     }
 
 
@@ -305,6 +391,7 @@ async def _run_once(ws, rules: list[dict], rule_state: dict[str, dict]) -> None:
             rule["name"],
             {
                 "last_presence": None,
+                "last_on_eligible": None,
                 "last_light_state": None,
                 "override_until": 0.0,
                 "override_state": None,
@@ -374,11 +461,14 @@ async def _run_once(ws, rules: list[dict], rule_state: dict[str, dict]) -> None:
             )
             continue
         present = any(presence_values)
-
-        previous = state.get("last_presence")
-        if previous is present:
-            continue
+        previous_presence = state.get("last_presence")
+        presence_changed = (previous_presence is None) or (previous_presence != present)
         state["last_presence"] = present
+
+        previous_on_eligible = state.get("last_on_eligible")
+        skip_on_reasons: list[str] = []
+        pass_conditions: list[str] = []
+        fail_conditions: list[str] = []
 
         if present and rule["dark_when_lux_below"] is not None:
             lux = _luminance_lux_from_attrs(
@@ -386,28 +476,94 @@ async def _run_once(ws, rules: list[dict], rule_state: dict[str, dict]) -> None:
                 rule["luminance_attribute_paths"],
                 rule["luminance_mode"],
             )
+            cond_ok = True
+            cond_reason = "lux-ok"
             if lux is None:
                 if rule["require_luminance_for_on"]:
-                    print(
-                        f"presence rule {rule['name']}: presence detected but luminance unavailable; skipping On",
-                        flush=True,
-                    )
-                    continue
+                    cond_ok = False
+                    cond_reason = "luminance unavailable"
+                else:
+                    cond_reason = "luminance unavailable (allowed)"
             elif lux >= rule["dark_when_lux_below"]:
-                print(
-                    f"presence rule {rule['name']}: presence detected but bright (lux={lux:.2f} >= {rule['dark_when_lux_below']}); skipping On",
-                    flush=True,
+                cond_ok = False
+                cond_reason = (
+                    f"bright (lux={lux:.2f} >= {rule['dark_when_lux_below']})"
                 )
-                continue
+            else:
+                cond_reason = f"dark (lux={lux:.2f} < {rule['dark_when_lux_below']})"
 
-        if present and not _is_now_in_any_window(rule["on_active_windows"]):
+            if cond_ok:
+                pass_conditions.append(cond_reason)
+            else:
+                fail_conditions.append(cond_reason)
+
+        if present and rule["on_active_windows"]:
+            if _is_now_in_any_window(rule["on_active_windows"]):
+                pass_conditions.append("inside active window")
+            else:
+                fail_conditions.append("outside active window")
+
+        if present and rule["on_active_solar_window"] is not None:
+            solar_window = _resolve_solar_window(rule["on_active_solar_window"])
+            if solar_window is None:
+                fail_conditions.append("solar window unavailable (missing coords/timezone)")
+            else:
+                in_solar_window = is_now_in_solar_window(
+                    latitude=solar_window["latitude"],
+                    longitude=solar_window["longitude"],
+                    timezone_name=solar_window["timezone"],
+                    mode=solar_window["mode"],
+                )
+                if in_solar_window is None:
+                    fail_conditions.append("solar window unavailable (polar/no event)")
+                elif in_solar_window:
+                    pass_conditions.append(f"inside solar window ({solar_window['mode']})")
+                else:
+                    fail_conditions.append(f"outside solar window ({solar_window['mode']})")
+
+        if not present:
+            on_eligible = False
+        else:
+            has_conditions = bool(pass_conditions or fail_conditions)
+            if not has_conditions:
+                on_eligible = True
+            elif rule["on_eligibility_mode"] == "any":
+                on_eligible = len(pass_conditions) > 0
+            else:
+                on_eligible = len(fail_conditions) == 0
+
+        state["last_on_eligible"] = on_eligible
+
+        should_issue_on = bool(on_eligible) and (
+            presence_changed or (previous_on_eligible is not True)
+        )
+        should_issue_off = (not present) and presence_changed
+
+        if present and (not on_eligible) and (
+            presence_changed or (previous_on_eligible is not False)
+        ):
+            if fail_conditions:
+                skip_on_reasons.extend(fail_conditions)
+            reason_text = "; ".join(skip_on_reasons) if skip_on_reasons else "conditions not met"
             print(
-                f"presence rule {rule['name']}: presence detected outside active window; skipping On",
+                f"presence rule {rule['name']}: presence detected but {reason_text}; skipping On",
                 flush=True,
             )
             continue
 
-        command_name = rule["on_command"] if present else rule["off_command"]
+        if not should_issue_on and not should_issue_off:
+            continue
+
+        command_name = rule["on_command"] if should_issue_on else rule["off_command"]
+        desired_onoff = _command_desired_onoff(command_name)
+        if desired_onoff is not None and light_state is not None and light_state == desired_onoff:
+            print(
+                f"presence rule {rule['name']}: present={present} -> "
+                f"skip {command_name} (target already {'On' if light_state else 'Off'})",
+                flush=True,
+            )
+            continue
+
         await _device_command(
             ws,
             node_id=target["node_id"],
