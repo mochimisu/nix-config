@@ -60,7 +60,6 @@ in
         "font"
         "cursor"
         "terminal"
-        "terminalfont"
         "cpu"
         "gpu"
         "memory"
