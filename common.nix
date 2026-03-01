@@ -63,6 +63,8 @@ in {
     openssh
     lm_sensors
     jq
+    sops
+    proton-pass-cli
 
     fx
     unzip

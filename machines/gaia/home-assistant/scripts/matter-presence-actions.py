@@ -7,6 +7,7 @@ import math
 import os
 from pathlib import Path
 import sys
+import time
 
 import websockets
 from solar_window import is_now_in_solar_window
@@ -70,10 +71,18 @@ def _as_bool(value) -> bool | None:
     return None
 
 
-def _presence_from_attrs(attrs: dict, candidate_paths: list[str]) -> bool | None:
+def _presence_from_attrs(
+    attrs: dict,
+    candidate_paths: list[str],
+    *,
+    allow_any_fallback: bool = True,
+) -> bool | None:
     for path in candidate_paths:
         if path in attrs:
             return _as_present(attrs.get(path))
+
+    if not allow_any_fallback:
+        return None
 
     # Fallback for sensors that expose Occupancy at a non-standard endpoint.
     for path, value in attrs.items():
@@ -104,10 +113,106 @@ def _command_desired_onoff(command_name: str) -> bool | None:
     return None
 
 
+def _supports_manual_indicator(attrs: dict) -> bool:
+    # Inovelli dimmers expose an auxiliary indicator LED on endpoint 6 with
+    # OnOff/Level/ColorControl clusters.
+    return (
+        "6/6/0" in attrs
+        and "6/8/0" in attrs
+        and any(isinstance(path, str) and path.startswith("6/768/") for path in attrs.keys())
+    )
+
+
+def _manual_override_toggle_from_event(event_data: dict, *, target_node_id: int) -> bool | None:
+    if not isinstance(event_data, dict):
+        return None
+    if event_data.get("node_id") != target_node_id:
+        return None
+    # Switch cluster multi-press complete event.
+    if event_data.get("cluster_id") != 59 or event_data.get("event_id") != 6:
+        return None
+    press_count = (event_data.get("data") or {}).get("totalNumberOfPressesCounted")
+    if press_count != 1:
+        return None
+
+    endpoint_id = event_data.get("endpoint_id")
+    # Inovelli target switch button endpoints:
+    # - endpoint 3: up paddle
+    # - endpoint 4: down paddle
+    if endpoint_id == 3:
+        return True
+    if endpoint_id == 4:
+        return False
+    return None
+
+
 def _as_float(value) -> float | None:
     if isinstance(value, (int, float)):
         return float(value)
+    if isinstance(value, str):
+        text = value.strip()
+        if not text:
+            return None
+        try:
+            return float(text)
+        except ValueError:
+            return None
     return None
+
+
+async def _set_manual_indicator(
+    ws,
+    *,
+    node_id: int,
+    enabled: bool,
+) -> None:
+    if enabled:
+        # Turn on endpoint-6 indicator and set it to green.
+        await _device_command(
+            ws,
+            node_id=node_id,
+            endpoint_id=6,
+            cluster_id=6,
+            command_name="On",
+            payload={},
+        )
+        await _device_command(
+            ws,
+            node_id=node_id,
+            endpoint_id=6,
+            cluster_id=8,
+            command_name="MoveToLevelWithOnOff",
+            payload={
+                "level": 254,
+                "transitionTime": 0,
+                "optionsMask": 0,
+                "optionsOverride": 0,
+            },
+        )
+        await _device_command(
+            ws,
+            node_id=node_id,
+            endpoint_id=6,
+            cluster_id=768,
+            command_name="MoveToHueAndSaturation",
+            payload={
+                "hue": 85,  # green
+                "saturation": 254,
+                "transitionTime": 0,
+                "optionsMask": 0,
+                "optionsOverride": 0,
+            },
+        )
+        return
+
+    await _device_command(
+        ws,
+        node_id=node_id,
+        endpoint_id=6,
+        cluster_id=6,
+        command_name="Off",
+        payload={},
+    )
 
 
 def _parse_hhmm(value: str) -> int | None:
@@ -147,6 +252,39 @@ def _as_nonempty_str(value) -> str | None:
         if text:
             return text
     return None
+
+
+def _node_key_from_env_name(env_name: str | None) -> str | None:
+    if not isinstance(env_name, str) or not env_name:
+        return None
+    raw = os.getenv(env_name, "").strip()
+    if not raw:
+        return None
+    if raw.startswith("unique_id:") or raw.startswith("serial:") or raw.startswith("mac:"):
+        return raw
+    return f"unique_id:{raw}"
+
+
+def _resolve_node_key(raw_key: str | None) -> str | None:
+    if not isinstance(raw_key, str):
+        return None
+    key = raw_key.strip()
+    if not key:
+        return None
+
+    if key.startswith("unique_id_env:"):
+        env_name = key.split(":", 1)[1].strip()
+        value = (os.getenv(env_name, "") or "").strip()
+        return f"unique_id:{value}" if value else None
+    if key.startswith("serial_env:"):
+        env_name = key.split(":", 1)[1].strip()
+        value = (os.getenv(env_name, "") or "").strip()
+        return f"serial:{value}" if value else None
+    if key.startswith("mac_env:"):
+        env_name = key.split(":", 1)[1].strip()
+        value = (os.getenv(env_name, "") or "").strip().lower()
+        return f"mac:{value}" if value else None
+    return key
 
 
 def _parse_solar_window(raw) -> dict | None:
@@ -264,7 +402,13 @@ def _normalize_rule(raw: dict, index: int) -> dict | None:
         return None
     source_key = raw.get("source_key")
     source_keys = raw.get("source_keys")
+    source_key_env = raw.get("source_key_env")
+    source_keys_env = raw.get("source_keys_env")
     target_key = raw.get("target_key")
+    target_key_env = raw.get("target_key_env")
+    if not isinstance(target_key, str) or not target_key:
+        target_key = _node_key_from_env_name(target_key_env)
+    target_key = _resolve_node_key(target_key if isinstance(target_key, str) else None)
     if not isinstance(target_key, str) or not target_key:
         return None
 
@@ -273,6 +417,16 @@ def _normalize_rule(raw: dict, index: int) -> dict | None:
         normalized_source_keys = [str(x) for x in source_keys if isinstance(x, str) and x]
     elif isinstance(source_key, str) and source_key:
         normalized_source_keys = [source_key]
+    elif isinstance(source_keys_env, list):
+        for env_name in source_keys_env:
+            key = _node_key_from_env_name(env_name if isinstance(env_name, str) else None)
+            if key:
+                normalized_source_keys.append(key)
+    else:
+        key = _node_key_from_env_name(source_key_env if isinstance(source_key_env, str) else None)
+        if key:
+            normalized_source_keys = [key]
+    normalized_source_keys = [k for k in (_resolve_node_key(x) for x in normalized_source_keys) if k]
     if not normalized_source_keys:
         return None
 
@@ -283,8 +437,10 @@ def _normalize_rule(raw: dict, index: int) -> dict | None:
     paths = raw.get("presence_attribute_paths")
     if isinstance(paths, list):
         candidate_paths = [str(x) for x in paths if isinstance(x, str) and x]
+        presence_paths_explicit = len(candidate_paths) > 0
     else:
         candidate_paths = list(DEFAULT_PRESENCE_PATHS)
+        presence_paths_explicit = False
 
     luminance_paths = raw.get("luminance_attribute_paths")
     if isinstance(luminance_paths, list):
@@ -316,6 +472,7 @@ def _normalize_rule(raw: dict, index: int) -> dict | None:
         "off_command": str(raw.get("off_command", "Off")),
         "payload": raw.get("payload") if isinstance(raw.get("payload"), dict) else {},
         "presence_attribute_paths": candidate_paths,
+        "presence_paths_explicit": presence_paths_explicit,
         "luminance_attribute_paths": candidate_luminance_paths,
         "dark_when_lux_below": dark_threshold,
         "require_luminance_for_on": require_luminance_for_on,
@@ -365,14 +522,8 @@ async def _device_command(
         raise RuntimeError(f"device_command {command_name} failed: {details}")
 
 
-async def _run_once(ws, rules: list[dict], rule_state: dict[str, dict]) -> None:
-    start = await _call(ws, "presence-start", "start_listening")
-    if "error_code" in start:
-        details = start.get("details") or "unknown error"
-        raise RuntimeError(f"start_listening failed: {details}")
-
-    nodes = start.get("result") or []
-    by_key = {}
+def _build_by_key(nodes: list[dict]) -> dict[str, dict]:
+    by_key: dict[str, dict] = {}
     for node in nodes:
         node_id = node.get("node_id")
         if not isinstance(node_id, int):
@@ -385,7 +536,48 @@ async def _run_once(ws, rules: list[dict], rule_state: dict[str, dict]) -> None:
                 "attrs": attrs,
                 "available": bool(node.get("available", False)),
             }
+    return by_key
 
+
+def _index_by_node_id(by_key: dict[str, dict]) -> dict[int, dict]:
+    out: dict[int, dict] = {}
+    for entry in by_key.values():
+        node_id = entry.get("node_id")
+        if isinstance(node_id, int):
+            out[node_id] = entry
+    return out
+
+
+def _watched_node_ids(rules: list[dict], by_key: dict[str, dict]) -> set[int]:
+    watched: set[int] = set()
+    for rule in rules:
+        for key in rule["source_keys"]:
+            node = by_key.get(key)
+            if node and isinstance(node.get("node_id"), int):
+                watched.add(int(node["node_id"]))
+        target = by_key.get(rule["target_key"])
+        if target and isinstance(target.get("node_id"), int):
+            watched.add(int(target["node_id"]))
+    return watched
+
+
+async def _read_snapshot(ws) -> dict[str, dict]:
+    start = await _call(ws, "presence-start", "start_listening")
+    if "error_code" in start:
+        details = start.get("details") or "unknown error"
+        raise RuntimeError(f"start_listening failed: {details}")
+    nodes = start.get("result") or []
+    return _build_by_key(nodes)
+
+
+async def _evaluate_rules(
+    ws,
+    rules: list[dict],
+    rule_state: dict[str, dict],
+    by_key: dict[str, dict],
+    trigger: str,
+    event_data: dict | None = None,
+) -> None:
     for rule in rules:
         state = rule_state.setdefault(
             rule["name"],
@@ -395,7 +587,11 @@ async def _run_once(ws, rules: list[dict], rule_state: dict[str, dict]) -> None:
                 "last_light_state": None,
                 "override_until": 0.0,
                 "override_state": None,
+                "last_override_log_epoch": 0.0,
+                "override_started_epoch": 0.0,
+                "manual_indicator_active": False,
                 "last_auto_command_epoch": 0.0,
+                "last_presence_change_epoch": 0.0,
             },
         )
         sources = [by_key.get(key) for key in rule["source_keys"]]
@@ -433,24 +629,105 @@ async def _run_once(ws, rules: list[dict], rule_state: dict[str, dict]) -> None:
         ):
             state["override_until"] = now + rule["manual_override_sec"]
             state["override_state"] = light_state
+            state["override_started_epoch"] = now
             print(
                 f"presence rule {rule['name']}: manual light change detected (state={light_state}); "
                 f"holding automation for {rule['manual_override_sec']}s",
                 flush=True,
             )
+            if _supports_manual_indicator(target["attrs"]):
+                try:
+                    await _set_manual_indicator(
+                        ws,
+                        node_id=target["node_id"],
+                        enabled=True,
+                    )
+                    state["manual_indicator_active"] = True
+                except Exception as err:
+                    print(
+                        f"presence rule {rule['name']}: failed to enable manual indicator: {err}",
+                        file=sys.stderr,
+                        flush=True,
+                    )
         state["last_light_state"] = light_state
+
+        # If override is active, pressing the same paddle direction again
+        # clears the manual override immediately.
+        if float(state.get("override_until") or 0.0) > now:
+            pressed_state = _manual_override_toggle_from_event(
+                event_data or {},
+                target_node_id=target["node_id"],
+            )
+            override_state = state.get("override_state")
+            override_started = float(state.get("override_started_epoch") or 0.0)
+            if (
+                pressed_state is not None
+                and isinstance(override_state, bool)
+                and pressed_state == override_state
+                and (now - override_started) >= 1.0
+            ):
+                state["override_until"] = 0.0
+                state["override_state"] = None
+                state["override_started_epoch"] = 0.0
+                state["last_override_log_epoch"] = 0.0
+                print(
+                    f"presence rule {rule['name']}: manual override cleared by repeat button press",
+                    flush=True,
+                )
+                if state.get("manual_indicator_active"):
+                    try:
+                        await _set_manual_indicator(
+                            ws,
+                            node_id=target["node_id"],
+                            enabled=False,
+                        )
+                    except Exception as err:
+                        print(
+                            f"presence rule {rule['name']}: failed to clear manual indicator: {err}",
+                            file=sys.stderr,
+                            flush=True,
+                        )
+                    state["manual_indicator_active"] = False
 
         override_until = float(state.get("override_until") or 0.0)
         if override_until > now:
+            last_override_log = float(state.get("last_override_log_epoch") or 0.0)
+            if (now - last_override_log) >= 30.0:
+                remaining = max(0, int(round(override_until - now)))
+                print(
+                    f"presence rule {rule['name']}: manual override active "
+                    f"({remaining}s remaining); suppressing automation",
+                    flush=True,
+                )
+                state["last_override_log_epoch"] = now
             continue
         if override_until > 0.0 and override_until <= now:
             state["override_until"] = 0.0
             state["override_state"] = None
+            state["override_started_epoch"] = 0.0
             print(f"presence rule {rule['name']}: manual override expired; automation resumed", flush=True)
+            if state.get("manual_indicator_active"):
+                try:
+                    await _set_manual_indicator(
+                        ws,
+                        node_id=target["node_id"],
+                        enabled=False,
+                    )
+                except Exception as err:
+                    print(
+                        f"presence rule {rule['name']}: failed to clear manual indicator: {err}",
+                        file=sys.stderr,
+                        flush=True,
+                    )
+                state["manual_indicator_active"] = False
 
         presence_values: list[bool] = []
         for source in sources:
-            source_presence = _presence_from_attrs(source["attrs"], rule["presence_attribute_paths"])
+            source_presence = _presence_from_attrs(
+                source["attrs"],
+                rule["presence_attribute_paths"],
+                allow_any_fallback=not bool(rule.get("presence_paths_explicit")),
+            )
             if source_presence is not None:
                 presence_values.append(source_presence)
         if not presence_values:
@@ -464,6 +741,8 @@ async def _run_once(ws, rules: list[dict], rule_state: dict[str, dict]) -> None:
         previous_presence = state.get("last_presence")
         presence_changed = (previous_presence is None) or (previous_presence != present)
         state["last_presence"] = present
+        if presence_changed:
+            state["last_presence_change_epoch"] = now
 
         previous_on_eligible = state.get("last_on_eligible")
         skip_on_reasons: list[str] = []
@@ -559,11 +838,13 @@ async def _run_once(ws, rules: list[dict], rule_state: dict[str, dict]) -> None:
         if desired_onoff is not None and light_state is not None and light_state == desired_onoff:
             print(
                 f"presence rule {rule['name']}: present={present} -> "
-                f"skip {command_name} (target already {'On' if light_state else 'Off'})",
+                f"skip {command_name} (target already {'On' if light_state else 'Off'}) "
+                f"trigger={trigger}",
                 flush=True,
             )
             continue
 
+        cmd_started = time.monotonic()
         await _device_command(
             ws,
             node_id=target["node_id"],
@@ -572,17 +853,28 @@ async def _run_once(ws, rules: list[dict], rule_state: dict[str, dict]) -> None:
             command_name=command_name,
             payload=rule["payload"],
         )
+        cmd_rtt_ms = (time.monotonic() - cmd_started) * 1000.0
         state["last_auto_command_epoch"] = now
+        observe_to_cmd_ms = None
+        if isinstance(state.get("last_presence_change_epoch"), (int, float)):
+            observe_to_cmd_ms = max(0.0, (now - float(state["last_presence_change_epoch"])) * 1000.0)
+        latency_text = (
+            f"observe_to_cmd_ms={observe_to_cmd_ms:.0f} cmd_rtt_ms={cmd_rtt_ms:.0f}"
+            if observe_to_cmd_ms is not None
+            else f"cmd_rtt_ms={cmd_rtt_ms:.0f}"
+        )
         print(
             f"presence rule {rule['name']}: present={present} -> "
-            f"{command_name} target_node_id={target['node_id']}",
+            f"{command_name} target_node_id={target['node_id']} trigger={trigger} {latency_text}",
             flush=True,
         )
 
 
 async def _run() -> int:
     ws_url = os.getenv("MATTER_WS_URL", WS_URL_DEFAULT)
-    poll_interval_sec = int(os.getenv("MATTER_PRESENCE_POLL_INTERVAL_SEC", "3"))
+    # Event-driven automation loop with a periodic re-evaluation tick for
+    # time-window and override-expiry logic.
+    poll_interval_sec = float(os.getenv("MATTER_PRESENCE_POLL_INTERVAL_SEC", "1.0"))
     raw_rules = os.getenv("MATTER_PRESENCE_RULES_JSON", "[]")
 
     try:
@@ -604,25 +896,82 @@ async def _run() -> int:
         return 1
 
     print(
-        f"matter-presence-actions: rules={len(rules)} poll_interval={poll_interval_sec}s",
+        f"matter-presence-actions: rules={len(rules)} event_driven=true tick={poll_interval_sec}s",
         flush=True,
     )
     rule_state: dict[str, dict] = {}
 
     while True:
-        async with websockets.connect(ws_url) as ws:
-            await ws.recv()  # server_info
-            await _run_once(ws, rules, rule_state)
-        await asyncio.sleep(max(1, poll_interval_sec))
-
-
-async def main() -> int:
-    while True:
         try:
-            return await _run()
+            async with websockets.connect(ws_url) as ws:
+                await ws.recv()  # server_info
+                by_key = await _read_snapshot(ws)
+                by_node_id = _index_by_node_id(by_key)
+                await _evaluate_rules(ws, rules, rule_state, by_key, "startup")
+                watched = _watched_node_ids(rules, by_key)
+                last_snapshot_refresh = asyncio.get_running_loop().time()
+
+                tick = max(0.25, poll_interval_sec)
+                while True:
+                    try:
+                        raw = await asyncio.wait_for(ws.recv(), timeout=tick)
+                    except asyncio.TimeoutError:
+                        # Keep rule timing logic active on a fast tick. To avoid
+                        # destabilizing the websocket, only force a full snapshot
+                        # occasionally; attribute/node events update incrementally.
+                        now = asyncio.get_running_loop().time()
+                        if (now - last_snapshot_refresh) >= 30.0:
+                            by_key = await _read_snapshot(ws)
+                            by_node_id = _index_by_node_id(by_key)
+                            watched = _watched_node_ids(rules, by_key)
+                            last_snapshot_refresh = now
+                        await _evaluate_rules(ws, rules, rule_state, by_key, "tick")
+                        continue
+
+                    msg = json.loads(raw)
+                    event_name = msg.get("event")
+                    if event_name == "attribute_updated":
+                        data = msg.get("data")
+                        if (
+                            isinstance(data, list)
+                            and len(data) >= 3
+                            and isinstance(data[0], int)
+                            and isinstance(data[1], str)
+                        ):
+                            node_id = data[0]
+                            if node_id in watched:
+                                entry = by_node_id.get(node_id)
+                                if entry is not None:
+                                    entry["attrs"][data[1]] = data[2]
+                                    await _evaluate_rules(ws, rules, rule_state, by_key, "attribute_updated")
+                        continue
+
+                    if event_name != "node_event":
+                        continue
+                    data = msg.get("data") or {}
+                    node_id = data.get("node_id")
+                    if not isinstance(node_id, int) or node_id not in watched:
+                        continue
+
+                    # Refresh authoritative node attributes when relevant devices
+                    # emit events; this keeps automation immediate and consistent.
+                    by_key = await _read_snapshot(ws)
+                    by_node_id = _index_by_node_id(by_key)
+                    watched = _watched_node_ids(rules, by_key)
+                    last_snapshot_refresh = asyncio.get_running_loop().time()
+                    await _evaluate_rules(ws, rules, rule_state, by_key, "node_event", event_data=data)
+        except websockets.exceptions.ConnectionClosed as err:
+            # The matter server may close idle/rotating sockets; reconnect fast
+            # to avoid missing brief occupancy changes.
+            print(f"presence listener closed: {err}; reconnecting", file=sys.stderr, flush=True)
+            await asyncio.sleep(0.2)
         except Exception as err:
             print(f"presence listener error: {err}", file=sys.stderr, flush=True)
             await asyncio.sleep(3)
+
+
+async def main() -> int:
+    return await _run()
 
 
 if __name__ == "__main__":

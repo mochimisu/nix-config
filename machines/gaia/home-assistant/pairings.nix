@@ -1,5 +1,10 @@
-{pkgs, lib, ...}: let
-  # Declarative desired pairings. Keep setup codes in /etc/secret/matter-reconcile.env
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}: let
+  # Declarative desired pairings. Keep setup codes in encrypted sops secret env file
   # using the environment variable named in `code_env`.
   matterDesiredPairings = [
     {
@@ -8,7 +13,7 @@
       code_env = "MATTER_CODE_OFFICE_BLINDS";
       network_only = false;
       match = {
-        mac = "88:13:bf:aa:50:df";
+        mac_env = "MATTER_MAC_OFFICE_BLINDS";
       };
     }
 
@@ -18,7 +23,7 @@
       code_env = "MATTER_CODE_OFFICE_BLINDS_REMOTE";
       network_only = false;
       match = {
-        mac = "96:fe:3c:95:81:67";
+        mac_env = "MATTER_MAC_OFFICE_BLINDS_REMOTE";
       };
     }
 
@@ -28,7 +33,7 @@
       code_env = "MATTER_CODE_DOWNSTAIRS_THERMOSTAT";
       network_only = false;
       match = {
-        unique_id = "2FEE8B19A9C9B651";
+        unique_id_env = "MATTER_UID_DOWNSTAIRS_THERMOSTAT";
       };
     }
 
@@ -38,7 +43,7 @@
       code_env = "MATTER_CODE_UPSTAIRS_THERMOSTAT";
       network_only = false;
       match = {
-        unique_id = "F6463B0DBBD4130A";
+        unique_id_env = "MATTER_UID_UPSTAIRS_THERMOSTAT";
       };
     }
 
@@ -48,7 +53,7 @@
       code_env = "MATTER_CODE_OFFICE_LIGHT";
       network_only = false;
       match = {
-        unique_id = "14285507501172f6ff50bbcd35a43879";
+        unique_id_env = "MATTER_UID_OFFICE_LIGHT";
       };
     }
 
@@ -58,7 +63,7 @@
       code_env = "MATTER_CODE_MBR_BATHROOM_MAIN";
       network_only = false;
       match = {
-        unique_id = "ac274f08f79b750e30dc485f96fdee2f";
+        unique_id_env = "MATTER_UID_MBR_BATHROOM_MAIN";
       };
     }
 
@@ -68,7 +73,7 @@
       code_env = "MATTER_CODE_MBR_BATHROOM_WARM";
       network_only = false;
       match = {
-        unique_id = "0383480d4f0476afb1007333283762d6";
+        unique_id_env = "MATTER_UID_MBR_BATHROOM_WARM";
       };
     }
 
@@ -78,7 +83,7 @@
       code_env = "MATTER_CODE_MBR_BATHROOM_MIRROR";
       network_only = false;
       match = {
-        unique_id = "3817c88523e9263acbddedf321283ad5";
+        unique_id_env = "MATTER_UID_MBR_BATHROOM_MIRROR";
       };
     }
 
@@ -88,7 +93,7 @@
       code_env = "MATTER_CODE_MBR_BATHROOM_FAN";
       network_only = false;
       match = {
-        unique_id = "f64b7b8fea979ebb48c915cbbc444261";
+        unique_id_env = "MATTER_UID_MBR_BATHROOM_FAN";
       };
     }
 
@@ -98,7 +103,7 @@
       code_env = "MATTER_CODE_MBR_SHOWER";
       network_only = false;
       match = {
-        unique_id = "f9da66c66a1a093459550ac0d11d9e98";
+        unique_id_env = "MATTER_UID_MBR_SHOWER";
       };
     }
 
@@ -108,7 +113,7 @@
       code_env = "MATTER_CODE_MBR_BATHTUB";
       network_only = false;
       match = {
-        unique_id = "0039f05c787bcd10bdb2e648f5a8f2f8";
+        unique_id_env = "MATTER_UID_MBR_BATHTUB";
       };
     }
 
@@ -118,17 +123,26 @@
       code_env = "MATTER_CODE_OFFICE_PRESENCE";
       network_only = false;
       match = {
-        unique_id = "26ADD8F211F1A97A";
+        unique_id_env = "MATTER_UID_OFFICE_PRESENCE";
       };
     }
 
     {
-      name = "MBR Bathroom Presence";
+      name = "MBR Bathroom Toilet Presence";
       room = "MBR Bathroom";
       code_env = "MATTER_CODE_MBR_BATHROOM_PRESENCE";
       network_only = false;
       match = {
-        unique_id = "3EBD38F2CC110F47";
+        unique_id_env = "MATTER_UID_MBR_BATHROOM_PRESENCE";
+      };
+    }
+
+    {
+      name = "MBR Bathroom Main Presence";
+      room = "MBR Bathroom";
+      network_only = false;
+      match = {
+        unique_id_env = "MATTER_UID_MBR_BATHROOM_MAIN_PRESENCE";
       };
     }
 
@@ -138,7 +152,61 @@
       code_env = "MATTER_CODE_MBR_SHOWER_PRESENCE";
       network_only = false;
       match = {
-        unique_id = "78FFD38C8E551431";
+        unique_id_env = "MATTER_UID_MBR_SHOWER_PRESENCE";
+      };
+    }
+
+    {
+      name = "MBR Presence";
+      room = "MBR";
+      network_only = false;
+      match = {
+        unique_id_env = "MATTER_UID_MBR_PRESENCE";
+      };
+    }
+
+    {
+      name = "Upstairs Bathroom Light";
+      room = "Upstairs Bathroom";
+      network_only = false;
+      match = {
+        unique_id_env = "MATTER_UID_UPSTAIRS_BATHROOM_LIGHT";
+      };
+    }
+
+    {
+      name = "Pantry Light";
+      room = "Pantry";
+      network_only = false;
+      match = {
+        unique_id_env = "MATTER_UID_PANTRY_LIGHT";
+      };
+    }
+
+    {
+      name = "Front Door Light";
+      room = "Front Door";
+      network_only = false;
+      match = {
+        unique_id_env = "MATTER_UID_FRONT_DOOR_LIGHT";
+      };
+    }
+
+    {
+      name = "Pantry Presence";
+      room = "Pantry";
+      network_only = false;
+      match = {
+        unique_id_env = "MATTER_UID_PANTRY_PRESENCE";
+      };
+    }
+
+    {
+      name = "Upstairs Bathroom Presence";
+      room = "Upstairs Bathroom";
+      network_only = false;
+      match = {
+        unique_id_env = "MATTER_UID_UPSTAIRS_BATHROOM_PRESENCE";
       };
     }
 
@@ -147,7 +215,7 @@
       room = "Nursery";
       network_only = false;
       match = {
-        mac = "88:13:bf:aa:51:77";
+        mac_env = "MATTER_MAC_NURSERY_BLINDS";
       };
     }
 
@@ -156,16 +224,16 @@
       room = "MBR Bathroom";
       network_only = false;
       match = {
-        unique_id = "7D4B942B6330D1FB";
+        unique_id_env = "MATTER_UID_MBR_DEHUMIDIFIER";
       };
     }
 
     {
       name = "MBR Bed Light";
-      room = "MBR Bathroom";
+      room = "MBR";
       network_only = false;
       match = {
-        unique_id = "1DC692B6244A7FDD";
+        unique_id_env = "MATTER_UID_MBR_BED_LIGHT";
       };
     }
 
@@ -174,7 +242,7 @@
       room = "Network Closet";
       network_only = false;
       match = {
-        mac = "9e:b1:dc:1c:ec:f4";
+        mac_env = "MATTER_MAC_AQARA_HUB_M3";
       };
     }
 
@@ -198,42 +266,61 @@
   nodeLabelKeyFromMatch = match:
     if match ? unique_id
     then "unique_id:${match.unique_id}"
+    else if match ? unique_id_env
+    then "unique_id_env:${match.unique_id_env}"
     else if match ? serial
     then "serial:${match.serial}"
+    else if match ? serial_env
+    then "serial_env:${match.serial_env}"
     else if match ? mac
     then "mac:${match.mac}"
+    else if match ? mac_env
+    then "mac_env:${match.mac_env}"
     else null;
 
   matterPairingNodeLabels =
     lib.listToAttrs
     (lib.filter (x: x != null) (map (pairing: let
-        key = nodeLabelKeyFromMatch (pairing.match or {});
-        label = pairing.name or null;
-      in
-        if key != null && label != null
-        then {
-          name = key;
-          value = label;
-        }
-        else null)
-      matterDesiredPairings));
+      key = nodeLabelKeyFromMatch (pairing.match or {});
+      label = pairing.name or null;
+    in
+      if key != null && label != null
+      then {
+        name = key;
+        value = label;
+      }
+      else null)
+    matterDesiredPairings));
 
   matterPairingNodeRooms =
     lib.listToAttrs
     (lib.filter (x: x != null) (map (pairing: let
-        key = nodeLabelKeyFromMatch (pairing.match or {});
-        room = pairing.room or null;
-      in
-        if key != null && room != null
-        then {
-          name = key;
-          value = room;
-        }
-        else null)
-      matterDesiredPairings));
+      key = nodeLabelKeyFromMatch (pairing.match or {});
+      room = pairing.room or null;
+    in
+      if key != null && room != null
+      then {
+        name = key;
+        value = room;
+      }
+      else null)
+    matterDesiredPairings));
 
   matterNodeLabels = matterExtraNodeLabels // matterPairingNodeLabels;
   matterNodeRooms = matterExtraNodeRooms // matterPairingNodeRooms;
+  matterNodeRoomsByLabel =
+    lib.listToAttrs
+    (lib.filter (x: x != null) (map (pairing: let
+      label = pairing.name or null;
+      room = pairing.room or null;
+    in
+      if label != null && room != null
+      then {
+        name = label;
+        value = room;
+      }
+      else null)
+    matterDesiredPairings));
   matterDesiredPairingsJson = builtins.toJSON matterDesiredPairings;
 
   pythonEnv = pkgs.python3.withPackages (ps: [
@@ -283,7 +370,15 @@
       attrs = node.get("attributes") or {}
       identity = _node_identity(attrs)
       desired_name = desired.get("name")
-      desired_match = desired.get("match") or {}
+      desired_match = dict(desired.get("match") or {})
+
+      for field in ("unique_id", "serial", "mac"):
+        env_field = f"{field}_env"
+        env_name = desired_match.get(env_field)
+        if isinstance(env_name, str) and env_name:
+          env_value = (os.getenv(env_name, "") or "").strip()
+          if env_value:
+            desired_match[field] = env_value
 
       if desired_name and identity.get("label") == desired_name:
         return True
@@ -454,43 +549,11 @@ in {
   # Export to sibling modules (devices.nix) so labeler and reconcile share one source.
   _module.args.matterNodeLabels = matterNodeLabels;
   _module.args.matterNodeRooms = matterNodeRooms;
+  _module.args.matterNodeRoomsByLabel = matterNodeRoomsByLabel;
 
   environment.systemPackages = [
     matterReconcileTool
   ];
-
-  system.activationScripts.matterReconcileEnv = ''
-    ENV_FILE=/etc/secret/matter-reconcile.env
-    if [ ! -f "$ENV_FILE" ]; then
-      ${pkgs.coreutils}/bin/install -d -m 0750 /etc/secret
-      ${pkgs.coreutils}/bin/install -m 0600 /dev/null "$ENV_FILE"
-      ${pkgs.coreutils}/bin/cat > "$ENV_FILE" <<'EOT'
-# Matter reconcile secrets/config.
-# One variable per desired pairing `code_env` key.
-# Example:
-# MATTER_CODE_NURSERY_SENSOR=MT:Y.ABCD1234...
-# MATTER_CODE_OFFICE_LIGHT=MT:Y.ABCD1234...
-# MATTER_CODE_MBR_BATHROOM_MAIN=MT:Y.ABCD1234...
-# MATTER_CODE_MBR_BATHROOM_WARM=MT:Y.ABCD1234...
-# MATTER_CODE_MBR_BATHROOM_MIRROR=MT:Y.ABCD1234...
-# MATTER_CODE_MBR_BATHROOM_FAN=MT:Y.ABCD1234...
-# MATTER_CODE_MBR_SHOWER=MT:Y.ABCD1234...
-# MATTER_CODE_MBR_BATHTUB=MT:Y.ABCD1234...
-# MATTER_CODE_OFFICE_PRESENCE=MT:Y.ABCD1234...
-# Optional: set to seed Thread commissioning credentials.
-# MATTER_THREAD_DATASET_HEX=0e080000000000010000000300001235060004001fffe00208...
-# Optional: token for HA websocket API (used by matter-ha-namer).
-# MATTER_HA_TOKEN=eyJ...
-# Optional HA websocket URL override (default ws://127.0.0.1:8123/api/websocket).
-# HA_WS_URL=ws://127.0.0.1:8123/api/websocket
-# Optional: watchdog alert + thresholds.
-# MATTER_ALERT_EMAIL=you@example.com
-# MATTER_ALERT_FROM=gaia-watchdog@example.com
-# THREAD_WATCHDOG_OFFLINE_THRESHOLD=5
-# THREAD_WATCHDOG_RESTART_COOLDOWN_SEC=600
-EOT
-    fi
-  '';
 
   systemd.services.matter-reconcile = {
     description = "Reconcile declarative Matter pairings";
@@ -504,8 +567,8 @@ EOT
     ];
     serviceConfig = {
       Type = "oneshot";
-      SuccessExitStatus = [ 1 ];
-      EnvironmentFile = "-/etc/secret/matter-reconcile.env";
+      SuccessExitStatus = [1];
+      EnvironmentFile = config.sops.secrets."matter-env".path;
       ExecStartPre = "${pkgs.bash}/bin/bash -c 'for i in {1..60}; do (echo > /dev/tcp/127.0.0.1/5580) >/dev/null 2>&1 && exit 0; sleep 1; done; echo matter-server ws not ready >&2; exit 1'";
       ExecStart = "${matterReconcileTool}/bin/matter-reconcile";
     };

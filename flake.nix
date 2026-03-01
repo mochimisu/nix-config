@@ -35,6 +35,10 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nix-openclaw.url = "github:openclaw/nix-openclaw";
+    sops-nix = {
+      url = "github:Mic92/sops-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
   outputs = {
     self,
@@ -218,6 +222,7 @@
         system = "x86_64-linux";
         modules = [
           ./vars.nix
+          inputs.sops-nix.nixosModules.sops
           ./machines/gaia/hardware-configuration.nix
           ./machines/gaia/configuration.nix
           ./boot-efi.nix

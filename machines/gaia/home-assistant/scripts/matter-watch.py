@@ -13,17 +13,29 @@ import unicodedata
 import urllib.error
 import urllib.request
 from datetime import datetime
+from pathlib import Path
 
 import websockets
 
 WS_URL_DEFAULT = "ws://127.0.0.1:5580/ws"
+KEEPALIVE_LATENCY_FILE_DEFAULT = "/run/matter-keepalive-latency.json"
 
 GREEN = "\033[32m"
 YELLOW = "\033[33m"
 ORANGE = "\033[38;5;208m"
 RED = "\033[31m"
+WHITE = "\033[37m"
+BLUE = "\033[34m"
 RESET = "\033[0m"
 ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
+THREAD_VENDOR_KEYWORDS = (
+    "inovelli",
+    "meross",
+    "ikea of sweden",
+    "smartwings",
+    "aqara",
+    "nanoleaf",
+)
 
 
 def _b64_to_bytes(value: str) -> bytes | None:
@@ -57,11 +69,54 @@ def _room_key_candidates(attrs: dict) -> list[str]:
     return out
 
 
-def _room_for_attrs(attrs: dict, rooms: dict[str, str]) -> str:
+def _room_for_attrs(attrs: dict, rooms: dict[str, str], rooms_by_label: dict[str, str]) -> str:
     for key in _room_key_candidates(attrs):
         if key in rooms and isinstance(rooms[key], str) and rooms[key]:
             return rooms[key]
+
+    label = attrs.get("0/40/5")
+    if isinstance(label, str) and label and label in rooms_by_label:
+        room = rooms_by_label.get(label)
+        if isinstance(room, str) and room:
+            return room
+
     return "Ungrouped"
+
+
+def _expand_env_backed_rooms(raw: dict) -> dict[str, str]:
+    out: dict[str, str] = {}
+    for key, room in raw.items():
+        if not isinstance(key, str) or not isinstance(room, str) or not room:
+            continue
+        if key.startswith("unique_id_env:"):
+            env_name = key.split(":", 1)[1].strip()
+            if not env_name:
+                continue
+            value = (os.getenv(env_name, "") or "").strip()
+            if not value:
+                continue
+            out[f"unique_id:{value}"] = room
+            continue
+        if key.startswith("serial_env:"):
+            env_name = key.split(":", 1)[1].strip()
+            if not env_name:
+                continue
+            value = (os.getenv(env_name, "") or "").strip()
+            if not value:
+                continue
+            out[f"serial:{value}"] = room
+            continue
+        if key.startswith("mac_env:"):
+            env_name = key.split(":", 1)[1].strip()
+            if not env_name:
+                continue
+            value = (os.getenv(env_name, "") or "").strip().lower()
+            if not value:
+                continue
+            out[f"mac:{value}"] = room
+            continue
+        out[key] = room
+    return out
 
 
 def _parse_attr_path(path: str) -> tuple[int, int, int] | None:
@@ -170,6 +225,19 @@ def _thread_link_metrics(attrs: dict) -> tuple[str, str]:
     return lqi, rssi
 
 
+def _is_thread_candidate(attrs: dict) -> bool:
+    vendor = str(attrs.get("0/40/1") or "").strip().lower()
+    product = str(attrs.get("0/40/3") or "").strip().lower()
+    if any(keyword in vendor for keyword in THREAD_VENDOR_KEYWORDS):
+        return True
+    for path in attrs.keys():
+        if isinstance(path, str) and (path.startswith("0/53/") or path.startswith("0/54/")):
+            return True
+    if "button" in product or "remote" in product:
+        return True
+    return False
+
+
 def _fetch_solar(api_url: str, timeout_sec: float = 0.7) -> dict | None:
     try:
         with urllib.request.urlopen(api_url, timeout=timeout_sec) as resp:
@@ -187,12 +255,34 @@ def _fetch_solar(api_url: str, timeout_sec: float = 0.7) -> dict | None:
     return data if isinstance(data, dict) else None
 
 
+def _load_keepalive_metrics(path: str) -> dict[str, dict]:
+    try:
+        raw = Path(path).read_text(encoding="utf-8")
+    except Exception:
+        return {}
+    try:
+        data = json.loads(raw)
+    except Exception:
+        return {}
+    if not isinstance(data, dict):
+        return {}
+    nodes = data.get("nodes")
+    return nodes if isinstance(nodes, dict) else {}
+
+
 def _device_status(vendor: str, product: str, label: str, attrs: dict, color: bool) -> str:
     vendor_l = (vendor or "").lower()
     product_l = (product or "").lower()
     label_l = (label or "").lower()
 
-    if "inovelli" in vendor_l or "vtm31" in product_l:
+    is_mbr_bed_light = ("nanoleaf" in vendor_l) and ("mbr bed light" in label_l)
+
+    switch_like = (
+        ("inovelli" in vendor_l)
+        or ("vtm31" in product_l)
+        or ("tapo" in vendor_l and ("smart wi-fi plug" in product_l or "plug" in label_l))
+    )
+    if switch_like or is_mbr_bed_light:
         onoff = _cluster_attr_value(attrs, 6, 0)
         on_symbol = f"{GREEN}●{RESET}" if color else "●"
         off_symbol = "◯"
@@ -201,7 +291,61 @@ def _device_status(vendor: str, product: str, label: str, attrs: dict, color: bo
         if isinstance(onoff, (int, float)):
             return on_symbol if int(onoff) != 0 else off_symbol
 
-    if ("meross" in vendor_l) and ("presence sensor" in product_l or "presence" in label_l):
+    # Window covering icon state:
+    # - fully open: empty box
+    # - partially closed: half-filled box
+    # - closed: full box
+    covering_like = ("window covering" in product_l) or any(
+        isinstance(path, str) and "/258/" in path for path in attrs.keys()
+    )
+    if covering_like:
+        position_raw = _cluster_attr_value(attrs, 258, 14)
+        if not isinstance(position_raw, (int, float)):
+            position_raw = _cluster_attr_value(attrs, 258, 8)
+        if isinstance(position_raw, (int, float)):
+            pos = float(position_raw)
+            # Matter can expose percent in 0..100 or 0..10000.
+            closed_pct = (pos / 100.0) if pos > 100.0 else pos
+            if closed_pct <= 5.0:
+                return "□"
+            if closed_pct >= 95.0:
+                return "■"
+            return "▌"
+
+    def _first_cluster_value(cluster: int, attr_ids: tuple[int, ...]):
+        for attr_id in attr_ids:
+            value = _cluster_attr_value(attrs, cluster, attr_id)
+            if isinstance(value, (int, float)):
+                return float(value)
+        return None
+
+    def _thermostat_deg_f(raw: float | None) -> str:
+        if raw is None:
+            return "--"
+        # Matter thermostat values are in 0.01C.
+        c = raw / 100.0
+        f = (c * 9.0 / 5.0) + 32.0
+        return str(int(round(f)))
+
+    thermostat_like = ("thermostat" in product_l) or any(
+        isinstance(path, str) and "/513/" in path for path in attrs.keys()
+    )
+    if thermostat_like:
+        heat_raw = _first_cluster_value(513, (18, 16))
+        temp_raw = _first_cluster_value(513, (0,))
+        cool_raw = _first_cluster_value(513, (17, 19))
+        heat = _thermostat_deg_f(heat_raw)
+        temp = _thermostat_deg_f(temp_raw)
+        cool = _thermostat_deg_f(cool_raw)
+        if color:
+            return f"{RED}{heat}{RESET}/{WHITE}{temp}{RESET}/{BLUE}{cool}{RESET}"
+        return f"{heat}/{temp}/{cool}"
+
+    is_presence_sensor = (
+        (("meross" in vendor_l) and ("presence sensor" in product_l or "presence" in label_l))
+        or (("aqara" in vendor_l) and ("fp300" in product_l or "presence" in label_l))
+    )
+    if is_presence_sensor:
         occ = _cluster_attr_value(attrs, 1030, 0)
         if occ is None:
             occ = _cluster_attr_value(attrs, 1066, 0)
@@ -222,7 +366,15 @@ def _device_status(vendor: str, product: str, label: str, attrs: dict, color: bo
             lux = 0.0 if raw <= 0 else math.pow(10.0, (raw - 1.0) / 10000.0)
             lux_text = f"/{int(round(lux))}lx"
 
-        return f"{icon}{lux_text}"
+        humidity_text = ""
+        humidity = _cluster_attr_value(attrs, 1029, 0)
+        if isinstance(humidity, (int, float)):
+            raw_h = float(humidity)
+            # RelativeHumidityMeasurement.MeasuredValue is typically in 0.01%.
+            pct = raw_h / 100.0 if raw_h > 100.0 else raw_h
+            humidity_text = f"/{int(round(pct))}%"
+
+        return f"{icon}{lux_text}{humidity_text}"
 
     return ""
 
@@ -339,6 +491,38 @@ def _color_rssi(value_text: str, color: bool) -> str:
     return f"{RED}{value_text}{RESET}"
 
 
+def _last_ack_info(node_id: int, attrs: dict, keepalive_metrics: dict[str, dict]) -> tuple[str, float | None]:
+    if not _is_thread_candidate(attrs):
+        return "---", None
+    entry = keepalive_metrics.get(str(node_id))
+    if not isinstance(entry, dict):
+        return "", None
+    last_ack = entry.get("last_ack_epoch")
+    if isinstance(last_ack, (int, float)):
+        try:
+            ack_epoch = float(last_ack)
+            text = datetime.fromtimestamp(ack_epoch).strftime("%H:%M:%S")
+            age_sec = max(0.0, datetime.now().timestamp() - ack_epoch)
+            return text, age_sec
+        except Exception:
+            return "", None
+    return "", None
+
+
+def _color_last_ack(value_text: str, age_sec: float | None, color: bool) -> str:
+    if not color or not value_text:
+        return value_text
+    if value_text == "---":
+        return value_text
+    if age_sec is None:
+        return f"{RED}{value_text}{RESET}"
+    if age_sec < 60.0:
+        return f"{WHITE}{value_text}{RESET}"
+    if age_sec <= 150.0:
+        return f"{YELLOW}{value_text}{RESET}"
+    return f"{RED}{value_text}{RESET}"
+
+
 async def _poll(ws_url: str) -> list[dict]:
     async with websockets.connect(ws_url) as ws:
         await ws.recv()  # server_info
@@ -356,6 +540,8 @@ def _table_text(
     interval: float,
     solar_data: dict | None,
     rooms: dict[str, str],
+    rooms_by_label: dict[str, str],
+    keepalive_metrics: dict[str, dict],
 ) -> str:
     width = shutil.get_terminal_size((120, 40)).columns
     now = datetime.now().isoformat(timespec="seconds")
@@ -398,7 +584,7 @@ def _table_text(
     grouped: dict[str, list[dict]] = {}
     for node in sorted(nodes, key=lambda n: n.get("node_id", 0)):
         attrs = node.get("attributes") or {}
-        room = _room_for_attrs(attrs, rooms)
+        room = _room_for_attrs(attrs, rooms, rooms_by_label)
         grouped.setdefault(room, []).append(node)
 
     preferred_order = [
@@ -416,12 +602,12 @@ def _table_text(
     )
 
     header = (
-        f"{'Node':<6}  {'State':<5}  {'Status':<10}  "
-        f"{'LQI':<4}  {'RSSI':<5}  {'Label':<24}  {'MAC':<17}  Device"
+        f"{'Node':<6}  {'State':<5}  {'Status':<14}  "
+        f"{'RSSI':<5}  {'Label':<24}  {'LastAck':<8}  {'MAC':<17}  Device"
     )
     header_sep = (
-        f"{'----':<6}  {'-----':<5}  {'------':<10}  "
-        f"{'---':<4}  {'----':<5}  {'-----':<24}  {'---':<17}  ------"
+        f"{'----':<6}  {'-----':<5}  {'------':<14}  "
+        f"{'----':<5}  {'-----':<24}  {'-------':<8}  {'---':<17}  ------"
     )
 
     for room in room_order:
@@ -435,9 +621,11 @@ def _table_text(
             vendor = attrs.get("0/40/1") or ""
             product = attrs.get("0/40/3") or ""
             mac = _mac_from_attrs(attrs) or ""
-            lqi, rssi = _thread_link_metrics(attrs)
-            lqi_text = _color_lqi(lqi, color)
+            _, rssi = _thread_link_metrics(attrs)
             rssi_text = _color_rssi(rssi, color)
+            ack_source_id = node_id if isinstance(node_id, int) else -1
+            ack_raw, ack_age = _last_ack_info(ack_source_id, attrs, keepalive_metrics)
+            ack_text = _color_last_ack(ack_raw, ack_age, color)
             state = _fmt_state(available, color)
             status = _device_status(vendor, product, label, attrs, color)
             label_text = label[:24]
@@ -449,10 +637,10 @@ def _table_text(
             row_lines.append(
                 f"{_pad(str(node_id), 6)}  "
                 f"{_pad(state, 5)}  "
-                f"{_pad(status, 10)}  "
-                f"{_pad(lqi_text, 4)}  "
+                f"{_pad(status, 14)}  "
                 f"{_pad(rssi_text, 5)}  "
                 f"{_pad(label_colored, 24)}  "
+                f"{_pad(ack_text, 8)}  "
                 f"{_pad(mac, 17)}  "
                 f"{device}"
             )
@@ -472,6 +660,7 @@ async def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--ws-url", default=os.getenv("MATTER_WS_URL", WS_URL_DEFAULT))
     parser.add_argument("--solar-api-url", default=os.getenv("MATTER_SOLAR_API_URL", "http://127.0.0.1:8056/solar"))
+    parser.add_argument("--keepalive-latency-file", default=os.getenv("MATTER_KEEPALIVE_LATENCY_FILE", KEEPALIVE_LATENCY_FILE_DEFAULT))
     parser.add_argument("--interval", type=float, default=2.0)
     parser.add_argument("--no-color", action="store_true")
     args = parser.parse_args()
@@ -482,16 +671,33 @@ async def main() -> int:
     try:
         rooms_raw = os.getenv("MATTER_NODE_ROOMS_JSON", "{}")
         parsed_rooms = json.loads(rooms_raw)
-        node_rooms = parsed_rooms if isinstance(parsed_rooms, dict) else {}
+        node_rooms = _expand_env_backed_rooms(parsed_rooms if isinstance(parsed_rooms, dict) else {})
     except Exception:
         node_rooms = {}
+
+    try:
+        rooms_by_label_raw = os.getenv("MATTER_NODE_ROOMS_BY_LABEL_JSON", "{}")
+        parsed_rooms_by_label = json.loads(rooms_by_label_raw)
+        node_rooms_by_label = parsed_rooms_by_label if isinstance(parsed_rooms_by_label, dict) else {}
+    except Exception:
+        node_rooms_by_label = {}
 
     while True:
         try:
             nodes = await _poll(args.ws_url)
             solar_data = _fetch_solar(args.solar_api_url)
+            keepalive_metrics = _load_keepalive_metrics(args.keepalive_latency_file)
             _render(
-                _table_text(nodes, use_color, args.ws_url, args.interval, solar_data, node_rooms),
+                _table_text(
+                    nodes,
+                    use_color,
+                    args.ws_url,
+                    args.interval,
+                    solar_data,
+                    node_rooms,
+                    node_rooms_by_label,
+                    keepalive_metrics,
+                ),
                 first,
             )
             first = False

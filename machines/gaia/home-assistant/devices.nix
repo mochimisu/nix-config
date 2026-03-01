@@ -1,4 +1,4 @@
-{pkgs, matterNodeLabels ? {}, ...}: let
+{config, pkgs, matterNodeLabels ? {}, ...}: let
   # Prefer setting the Matter device's own NodeLabel (0/40/5) so names survive
   # HA state wipes and re-pairing. Entity_id-based HA customizations are fragile.
 
@@ -27,6 +27,41 @@
     import websockets
 
     WS_URL_DEFAULT = "ws://127.0.0.1:5580/ws"
+
+    def _expand_labels(raw: dict) -> dict:
+        out = {}
+        for key, label in raw.items():
+            if not isinstance(key, str) or not isinstance(label, str) or not label:
+                continue
+            if key.startswith("unique_id_env:"):
+                env_name = key.split(":", 1)[1].strip()
+                if not env_name:
+                    continue
+                unique_id = (os.getenv(env_name, "") or "").strip()
+                if not unique_id:
+                    continue
+                out[f"unique_id:{unique_id}"] = label
+                continue
+            if key.startswith("serial_env:"):
+                env_name = key.split(":", 1)[1].strip()
+                if not env_name:
+                    continue
+                serial = (os.getenv(env_name, "") or "").strip()
+                if not serial:
+                    continue
+                out[f"serial:{serial}"] = label
+                continue
+            if key.startswith("mac_env:"):
+                env_name = key.split(":", 1)[1].strip()
+                if not env_name:
+                    continue
+                mac = (os.getenv(env_name, "") or "").strip().lower()
+                if not mac:
+                    continue
+                out[f"mac:{mac}"] = label
+                continue
+            out[key] = label
+        return out
 
     def _b64_to_bytes(s: str) -> bytes | None:
         # Matter server returns some values base64-encoded.
@@ -79,6 +114,7 @@
         except Exception as e:
             print(f"Invalid MATTER_NODE_LABELS_JSON: {e}", file=sys.stderr)
             return 2
+        labels = _expand_labels(labels if isinstance(labels, dict) else {})
 
         async with websockets.connect(args.ws_url) as ws:
             # Server sends a server_info object immediately after connect.
@@ -211,6 +247,41 @@
                 return key, label
         return None, None
 
+    def _expand_labels(raw: dict) -> dict:
+        out = {}
+        for key, label in raw.items():
+            if not isinstance(key, str) or not isinstance(label, str) or not label:
+                continue
+            if key.startswith("unique_id_env:"):
+                env_name = key.split(":", 1)[1].strip()
+                if not env_name:
+                    continue
+                unique_id = (os.getenv(env_name, "") or "").strip()
+                if not unique_id:
+                    continue
+                out[f"unique_id:{unique_id}"] = label
+                continue
+            if key.startswith("serial_env:"):
+                env_name = key.split(":", 1)[1].strip()
+                if not env_name:
+                    continue
+                serial = (os.getenv(env_name, "") or "").strip()
+                if not serial:
+                    continue
+                out[f"serial:{serial}"] = label
+                continue
+            if key.startswith("mac_env:"):
+                env_name = key.split(":", 1)[1].strip()
+                if not env_name:
+                    continue
+                mac = (os.getenv(env_name, "") or "").strip().lower()
+                if not mac:
+                    continue
+                out[f"mac:{mac}"] = label
+                continue
+            out[key] = label
+        return out
+
     def _device_matches_node(device: dict, node_id: int, attrs: dict) -> bool:
         node_hex = f"{node_id:016X}"
         identifiers = device.get("identifiers") or []
@@ -252,6 +323,7 @@
         except Exception as err:
             print(f"Invalid MATTER_NODE_LABELS_JSON: {err}", file=sys.stderr)
             return 2
+        labels = _expand_labels(labels if isinstance(labels, dict) else {})
 
         async with websockets.connect(args.matter_ws_url) as matter_ws:
             await matter_ws.recv()  # server_info
@@ -375,6 +447,7 @@ in {
     ];
     serviceConfig = {
       Type = "oneshot";
+      EnvironmentFile = config.sops.secrets."matter-env".path;
       ExecStartPre = "${pkgs.bash}/bin/bash -c 'for i in {1..60}; do (echo > /dev/tcp/127.0.0.1/5580) >/dev/null 2>&1 && exit 0; sleep 1; done; echo matter-server ws not ready >&2; exit 1'";
       ExecStart = "${matterNodeLabelsTool}/bin/matter-node-labels";
     };
@@ -406,7 +479,7 @@ in {
     ];
     serviceConfig = {
       Type = "oneshot";
-      EnvironmentFile = "-/etc/secret/matter-reconcile.env";
+      EnvironmentFile = config.sops.secrets."matter-env".path;
       ExecStartPre = "${pkgs.bash}/bin/bash -c 'for i in {1..60}; do (echo > /dev/tcp/127.0.0.1/8123) >/dev/null 2>&1 && (echo > /dev/tcp/127.0.0.1/5580) >/dev/null 2>&1 && exit 0; sleep 1; done; echo HA or matter ws not ready >&2; exit 1'";
       ExecStart = "${matterHaNamerTool}/bin/matter-ha-namer";
     };

@@ -83,9 +83,9 @@ in {
             exposePluginPackages = false;
             documents = ./openclaw-documents;
 
-            firstParty = {
-              summarize.enable = true;
-              oracle.enable = true;
+            bundledPlugins = {
+              sag.enable = true;
+              gogcli.enable = true;
             };
 
             instances.default = {

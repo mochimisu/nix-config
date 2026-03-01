@@ -4,6 +4,7 @@ import base64
 import json
 import os
 import sys
+import time
 
 import websockets
 
@@ -14,9 +15,18 @@ BLINDS_MAC = os.getenv("MATTER_BLINDS_MAC", "")
 BLINDS_ENDPOINT = int(os.getenv("MATTER_BLINDS_ENDPOINT", "1"))
 KEEPALIVE_NODE_IDS_ENV = os.getenv("MATTER_KEEPALIVE_NODE_IDS", "")
 KEEPALIVE_INTERVAL_SEC = int(os.getenv("MATTER_KEEPALIVE_INTERVAL_SEC", "30"))
+KEEPALIVE_LATENCY_FILE = os.getenv("MATTER_KEEPALIVE_LATENCY_FILE", "/run/matter-keepalive-latency.json")
 SWITCH_CLUSTER_ID = 59
 WINDOW_COVERING_CLUSTER_ID = 258
 SWITCH_EVENT_MULTI_PRESS_COMPLETE = 6
+THREAD_VENDOR_KEYWORDS = (
+    "inovelli",
+    "meross",
+    "ikea of sweden",
+    "smartwings",
+    "aqara",
+    "nanoleaf",
+)
 
 
 def _b64_to_bytes(value: str) -> bytes | None:
@@ -49,6 +59,58 @@ def _parse_node_ids(raw: str) -> set[int]:
         if node_id > 0:
             node_ids.add(node_id)
     return node_ids
+
+
+def _is_thread_candidate(attrs: dict) -> bool:
+    vendor = str(attrs.get("0/40/1") or "").strip().lower()
+    product = str(attrs.get("0/40/3") or "").strip().lower()
+    if any(keyword in vendor for keyword in THREAD_VENDOR_KEYWORDS):
+        return True
+    for path in attrs.keys():
+        if isinstance(path, str) and (path.startswith("0/53/") or path.startswith("0/54/")):
+            return True
+    if "button" in product or "remote" in product:
+        return True
+    return False
+
+
+async def _discover_keepalive_nodes(ws, seed_node_ids: set[int]) -> set[int]:
+    keepalive_node_ids = set(seed_node_ids)
+    start = await _call(ws, "keepalive:start", "start_listening")
+    nodes = start.get("result") or []
+    for node in nodes:
+        node_id = node.get("node_id")
+        if not isinstance(node_id, int) or node_id <= 0:
+            continue
+        attrs = node.get("attributes") or {}
+        if _is_thread_candidate(attrs):
+            keepalive_node_ids.add(node_id)
+    return keepalive_node_ids
+
+
+def _write_keepalive_metrics(metrics: dict[str, dict]) -> None:
+    parent = os.path.dirname(KEEPALIVE_LATENCY_FILE) or "."
+    os.makedirs(parent, exist_ok=True)
+    tmp = f"{KEEPALIVE_LATENCY_FILE}.tmp"
+    payload = {
+        "updated_at_epoch": time.time(),
+        "nodes": metrics,
+    }
+    with open(tmp, "w", encoding="utf-8") as handle:
+        json.dump(payload, handle, separators=(",", ":"), sort_keys=True)
+    os.replace(tmp, KEEPALIVE_LATENCY_FILE)
+
+
+def _load_keepalive_metrics() -> dict[str, dict]:
+    try:
+        with open(KEEPALIVE_LATENCY_FILE, "r", encoding="utf-8") as handle:
+            data = json.load(handle)
+    except Exception:
+        return {}
+    if not isinstance(data, dict):
+        return {}
+    nodes = data.get("nodes")
+    return nodes if isinstance(nodes, dict) else {}
 
 
 async def _call(ws, message_id: str, command: str, args: dict | None = None) -> dict:
@@ -89,13 +151,19 @@ async def _device_command(
         raise RuntimeError(f"device_command {command_name} failed: {details}")
 
 
-async def _keepalive_once(ws_url: str, node_ids: set[int]) -> None:
-    if not node_ids:
-        return
-
+async def _keepalive_once(ws_url: str, seed_node_ids: set[int]) -> None:
     async with websockets.connect(ws_url) as ws:
         await ws.recv()  # server info frame
-        for node_id in sorted(node_ids):
+        keepalive_node_ids = await _discover_keepalive_nodes(ws, seed_node_ids)
+        previous_metrics = _load_keepalive_metrics()
+        metrics: dict[str, dict] = {}
+        for node_id in sorted(keepalive_node_ids):
+            node_key = str(node_id)
+            previous_entry = previous_metrics.get(node_key)
+            previous_last_ack = None
+            if isinstance(previous_entry, dict):
+                previous_last_ack = previous_entry.get("last_ack_epoch")
+            started = time.monotonic()
             response = await _call(
                 ws,
                 f"keepalive:{node_id}",
@@ -105,13 +173,29 @@ async def _keepalive_once(ws_url: str, node_ids: set[int]) -> None:
                     "attribute_path": "0/40/5",  # BasicInformation.NodeLabel
                 },
             )
+            latency_ms = (time.monotonic() - started) * 1000.0
             if "error_code" in response:
                 details = response.get("details") or "unknown error"
+                entry = {
+                    "ok": False,
+                    "latency_ms": latency_ms,
+                    "error": details,
+                }
+                if isinstance(previous_last_ack, (int, float)):
+                    entry["last_ack_epoch"] = float(previous_last_ack)
+                metrics[node_key] = entry
                 print(
                     f"keepalive node_id={node_id} failed: {details}",
                     file=sys.stderr,
                     flush=True,
                 )
+            else:
+                metrics[node_key] = {
+                    "ok": True,
+                    "latency_ms": latency_ms,
+                    "last_ack_epoch": time.time(),
+                }
+        _write_keepalive_metrics(metrics)
 
 
 async def _keepalive_loop(ws_url: str, node_ids: set[int], interval_sec: int) -> None:
@@ -164,7 +248,8 @@ async def _run() -> int:
         print(
             "listening for remote node_id="
             f"{remote_node_id}, controlling blinds node_id={blinds_node_id}, "
-            f"keepalive_nodes={sorted(keepalive_node_ids)} interval={KEEPALIVE_INTERVAL_SEC}s",
+            f"keepalive_seed_nodes={sorted(keepalive_node_ids)} "
+            f"(plus dynamic thread devices) interval={KEEPALIVE_INTERVAL_SEC}s",
             flush=True,
         )
 

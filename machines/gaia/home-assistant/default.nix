@@ -1,4 +1,4 @@
-{pkgs, lib, ...}: {
+{config, pkgs, lib, ...}: {
   imports = [
     ./devices.nix
     ./remote-actions.nix
@@ -132,7 +132,7 @@
         "--network=host"
         "--cap-add=NET_ADMIN"
         "--cap-add=NET_RAW"
-        "--device=/dev/serial/by-id/usb-Nabu_Casa_ZBT-2_DCB4D9123AF0-if00:/dev/ttyACM0"
+        "--device=/dev/ttyACM0:/dev/ttyACM0"
         "--device=/dev/net/tun"
       ];
     };
@@ -187,7 +187,11 @@
   systemd.services."podman-otbr" = {
     after = [ "earth.mount" ];
     requires = [ "earth.mount" ];
-    unitConfig.RequiresMountsFor = [ "/earth" ];
+    unitConfig = {
+      RequiresMountsFor = [ "/earth" ];
+      # Skip start (instead of hard failure loop) when the Thread USB radio is absent.
+      ConditionPathExists = "/dev/ttyACM0";
+    };
     preStart = ''
       ${pkgs.coreutils}/bin/mkdir -p /earth/home-assistant/otbr
     '';
@@ -199,7 +203,7 @@
   };
 
   # OTBR can occasionally lose active dataset after RCP/USB faults. Re-seed from
-  # /etc/secret/matter-reconcile.env and bring Thread back up when needed.
+  # decrypted sops env file and bring Thread back up when needed.
   systemd.services.otbr-ensure-dataset = let
     otbrEnsureDataset = pkgs.writeShellApplication {
       name = "otbr-ensure-dataset";
@@ -298,7 +302,7 @@
     ];
     serviceConfig = {
       Type = "oneshot";
-      EnvironmentFile = "-/etc/secret/matter-reconcile.env";
+      EnvironmentFile = config.sops.secrets."matter-env".path;
       ExecStart = "${otbrEnsureDataset}/bin/otbr-ensure-dataset";
       # podman exec may leave short-lived helper processes behind; do not fail
       # the unit on cgroup cleanup timing issues after successful execution.
@@ -337,7 +341,7 @@
         mkdir -p "$state_dir"
 
         offline_threshold="''${THREAD_WATCHDOG_OFFLINE_THRESHOLD:-5}"
-        cooldown_sec="''${THREAD_WATCHDOG_RESTART_COOLDOWN_SEC:-600}"
+        cooldown_sec="''${THREAD_WATCHDOG_RESTART_COOLDOWN_SEC:-180}"
         alert_email="''${MATTER_ALERT_EMAIL:-home@bwang.dev}"
         alert_from="''${MATTER_ALERT_FROM:-home@bwang.dev}"
         ot_state=""
@@ -401,14 +405,47 @@
           last_restart="$(cat "$last_restart_file" 2>/dev/null || echo 0)"
         fi
         elapsed="$((now_epoch - last_restart))"
-        if [ "$elapsed" -lt "$cooldown_sec" ]; then
+        force_recover=0
+        if printf '%s' "$bad_reason" | grep -q "rcp-timeout"; then
+          force_recover=1
+        fi
+        if [ "$elapsed" -lt "$cooldown_sec" ] && [ "$force_recover" -ne 1 ]; then
           echo "matter-thread-watchdog: bad state detected ($bad_reason) but in cooldown (''${elapsed}s < ''${cooldown_sec}s)"
           exit 0
         fi
 
         echo "$now_epoch" > "$last_restart_file"
         echo "matter-thread-watchdog: recovering from bad state: $bad_reason"
-        systemctl restart podman-otbr.service podman-matter-server.service
+        thread_dev_by_id="/dev/serial/by-id/usb-Nabu_Casa_ZBT-2_DCB4D9123AF0-if00"
+        thread_dev_fallback="/dev/ttyACM0"
+        usb_reset_done=0
+        tty_real=""
+        if [ -e "$thread_dev_by_id" ]; then
+          tty_real="$(readlink -f "$thread_dev_by_id" 2>/dev/null || true)"
+        elif [ -e "$thread_dev_fallback" ]; then
+          tty_real="$(readlink -f "$thread_dev_fallback" 2>/dev/null || true)"
+        fi
+        if [ -n "$tty_real" ]; then
+          tty_name="$(basename "$tty_real" 2>/dev/null || true)"
+          if [ -n "$tty_name" ] && [ -e "/sys/class/tty/$tty_name/device" ]; then
+            usb_node="$(readlink -f "/sys/class/tty/$tty_name/device" 2>/dev/null || true)"
+            while [ -n "$usb_node" ] && [ "$usb_node" != "/" ]; do
+              if [ -w "$usb_node/authorized" ]; then
+                echo "matter-thread-watchdog: cycling USB device at $usb_node"
+                echo 0 > "$usb_node/authorized" || true
+                sleep 1
+                echo 1 > "$usb_node/authorized" || true
+                usb_reset_done=1
+                break
+              fi
+              usb_node="$(dirname "$usb_node")"
+            done
+          fi
+        fi
+        if [ "$usb_reset_done" -ne 1 ]; then
+          echo "matter-thread-watchdog: USB reset path not found; continuing with OTBR restart"
+        fi
+        systemctl restart podman-otbr.service
         systemctl start otbr-ensure-dataset.service matter-reconcile.service matter-apply-node-labels.service matter-apply-ha-names.service
 
         if [ -n "$alert_email" ]; then
@@ -417,7 +454,7 @@
 Time: $(date -Iseconds)
 Reason: $bad_reason
 OfflineThreadNodes: $offline_thread_nodes
-Action: restarted podman-otbr + podman-matter-server; started reconcile/label timers."
+Action: cycled Thread USB (when possible), restarted podman-otbr; started reconcile/label timers."
 
           if command -v sendmail >/dev/null 2>&1; then
             {
@@ -450,7 +487,7 @@ Action: restarted podman-otbr + podman-matter-server; started reconcile/label ti
     ];
     serviceConfig = {
       Type = "oneshot";
-      EnvironmentFile = "-/etc/secret/matter-reconcile.env";
+      EnvironmentFile = config.sops.secrets."matter-env".path;
       ExecStart = "${threadWatchdog}/bin/matter-thread-watchdog";
       # Avoid false failures caused by lingering podman exec cleanup helpers.
       KillMode = "none";
@@ -463,7 +500,7 @@ Action: restarted podman-otbr + podman-matter-server; started reconcile/label ti
     wantedBy = [ "timers.target" ];
     timerConfig = {
       OnBootSec = "3min";
-      OnUnitInactiveSec = "3min";
+      OnUnitInactiveSec = "1min";
       Unit = "matter-thread-watchdog.service";
     };
   };

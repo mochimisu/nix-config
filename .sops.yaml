@@ -1,0 +1,5 @@
+creation_rules:
+  - path_regex: ^machines/gaia/secrets/.*$
+    key_groups:
+      - age:
+          - age1frvu2rns8l8ekq64hhej4twvqgu54lcepu2vgw89ggpp4t8tfpkqnmn4eq

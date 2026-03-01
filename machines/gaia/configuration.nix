@@ -75,8 +75,10 @@
     ${pkgs.systemd}/bin/systemctl start "win11-$name-define.service"
     ${pkgs.libvirt}/bin/virsh -c "$uri" start "$name"
   '';
+
 in {
   imports = [
+    ./sops.nix
     ./transmission.nix
     ./home-assistant
     ./openclaw-container.nix
