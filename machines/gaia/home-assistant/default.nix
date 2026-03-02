@@ -338,7 +338,7 @@
       "timers.target"
     ];
     timerConfig = {
-      OnBootSec = "3min";
+      OnBootSec = "20s";
       OnUnitInactiveSec = "30min";
       Unit = "otbr-ensure-dataset.service";
     };

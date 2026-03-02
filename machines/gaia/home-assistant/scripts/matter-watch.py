@@ -405,13 +405,6 @@ def _render(text: str, first: bool) -> None:
     sys.stdout.flush()
 
 
-def _fmt_state(available: bool, color: bool) -> str:
-    symbol = "✓" if available else "✗"
-    if not color:
-        return symbol
-    return f"{GREEN}{symbol}{RESET}" if available else f"{RED}{symbol}{RESET}"
-
-
 def _strip_ansi(text: str) -> str:
     return ANSI_RE.sub("", text)
 
@@ -612,7 +605,6 @@ def _zbt2_row(color: bool) -> tuple[str, dict] | None:
 
     row = {
         "node": "zbt2",
-        "state": _fmt_state(available, color),
         "status": status,
         "rssi": "",
         "label": label_colored,
@@ -708,17 +700,17 @@ def _table_text(
     )
 
     header = (
-        f"{'Node':<6}  {'State':<5}  {'Status':<14}  "
+        f"{'Node':<6}  {'Status':<14}  "
         f"{'RSSI':<5}  {'Label':<24}  {'LastAck':<8}  {'Battery':<7}  Device"
     )
     header_sep = (
-        f"{'----':<6}  {'-----':<5}  {'------':<14}  "
+        f"{'----':<6}  {'------':<14}  "
         f"{'----':<5}  {'-----':<24}  {'-------':<8}  {'-------':<7}  ------"
     )
 
     for room in room_order:
         room_nodes = grouped.get(room, [])
-        row_lines: list[str] = [f"Room: {room}", header, header_sep]
+        row_lines: list[str] = [header, header_sep]
         for node in room_nodes:
             node_id = node.get("node_id")
             available = bool(node.get("available"))
@@ -732,7 +724,6 @@ def _table_text(
             ack_raw, ack_age = _last_ack_info(ack_source_id, attrs, keepalive_metrics)
             ack_text = _color_last_ack(ack_raw, ack_age, color)
             battery_text = _battery_text(attrs)
-            state = _fmt_state(available, color)
             status = _device_status(vendor, product, label, attrs, color)
             label_text = label[:24]
             if color:
@@ -742,7 +733,6 @@ def _table_text(
             device = f"{vendor} {product}".strip()
             row_lines.append(
                 f"{_pad(str(node_id), 6)}  "
-                f"{_pad(state, 5)}  "
                 f"{_pad(status, 14)}  "
                 f"{_pad(rssi_text, 5)}  "
                 f"{_pad(label_colored, 24)}  "
@@ -754,7 +744,6 @@ def _table_text(
         for row in synthetic_grouped.get(room, []):
             row_lines.append(
                 f"{_pad(str(row['node']), 6)}  "
-                f"{_pad(row['state'], 5)}  "
                 f"{_pad(row['status'], 14)}  "
                 f"{_pad(row['rssi'], 5)}  "
                 f"{_pad(row['label'], 24)}  "
@@ -764,7 +753,11 @@ def _table_text(
             )
 
         content_width = max((_display_width(x) for x in row_lines), default=0)
-        top = "┌" + ("─" * (content_width + 2)) + "┐"
+        room_title = f"─ {room} "
+        room_title_width = _display_width(room_title)
+        content_width = max(content_width, room_title_width)
+        top_fill = max(0, (content_width + 2) - room_title_width)
+        top = "┌" + room_title + ("─" * top_fill) + "┐"
         bottom = "└" + ("─" * (content_width + 2)) + "┘"
         lines.append(top)
         for row in row_lines:

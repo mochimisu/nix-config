@@ -75,10 +75,14 @@ in {
     ];
     after = [
       "podman-matter-server.service"
+      "podman-otbr.service"
+      "otbr-ensure-dataset.service"
       "network-online.target"
     ];
     wants = [
       "podman-matter-server.service"
+      "podman-otbr.service"
+      "otbr-ensure-dataset.service"
       "network-online.target"
     ];
     serviceConfig = {
