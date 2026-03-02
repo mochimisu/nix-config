@@ -507,6 +507,39 @@ def _color_rssi(value_text: str, color: bool) -> str:
     return f"{RED}{value_text}{RESET}"
 
 
+def _battery_text(attrs: dict) -> str:
+    # Power Source cluster (0x002F / 47):
+    # - 0x000C (12): BatteryPercentRemaining (typically 0.5% units)
+    # - 0x000B (11): BatteryVoltage (100 mV units)
+    # - 0x000A (10): BatteryChargeLevel enum
+    percent_remaining = _cluster_attr_value(attrs, 47, 12)
+    if isinstance(percent_remaining, (int, float)):
+        raw = float(percent_remaining)
+        if raw >= 0:
+            pct = raw / 2.0 if raw > 100.0 else raw
+            if 0.0 <= pct <= 100.0:
+                return f"{int(round(pct))}%"
+
+    battery_voltage = _cluster_attr_value(attrs, 47, 11)
+    if isinstance(battery_voltage, (int, float)):
+        raw_v = float(battery_voltage)
+        if raw_v > 0:
+            volts = raw_v / 10.0
+            return f"{volts:.1f}V"
+
+    battery_level = _cluster_attr_value(attrs, 47, 10)
+    if isinstance(battery_level, (int, float)):
+        level_map = {
+            0: "unk",
+            1: "crit",
+            2: "low",
+            3: "ok",
+        }
+        return level_map.get(int(battery_level), "")
+
+    return ""
+
+
 def _last_ack_info(node_id: int, attrs: dict, keepalive_metrics: dict[str, dict]) -> tuple[str, float | None]:
     if not _is_thread_candidate(attrs):
         return "---", None
@@ -584,7 +617,7 @@ def _zbt2_row(color: bool) -> tuple[str, dict] | None:
         "rssi": "",
         "label": label_colored,
         "last_ack": "---",
-        "mac": "",
+        "battery": "",
         "device": "Nabu Casa ZBT-2 (OTBR host radio)",
     }
     return room, row
@@ -676,11 +709,11 @@ def _table_text(
 
     header = (
         f"{'Node':<6}  {'State':<5}  {'Status':<14}  "
-        f"{'RSSI':<5}  {'Label':<24}  {'LastAck':<8}  {'MAC':<17}  Device"
+        f"{'RSSI':<5}  {'Label':<24}  {'LastAck':<8}  {'Battery':<7}  Device"
     )
     header_sep = (
         f"{'----':<6}  {'-----':<5}  {'------':<14}  "
-        f"{'----':<5}  {'-----':<24}  {'-------':<8}  {'---':<17}  ------"
+        f"{'----':<5}  {'-----':<24}  {'-------':<8}  {'-------':<7}  ------"
     )
 
     for room in room_order:
@@ -693,12 +726,12 @@ def _table_text(
             label = attrs.get("0/40/5") or "(no label)"
             vendor = attrs.get("0/40/1") or ""
             product = attrs.get("0/40/3") or ""
-            mac = _mac_from_attrs(attrs) or ""
             _, rssi = _thread_link_metrics(attrs)
             rssi_text = _color_rssi(rssi, color)
             ack_source_id = node_id if isinstance(node_id, int) else -1
             ack_raw, ack_age = _last_ack_info(ack_source_id, attrs, keepalive_metrics)
             ack_text = _color_last_ack(ack_raw, ack_age, color)
+            battery_text = _battery_text(attrs)
             state = _fmt_state(available, color)
             status = _device_status(vendor, product, label, attrs, color)
             label_text = label[:24]
@@ -714,7 +747,7 @@ def _table_text(
                 f"{_pad(rssi_text, 5)}  "
                 f"{_pad(label_colored, 24)}  "
                 f"{_pad(ack_text, 8)}  "
-                f"{_pad(mac, 17)}  "
+                f"{_pad(battery_text, 7)}  "
                 f"{device}"
             )
 
@@ -726,7 +759,7 @@ def _table_text(
                 f"{_pad(row['rssi'], 5)}  "
                 f"{_pad(row['label'], 24)}  "
                 f"{_pad(row['last_ack'], 8)}  "
-                f"{_pad(row['mac'], 17)}  "
+                f"{_pad(row['battery'], 7)}  "
                 f"{row['device']}"
             )
 
