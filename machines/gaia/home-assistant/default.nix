@@ -48,6 +48,11 @@
       automation = "!include automations.yaml";
       http = {
         server_port = 8123;
+        use_x_forwarded_for = true;
+        trusted_proxies = [
+          "127.0.0.1"
+          "::1"
+        ];
       };
       scene = "!include scenes.yaml";
     };
@@ -538,6 +543,35 @@ Action: cycled Thread USB (when possible), restarted podman-otbr; started reconc
       OnBootSec = "3min";
       OnUnitInactiveSec = "1min";
       Unit = "matter-thread-watchdog.service";
+    };
+  };
+
+  # Cloudflare Tunnel for remote Home Assistant access without port-forwarding.
+  # Expects CF_TUNNEL_TOKEN in the existing matter-env secret.
+  systemd.services.cloudflare-ha-tunnel = {
+    description = "Cloudflare Tunnel for Home Assistant";
+    wantedBy = [ "multi-user.target" ];
+    after = [
+      "network-online.target"
+      "home-assistant.service"
+    ];
+    wants = [
+      "network-online.target"
+      "home-assistant.service"
+    ];
+    serviceConfig = {
+      Type = "simple";
+      Restart = "always";
+      RestartSec = "3s";
+      EnvironmentFile = config.sops.secrets."matter-env".path;
+      ExecStart = pkgs.writeShellScript "cloudflare-ha-tunnel-start" ''
+        set -euo pipefail
+        if [ -z "''${CF_TUNNEL_TOKEN:-}" ]; then
+          echo "cloudflare-ha-tunnel: CF_TUNNEL_TOKEN missing in matter-env" >&2
+          exit 1
+        fi
+        exec ${pkgs.cloudflared}/bin/cloudflared tunnel --no-autoupdate run --token "''${CF_TUNNEL_TOKEN}"
+      '';
     };
   };
 }
