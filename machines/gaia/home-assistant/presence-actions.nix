@@ -55,7 +55,6 @@
         "2/1024/0"
         "0/1024/0"
       ];
-      manual_override_sec = 1800; # 30 minutes
       target_onoff_attribute_path = "1/6/0";
       # Optional override per rule.
       # presence_attribute_paths = [ "1/1030/0" ];
@@ -77,7 +76,6 @@
       payload = {};
       # Unless 11:30pm-5:00am.
       on_active_windows = [{ start = "05:00"; end = "23:30"; }];
-      manual_override_sec = 1800; # 30 minutes
       target_onoff_attribute_path = "1/6/0";
     }
 
@@ -97,7 +95,6 @@
       payload = {};
       # 7:00am-11:00am only.
       on_active_windows = [{ start = "07:00"; end = "11:00"; }];
-      manual_override_sec = 1800; # 30 minutes
       target_onoff_attribute_path = "1/6/0";
     }
 
@@ -117,7 +114,6 @@
       payload = {};
       # 11:30pm-5:00am only.
       on_active_windows = [{ start = "23:30"; end = "05:00"; }];
-      manual_override_sec = 1800; # 30 minutes
       target_onoff_attribute_path = "1/6/0";
     }
 
@@ -130,24 +126,24 @@
       on_command = "On";
       off_command = "Off";
       payload = {};
-      manual_override_sec = 1800; # 30 minutes
       target_onoff_attribute_path = "1/6/0";
     }
 
-    {
-      name = "mbr-presence2-bed-light";
-      source_keys = [ (nodeKeyForName "MBR Presence") ];
-      target_key = nodeKeyForName "MBR Bed Light";
-      # Trigger only from the third occupancy endpoint on this multi-occupancy sensor.
-      presence_attribute_paths = [ "3/1030/0" ];
-      target_endpoint = 1;
-      cluster_id = 6;
-      on_command = "On";
-      off_command = "Off";
-      payload = {};
-      manual_override_sec = 1800; # 30 minutes
-      target_onoff_attribute_path = "1/6/0";
-    }
+    # Temporarily disabled: mbr bed light automation.
+    # Re-enable by uncommenting this rule block.
+    # {
+    #   name = "mbr-presence2-bed-light";
+    #   source_keys = [ (nodeKeyForName "MBR Presence") ];
+    #   target_key = nodeKeyForName "MBR Bed Light";
+    #   # Trigger only from the third occupancy endpoint on this multi-occupancy sensor.
+    #   presence_attribute_paths = [ "3/1030/0" ];
+    #   target_endpoint = 1;
+    #   cluster_id = 6;
+    #   on_command = "On";
+    #   off_command = "Off";
+    #   payload = {};
+    #   target_onoff_attribute_path = "1/6/0";
+    # }
 
     {
       name = "pantry-presence-light";

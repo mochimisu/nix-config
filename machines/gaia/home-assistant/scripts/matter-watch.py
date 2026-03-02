@@ -2,6 +2,7 @@
 import argparse
 import asyncio
 import base64
+import glob
 import json
 import math
 import os
@@ -19,6 +20,8 @@ import websockets
 
 WS_URL_DEFAULT = "ws://127.0.0.1:5580/ws"
 KEEPALIVE_LATENCY_FILE_DEFAULT = "/run/matter-keepalive-latency.json"
+ZBT2_BYID_GLOB_DEFAULT = "/dev/serial/by-id/usb-Nabu_Casa_ZBT-2_*"
+ZBT2_ROOM_DEFAULT = "Network Closet"
 
 GREEN = "\033[32m"
 YELLOW = "\033[33m"
@@ -459,6 +462,19 @@ def _service_last_started(service: str) -> str:
     return value or "unknown"
 
 
+def _service_is_active(service: str) -> bool:
+    try:
+        result = subprocess.run(
+            ["systemctl", "is-active", "--quiet", service],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+    except Exception:
+        return False
+    return result.returncode == 0
+
+
 def _color_lqi(value_text: str, color: bool) -> str:
     if not color or not value_text:
         return value_text
@@ -521,6 +537,57 @@ def _color_last_ack(value_text: str, age_sec: float | None, color: bool) -> str:
     if age_sec <= 150.0:
         return f"{YELLOW}{value_text}{RESET}"
     return f"{RED}{value_text}{RESET}"
+
+
+def _env_bool(name: str, default: bool) -> bool:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    value = raw.strip().lower()
+    if value in {"1", "true", "yes", "on"}:
+        return True
+    if value in {"0", "false", "no", "off"}:
+        return False
+    return default
+
+
+def _zbt2_row(color: bool) -> tuple[str, dict] | None:
+    if not _env_bool("MATTER_WATCH_ZBT2_ENABLE", True):
+        return None
+
+    byid_glob = (os.getenv("MATTER_WATCH_ZBT2_BYID_GLOB", ZBT2_BYID_GLOB_DEFAULT) or "").strip()
+    room = (os.getenv("MATTER_WATCH_ZBT2_ROOM", ZBT2_ROOM_DEFAULT) or ZBT2_ROOM_DEFAULT).strip()
+    room = room or ZBT2_ROOM_DEFAULT
+
+    radio_present = bool(byid_glob) and bool(glob.glob(byid_glob))
+    otbr_active = _service_is_active("podman-otbr.service")
+    available = radio_present and otbr_active
+
+    if available:
+        status = "ready"
+    elif radio_present and not otbr_active:
+        status = "otbr down"
+    elif otbr_active and not radio_present:
+        status = "usb missing"
+    else:
+        status = "down"
+
+    label = "ZBT-2"
+    label_colored = label
+    if color:
+        label_colored = f"{GREEN}{label}{RESET}" if available else f"{RED}{label}{RESET}"
+
+    row = {
+        "node": "zbt2",
+        "state": _fmt_state(available, color),
+        "status": status,
+        "rssi": "",
+        "label": label_colored,
+        "last_ack": "---",
+        "mac": "",
+        "device": "Nabu Casa ZBT-2 (OTBR host radio)",
+    }
+    return room, row
 
 
 async def _poll(ws_url: str) -> list[dict]:
@@ -587,6 +654,12 @@ def _table_text(
         room = _room_for_attrs(attrs, rooms, rooms_by_label)
         grouped.setdefault(room, []).append(node)
 
+    synthetic_grouped: dict[str, list[dict]] = {}
+    zbt2 = _zbt2_row(color)
+    if zbt2:
+        room, row = zbt2
+        synthetic_grouped.setdefault(room, []).append(row)
+
     preferred_order = [
         "Office",
         "Nursery",
@@ -597,7 +670,7 @@ def _table_text(
         "Ungrouped",
     ]
     room_order = sorted(
-        grouped.keys(),
+        (set(grouped.keys()) | set(synthetic_grouped.keys())),
         key=lambda r: (preferred_order.index(r) if r in preferred_order else 1000, r),
     )
 
@@ -643,6 +716,18 @@ def _table_text(
                 f"{_pad(ack_text, 8)}  "
                 f"{_pad(mac, 17)}  "
                 f"{device}"
+            )
+
+        for row in synthetic_grouped.get(room, []):
+            row_lines.append(
+                f"{_pad(str(row['node']), 6)}  "
+                f"{_pad(row['state'], 5)}  "
+                f"{_pad(row['status'], 14)}  "
+                f"{_pad(row['rssi'], 5)}  "
+                f"{_pad(row['label'], 24)}  "
+                f"{_pad(row['last_ack'], 8)}  "
+                f"{_pad(row['mac'], 17)}  "
+                f"{row['device']}"
             )
 
         content_width = max((_display_width(x) for x in row_lines), default=0)

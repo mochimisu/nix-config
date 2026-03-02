@@ -23,6 +23,12 @@ DEFAULT_LUMINANCE_PATHS = [
     "2/1024/0",
     "0/1024/0",
 ]
+SWITCH_CLUSTER_ID = 59
+SWITCH_EVENT_MULTI_PRESS_COMPLETE = 6
+SWITCH_SINGLE_PRESS_COUNT = 1
+SWITCH_UP_ENDPOINT_IDS = {1, 3}
+SWITCH_DOWN_ENDPOINT_IDS = {2, 4}
+DEFAULT_MANUAL_OVERRIDE_TIMEOUT_SEC = 30.0 * 60.0
 
 
 def _b64_to_bytes(value: str) -> bytes | None:
@@ -71,6 +77,26 @@ def _as_bool(value) -> bool | None:
     return None
 
 
+def _as_int(value) -> int | None:
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        if value.is_integer():
+            return int(value)
+        return None
+    if isinstance(value, str):
+        text = value.strip()
+        if not text:
+            return None
+        try:
+            return int(text)
+        except ValueError:
+            return None
+    return None
+
+
 def _presence_from_attrs(
     attrs: dict,
     candidate_paths: list[str],
@@ -104,6 +130,21 @@ def _target_light_onoff_from_attrs(attrs: dict, preferred_path: str | None) -> b
     return None
 
 
+def _set_target_light_onoff_in_attrs(
+    attrs: dict,
+    preferred_path: str | None,
+    value: bool,
+) -> None:
+    if isinstance(preferred_path, str) and preferred_path:
+        attrs[preferred_path] = value
+        return
+
+    for path in attrs.keys():
+        if isinstance(path, str) and path.endswith("/6/0"):
+            attrs[path] = value
+            return
+
+
 def _command_desired_onoff(command_name: str) -> bool | None:
     name = (command_name or "").strip().lower()
     if name == "on":
@@ -121,29 +162,6 @@ def _supports_manual_indicator(attrs: dict) -> bool:
         and "6/8/0" in attrs
         and any(isinstance(path, str) and path.startswith("6/768/") for path in attrs.keys())
     )
-
-
-def _manual_override_toggle_from_event(event_data: dict, *, target_node_id: int) -> bool | None:
-    if not isinstance(event_data, dict):
-        return None
-    if event_data.get("node_id") != target_node_id:
-        return None
-    # Switch cluster multi-press complete event.
-    if event_data.get("cluster_id") != 59 or event_data.get("event_id") != 6:
-        return None
-    press_count = (event_data.get("data") or {}).get("totalNumberOfPressesCounted")
-    if press_count != 1:
-        return None
-
-    endpoint_id = event_data.get("endpoint_id")
-    # Inovelli target switch button endpoints:
-    # - endpoint 3: up paddle
-    # - endpoint 4: down paddle
-    if endpoint_id == 3:
-        return True
-    if endpoint_id == 4:
-        return False
-    return None
 
 
 def _as_float(value) -> float | None:
@@ -213,6 +231,31 @@ async def _set_manual_indicator(
         command_name="Off",
         payload={},
     )
+
+
+def _manual_override_from_event(event_data: dict | None, *, target_node_id: int) -> bool | None:
+    if not isinstance(event_data, dict):
+        return None
+    if _as_int(event_data.get("node_id")) != target_node_id:
+        return None
+    if _as_int(event_data.get("cluster_id")) != SWITCH_CLUSTER_ID:
+        return None
+    if _as_int(event_data.get("event_id")) != SWITCH_EVENT_MULTI_PRESS_COMPLETE:
+        return None
+
+    payload = event_data.get("data")
+    if isinstance(payload, dict):
+        press_count = payload.get("totalNumberOfPressesCounted")
+        parsed_press_count = _as_int(press_count)
+        if parsed_press_count is not None and parsed_press_count != SWITCH_SINGLE_PRESS_COUNT:
+            return None
+
+    endpoint_id = _as_int(event_data.get("endpoint_id"))
+    if endpoint_id in SWITCH_UP_ENDPOINT_IDS:
+        return True
+    if endpoint_id in SWITCH_DOWN_ENDPOINT_IDS:
+        return False
+    return None
 
 
 def _parse_hhmm(value: str) -> int | None:
@@ -452,7 +495,6 @@ def _normalize_rule(raw: dict, index: int) -> dict | None:
     dark_threshold = _as_float(dark_when_lux_below)
     require_luminance_for_on = bool(raw.get("require_luminance_for_on", False))
     luminance_mode = str(raw.get("luminance_mode", "matter_illuminance"))
-    manual_override_sec = int(raw.get("manual_override_sec", 0))
     target_onoff_attribute_path = raw.get("target_onoff_attribute_path")
     if not isinstance(target_onoff_attribute_path, str):
         target_onoff_attribute_path = None
@@ -461,6 +503,11 @@ def _normalize_rule(raw: dict, index: int) -> dict | None:
     if on_eligibility_mode not in {"all", "any"}:
         on_eligibility_mode = "all"
     on_active_solar_window = _parse_solar_window(raw.get("on_active_solar_window"))
+    manual_override_timeout_sec = _as_float(raw.get("manual_override_timeout_sec"))
+    if manual_override_timeout_sec is None:
+        manual_override_timeout_sec = _as_float(raw.get("manual_override_sec"))
+    if manual_override_timeout_sec is None or manual_override_timeout_sec <= 0:
+        manual_override_timeout_sec = DEFAULT_MANUAL_OVERRIDE_TIMEOUT_SEC
 
     return {
         "name": name,
@@ -477,11 +524,11 @@ def _normalize_rule(raw: dict, index: int) -> dict | None:
         "dark_when_lux_below": dark_threshold,
         "require_luminance_for_on": require_luminance_for_on,
         "luminance_mode": luminance_mode,
-        "manual_override_sec": max(0, manual_override_sec),
         "target_onoff_attribute_path": target_onoff_attribute_path,
         "on_active_windows": on_active_windows,
         "on_eligibility_mode": on_eligibility_mode,
         "on_active_solar_window": on_active_solar_window,
+        "manual_override_timeout_sec": manual_override_timeout_sec,
     }
 
 
@@ -585,11 +632,10 @@ async def _evaluate_rules(
                 "last_presence": None,
                 "last_on_eligible": None,
                 "last_light_state": None,
-                "override_until": 0.0,
-                "override_state": None,
-                "last_override_log_epoch": 0.0,
-                "override_started_epoch": 0.0,
-                "manual_indicator_active": False,
+                "manual_indicator_synced": False,
+                "manual_indicator_enabled": None,
+                "manual_override_value": None,
+                "manual_override_expires_epoch": 0.0,
                 "last_auto_command_epoch": 0.0,
                 "last_presence_change_epoch": 0.0,
             },
@@ -615,111 +661,13 @@ async def _evaluate_rules(
             continue
 
         now = asyncio.get_running_loop().time()
+
+        previous_light_state = state.get("last_light_state")
         light_state = _target_light_onoff_from_attrs(
             target["attrs"],
             rule["target_onoff_attribute_path"],
         )
-        previous_light_state = state.get("last_light_state")
-        if (
-            rule["manual_override_sec"] > 0
-            and previous_light_state is not None
-            and light_state is not None
-            and light_state != previous_light_state
-            and (now - float(state.get("last_auto_command_epoch") or 0.0)) > 10.0
-        ):
-            state["override_until"] = now + rule["manual_override_sec"]
-            state["override_state"] = light_state
-            state["override_started_epoch"] = now
-            print(
-                f"presence rule {rule['name']}: manual light change detected (state={light_state}); "
-                f"holding automation for {rule['manual_override_sec']}s",
-                flush=True,
-            )
-            if _supports_manual_indicator(target["attrs"]):
-                try:
-                    await _set_manual_indicator(
-                        ws,
-                        node_id=target["node_id"],
-                        enabled=True,
-                    )
-                    state["manual_indicator_active"] = True
-                except Exception as err:
-                    print(
-                        f"presence rule {rule['name']}: failed to enable manual indicator: {err}",
-                        file=sys.stderr,
-                        flush=True,
-                    )
         state["last_light_state"] = light_state
-
-        # If override is active, pressing the same paddle direction again
-        # clears the manual override immediately.
-        if float(state.get("override_until") or 0.0) > now:
-            pressed_state = _manual_override_toggle_from_event(
-                event_data or {},
-                target_node_id=target["node_id"],
-            )
-            override_state = state.get("override_state")
-            override_started = float(state.get("override_started_epoch") or 0.0)
-            if (
-                pressed_state is not None
-                and isinstance(override_state, bool)
-                and pressed_state == override_state
-                and (now - override_started) >= 1.0
-            ):
-                state["override_until"] = 0.0
-                state["override_state"] = None
-                state["override_started_epoch"] = 0.0
-                state["last_override_log_epoch"] = 0.0
-                print(
-                    f"presence rule {rule['name']}: manual override cleared by repeat button press",
-                    flush=True,
-                )
-                if state.get("manual_indicator_active"):
-                    try:
-                        await _set_manual_indicator(
-                            ws,
-                            node_id=target["node_id"],
-                            enabled=False,
-                        )
-                    except Exception as err:
-                        print(
-                            f"presence rule {rule['name']}: failed to clear manual indicator: {err}",
-                            file=sys.stderr,
-                            flush=True,
-                        )
-                    state["manual_indicator_active"] = False
-
-        override_until = float(state.get("override_until") or 0.0)
-        if override_until > now:
-            last_override_log = float(state.get("last_override_log_epoch") or 0.0)
-            if (now - last_override_log) >= 30.0:
-                remaining = max(0, int(round(override_until - now)))
-                print(
-                    f"presence rule {rule['name']}: manual override active "
-                    f"({remaining}s remaining); suppressing automation",
-                    flush=True,
-                )
-                state["last_override_log_epoch"] = now
-            continue
-        if override_until > 0.0 and override_until <= now:
-            state["override_until"] = 0.0
-            state["override_state"] = None
-            state["override_started_epoch"] = 0.0
-            print(f"presence rule {rule['name']}: manual override expired; automation resumed", flush=True)
-            if state.get("manual_indicator_active"):
-                try:
-                    await _set_manual_indicator(
-                        ws,
-                        node_id=target["node_id"],
-                        enabled=False,
-                    )
-                except Exception as err:
-                    print(
-                        f"presence rule {rule['name']}: failed to clear manual indicator: {err}",
-                        file=sys.stderr,
-                        flush=True,
-                    )
-                state["manual_indicator_active"] = False
 
         presence_values: list[bool] = []
         for source in sources:
@@ -737,7 +685,158 @@ async def _evaluate_rules(
                 flush=True,
             )
             continue
-        present = any(presence_values)
+        remote_present = any(presence_values)
+
+        indicator_supported = _supports_manual_indicator(target["attrs"])
+        override_value = state.get("manual_override_value")
+        override_expires_epoch = state.get("manual_override_expires_epoch")
+        override_active = (
+            isinstance(override_value, bool)
+            and isinstance(override_expires_epoch, (int, float))
+            and now < float(override_expires_epoch)
+        )
+
+        if isinstance(override_value, bool) and not override_active:
+            state["manual_override_value"] = None
+            state["manual_override_expires_epoch"] = 0.0
+            override_value = None
+            override_expires_epoch = 0.0
+            print(
+                f"presence rule {rule['name']}: manual override expired; resuming presence",
+                flush=True,
+            )
+
+        if indicator_supported:
+            override_from_event = _manual_override_from_event(
+                event_data,
+                target_node_id=target["node_id"],
+            )
+            if override_from_event is not None:
+                direction = "up" if override_from_event else "down"
+                current_value = state.get("manual_override_value")
+                current_expires_epoch = state.get("manual_override_expires_epoch")
+                current_active = (
+                    isinstance(current_value, bool)
+                    and isinstance(current_expires_epoch, (int, float))
+                    and now < float(current_expires_epoch)
+                )
+                if current_active and current_value == override_from_event:
+                    state["manual_override_value"] = None
+                    state["manual_override_expires_epoch"] = 0.0
+                    print(
+                        f"presence rule {rule['name']}: manual override cleared via {direction} press",
+                        flush=True,
+                    )
+                else:
+                    timeout_sec = float(rule["manual_override_timeout_sec"])
+                    state["manual_override_value"] = override_from_event
+                    state["manual_override_expires_epoch"] = now + timeout_sec
+                    print(
+                        f"presence rule {rule['name']}: manual override "
+                        f"{'On' if override_from_event else 'Off'} for {int(timeout_sec / 60)}m "
+                        f"via {direction} press",
+                        flush=True,
+                    )
+
+        # Fallback path for cases where button node_event messages are missed:
+        # infer manual intent from a direct target light-state change that did
+        # not come from recent automation output.
+        # Do not run this fallback during node_event handling, because an
+        # explicit paddle event should always win (including clear-on-repeat).
+        if (
+            trigger != "node_event"
+            and
+            isinstance(previous_light_state, bool)
+            and isinstance(light_state, bool)
+            and previous_light_state != light_state
+            and (now - float(state.get("last_auto_command_epoch") or 0.0)) > 10.0
+        ):
+            timeout_sec = float(rule["manual_override_timeout_sec"])
+            state["manual_override_value"] = light_state
+            state["manual_override_expires_epoch"] = now + timeout_sec
+            print(
+                f"presence rule {rule['name']}: manual override "
+                f"{'On' if light_state else 'Off'} for {int(timeout_sec / 60)}m "
+                f"via target state change",
+                flush=True,
+            )
+
+        override_value = state.get("manual_override_value")
+        override_expires_epoch = state.get("manual_override_expires_epoch")
+        override_active = (
+            isinstance(override_value, bool)
+            and isinstance(override_expires_epoch, (int, float))
+            and now < float(override_expires_epoch)
+        )
+
+        if indicator_supported:
+            desired_indicator_enabled = bool(override_active)
+            if state.get("manual_indicator_enabled") != desired_indicator_enabled:
+                try:
+                    await _set_manual_indicator(
+                        ws,
+                        node_id=target["node_id"],
+                        enabled=desired_indicator_enabled,
+                    )
+                    state["manual_indicator_synced"] = True
+                    state["manual_indicator_enabled"] = desired_indicator_enabled
+                except Exception as err:
+                    print(
+                        f"presence rule {rule['name']}: failed to set manual indicator "
+                        f"{'On' if desired_indicator_enabled else 'Off'}: {err}",
+                        file=sys.stderr,
+                        flush=True,
+                    )
+        else:
+            state["manual_indicator_synced"] = True
+            state["manual_indicator_enabled"] = False
+
+        if override_active:
+            present = bool(override_value)
+            previous_presence = state.get("last_presence")
+            presence_changed = (previous_presence is None) or (previous_presence != present)
+            state["last_presence"] = present
+            if presence_changed:
+                state["last_presence_change_epoch"] = now
+            state["last_on_eligible"] = present
+
+            command_name = rule["on_command"] if present else rule["off_command"]
+            desired_onoff = _command_desired_onoff(command_name)
+            if desired_onoff is None:
+                should_issue_manual = presence_changed
+            elif light_state is None:
+                should_issue_manual = presence_changed
+            else:
+                should_issue_manual = light_state != desired_onoff
+            if not should_issue_manual:
+                continue
+
+            cmd_started = time.monotonic()
+            await _device_command(
+                ws,
+                node_id=target["node_id"],
+                endpoint_id=rule["target_endpoint"],
+                cluster_id=rule["cluster_id"],
+                command_name=command_name,
+                payload=rule["payload"],
+            )
+            cmd_rtt_ms = (time.monotonic() - cmd_started) * 1000.0
+            state["last_auto_command_epoch"] = now
+            if desired_onoff is not None:
+                _set_target_light_onoff_in_attrs(
+                    target["attrs"],
+                    rule["target_onoff_attribute_path"],
+                    desired_onoff,
+                )
+                state["last_light_state"] = desired_onoff
+            print(
+                f"presence rule {rule['name']}: manual_override={present} -> {command_name} "
+                f"target_node_id={target['node_id']} trigger={trigger} cmd_rtt_ms={cmd_rtt_ms:.0f}",
+                flush=True,
+            )
+            continue
+
+        present = remote_present
         previous_presence = state.get("last_presence")
         presence_changed = (previous_presence is None) or (previous_presence != present)
         state["last_presence"] = present
@@ -855,6 +954,13 @@ async def _evaluate_rules(
         )
         cmd_rtt_ms = (time.monotonic() - cmd_started) * 1000.0
         state["last_auto_command_epoch"] = now
+        if desired_onoff is not None:
+            _set_target_light_onoff_in_attrs(
+                target["attrs"],
+                rule["target_onoff_attribute_path"],
+                desired_onoff,
+            )
+            state["last_light_state"] = desired_onoff
         observe_to_cmd_ms = None
         if isinstance(state.get("last_presence_change_epoch"), (int, float)):
             observe_to_cmd_ms = max(0.0, (now - float(state["last_presence_change_epoch"])) * 1000.0)
@@ -909,22 +1015,13 @@ async def _run() -> int:
                 by_node_id = _index_by_node_id(by_key)
                 await _evaluate_rules(ws, rules, rule_state, by_key, "startup")
                 watched = _watched_node_ids(rules, by_key)
-                last_snapshot_refresh = asyncio.get_running_loop().time()
 
                 tick = max(0.25, poll_interval_sec)
                 while True:
                     try:
                         raw = await asyncio.wait_for(ws.recv(), timeout=tick)
                     except asyncio.TimeoutError:
-                        # Keep rule timing logic active on a fast tick. To avoid
-                        # destabilizing the websocket, only force a full snapshot
-                        # occasionally; attribute/node events update incrementally.
-                        now = asyncio.get_running_loop().time()
-                        if (now - last_snapshot_refresh) >= 30.0:
-                            by_key = await _read_snapshot(ws)
-                            by_node_id = _index_by_node_id(by_key)
-                            watched = _watched_node_ids(rules, by_key)
-                            last_snapshot_refresh = now
+                        # Keep rule timing logic active on a fast tick.
                         await _evaluate_rules(ws, rules, rule_state, by_key, "tick")
                         continue
 
@@ -940,10 +1037,22 @@ async def _run() -> int:
                         ):
                             node_id = data[0]
                             if node_id in watched:
-                                entry = by_node_id.get(node_id)
-                                if entry is not None:
-                                    entry["attrs"][data[1]] = data[2]
-                                    await _evaluate_rules(ws, rules, rule_state, by_key, "attribute_updated")
+                                    entry = by_node_id.get(node_id)
+                                    if entry is not None:
+                                        entry["attrs"][data[1]] = data[2]
+                                    await _evaluate_rules(
+                                        ws,
+                                        rules,
+                                        rule_state,
+                                        by_key,
+                                        "attribute_updated",
+                                        event_data={
+                                            "type": "attribute_updated",
+                                            "node_id": node_id,
+                                            "attribute_path": data[1],
+                                            "value": data[2],
+                                        },
+                                    )
                         continue
 
                     if event_name != "node_event":
@@ -953,12 +1062,8 @@ async def _run() -> int:
                     if not isinstance(node_id, int) or node_id not in watched:
                         continue
 
-                    # Refresh authoritative node attributes when relevant devices
-                    # emit events; this keeps automation immediate and consistent.
-                    by_key = await _read_snapshot(ws)
-                    by_node_id = _index_by_node_id(by_key)
-                    watched = _watched_node_ids(rules, by_key)
-                    last_snapshot_refresh = asyncio.get_running_loop().time()
+                    # Do not call start_listening again on this websocket:
+                    # matter-server allows it only once per client connection.
                     await _evaluate_rules(ws, rules, rule_state, by_key, "node_event", event_data=data)
         except websockets.exceptions.ConnectionClosed as err:
             # The matter server may close idle/rotating sockets; reconnect fast

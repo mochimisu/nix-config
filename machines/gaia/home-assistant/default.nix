@@ -132,7 +132,9 @@
         "--network=host"
         "--cap-add=NET_ADMIN"
         "--cap-add=NET_RAW"
-        "--device=/dev/ttyACM0:/dev/ttyACM0"
+        # The host-side path is prepared by podman-otbr preStart; map it to the
+        # container's expected radio path.
+        "--device=/run/otbr-thread-radio:/dev/ttyACM0"
         "--device=/dev/net/tun"
       ];
     };
@@ -189,11 +191,31 @@
     requires = [ "earth.mount" ];
     unitConfig = {
       RequiresMountsFor = [ "/earth" ];
-      # Skip start (instead of hard failure loop) when the Thread USB radio is absent.
-      ConditionPathExists = "/dev/ttyACM0";
+      # Skip start when no ACM serial devices exist at all.
+      ConditionPathExistsGlob = "/dev/ttyACM*";
     };
     preStart = ''
       ${pkgs.coreutils}/bin/mkdir -p /earth/home-assistant/otbr
+
+      thread_dev_by_id="/dev/serial/by-id/usb-Nabu_Casa_ZBT-2_DCB4D9123AF0-if00"
+      thread_dev=""
+      if [ -e "$thread_dev_by_id" ]; then
+        thread_dev="$(${pkgs.coreutils}/bin/readlink -f "$thread_dev_by_id" 2>/dev/null || true)"
+      fi
+      if [ -z "$thread_dev" ]; then
+        for candidate in /dev/ttyACM*; do
+          if [ -e "$candidate" ]; then
+            thread_dev="$candidate"
+            break
+          fi
+        done
+      fi
+      if [ -z "$thread_dev" ]; then
+        echo "podman-otbr: no Thread RCP device found" >&2
+        exit 1
+      fi
+      ${pkgs.coreutils}/bin/ln -sfn "$thread_dev" /run/otbr-thread-radio
+      echo "podman-otbr: using Thread RCP $thread_dev"
     '';
     serviceConfig = {
       # OTBR can wedge after transient RCP/USB faults; keep trying automatically.
@@ -417,12 +439,18 @@
         echo "$now_epoch" > "$last_restart_file"
         echo "matter-thread-watchdog: recovering from bad state: $bad_reason"
         thread_dev_by_id="/dev/serial/by-id/usb-Nabu_Casa_ZBT-2_DCB4D9123AF0-if00"
-        thread_dev_fallback="/dev/ttyACM0"
+        thread_dev_fallback=""
+        for candidate in /dev/ttyACM*; do
+          if [ -e "$candidate" ]; then
+            thread_dev_fallback="$candidate"
+            break
+          fi
+        done
         usb_reset_done=0
         tty_real=""
         if [ -e "$thread_dev_by_id" ]; then
           tty_real="$(readlink -f "$thread_dev_by_id" 2>/dev/null || true)"
-        elif [ -e "$thread_dev_fallback" ]; then
+        elif [ -n "$thread_dev_fallback" ]; then
           tty_real="$(readlink -f "$thread_dev_fallback" 2>/dev/null || true)"
         fi
         if [ -n "$tty_real" ]; then
@@ -431,6 +459,14 @@
             usb_node="$(readlink -f "/sys/class/tty/$tty_name/device" 2>/dev/null || true)"
             while [ -n "$usb_node" ] && [ "$usb_node" != "/" ]; do
               if [ -w "$usb_node/authorized" ]; then
+                # Only cycle the USB *device* node (e.g. .../3-4), never an
+                # interface node (e.g. .../3-4:1.0). Cycling an interface can
+                # leave cdc_acm unbound with no ttyACM device.
+                usb_base="$(basename "$usb_node" 2>/dev/null || true)"
+                if printf '%s' "$usb_base" | ${pkgs.gnugrep}/bin/grep -q ':'; then
+                  usb_node="$(dirname "$usb_node")"
+                  continue
+                fi
                 echo "matter-thread-watchdog: cycling USB device at $usb_node"
                 echo 0 > "$usb_node/authorized" || true
                 sleep 1
