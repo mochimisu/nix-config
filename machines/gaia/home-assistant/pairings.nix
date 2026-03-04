@@ -202,11 +202,29 @@
     }
 
     {
+      name = "Office Presence - Far";
+      room = "Office";
+      network_only = false;
+      match = {
+        unique_id_env = "MATTER_UID_UPSTAIRS_BATHROOM_PRESENCE";
+      };
+    }
+
+    {
+      name = "Office Air Quality";
+      room = "Office";
+      network_only = false;
+      match = {
+        unique_id_env = "MATTER_UID_OFFICE_AIR_QUALITY";
+      };
+    }
+
+    {
       name = "Upstairs Bathroom Presence";
       room = "Upstairs Bathroom";
       network_only = false;
       match = {
-        unique_id_env = "MATTER_UID_UPSTAIRS_BATHROOM_PRESENCE";
+        unique_id_env = "MATTER_UID_UPSTAIRS_BATHROOM_PRESENCE_NEW";
       };
     }
 

@@ -30,7 +30,10 @@
   presenceRules = [
     {
       name = "office-presence-light";
-      source_keys = [ (nodeKeyForName "Office Presence") ];
+      source_keys = [
+        (nodeKeyForName "Office Presence")
+        (nodeKeyForName "Office Presence - Far")
+      ];
       target_key = nodeKeyForName "Office Light";
       target_endpoint = 1;
       cluster_id = 6;

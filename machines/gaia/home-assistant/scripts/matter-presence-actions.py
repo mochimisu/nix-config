@@ -617,6 +617,15 @@ async def _read_snapshot(ws) -> dict[str, dict]:
     return _build_by_key(nodes)
 
 
+async def _refresh_snapshot(ws) -> dict[str, dict]:
+    response = await _call(ws, "presence-refresh", "get_nodes")
+    if "error_code" in response:
+        details = response.get("details") or "unknown error"
+        raise RuntimeError(f"get_nodes failed: {details}")
+    nodes = response.get("result") or []
+    return _build_by_key(nodes)
+
+
 async def _evaluate_rules(
     ws,
     rules: list[dict],
@@ -981,6 +990,7 @@ async def _run() -> int:
     # Event-driven automation loop with a periodic re-evaluation tick for
     # time-window and override-expiry logic.
     poll_interval_sec = float(os.getenv("MATTER_PRESENCE_POLL_INTERVAL_SEC", "1.0"))
+    refresh_interval_sec = float(os.getenv("MATTER_PRESENCE_REFRESH_INTERVAL_SEC", "10.0"))
     raw_rules = os.getenv("MATTER_PRESENCE_RULES_JSON", "[]")
 
     try:
@@ -1017,10 +1027,18 @@ async def _run() -> int:
                 watched = _watched_node_ids(rules, by_key)
 
                 tick = max(0.25, poll_interval_sec)
+                refresh_interval = max(1.0, refresh_interval_sec)
+                next_refresh_epoch = asyncio.get_running_loop().time() + refresh_interval
                 while True:
                     try:
                         raw = await asyncio.wait_for(ws.recv(), timeout=tick)
                     except asyncio.TimeoutError:
+                        now = asyncio.get_running_loop().time()
+                        if now >= next_refresh_epoch:
+                            by_key = await _refresh_snapshot(ws)
+                            by_node_id = _index_by_node_id(by_key)
+                            watched = _watched_node_ids(rules, by_key)
+                            next_refresh_epoch = now + refresh_interval
                         # Keep rule timing logic active on a fast tick.
                         await _evaluate_rules(ws, rules, rule_state, by_key, "tick")
                         continue
