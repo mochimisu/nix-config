@@ -21,3 +21,5 @@
 ### Host notes
 - Gaia runs the Openclaw NixOS container in `machines/gaia/openclaw-container.nix` (container name: `gaiaclaw`).
 - Gaia Matter declarative pairing reconcile lives at `machines/gaia/home-assistant/pairings.nix` and reads setup codes from `/etc/secret/matter-reconcile.env`.
+- Gaia Matter custom OTA drop directory is `/earth/home-assistant/matter-server/ota-provider` (files are imported by matter-server and removed after successful import).
+- For new Matter devices on Gaia, define the device in `machines/gaia/home-assistant/pairings.nix` and keep sensitive/unique identifiers (setup codes, MACs, unique IDs, serials) in sops (`machines/gaia/secrets/matter-env.env`) referenced via `*_env` keys.

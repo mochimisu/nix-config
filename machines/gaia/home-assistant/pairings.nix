@@ -238,6 +238,16 @@
     }
 
     {
+      name = "Nursery Blinds Remote";
+      room = "Nursery";
+      code_env = "MATTER_CODE_NURSERY_BLINDS_REMOTE";
+      network_only = false;
+      match = {
+        mac_env = "MATTER_MAC_NURSERY_BLINDS_REMOTE";
+      };
+    }
+
+    {
       name = "MBR Dehumidifier";
       room = "MBR Bathroom";
       network_only = false;

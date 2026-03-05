@@ -1,5 +1,5 @@
 {config, pkgs, lib, matterNodeRooms ? {}, matterNodeRoomsByLabel ? {}, ...}: let
-  # Office bindings (Matter-over-Thread, handled directly through matter.js server API).
+  # Blinds remote bindings (Matter-over-Thread, handled directly through matter.js server API).
   # Keep this zero so runtime resolves by MAC and survives node-id churn.
   remoteNodeId = 0;
   blindsEndpoint = 1;
@@ -29,8 +29,16 @@
     text = ''
       export MATTER_REMOTE_NODE_ID='${toString remoteNodeId}'
       export MATTER_BLINDS_ENDPOINT='${toString blindsEndpoint}'
+      # Office defaults (legacy + explicit names).
+      export MATTER_OFFICE_REMOTE_MAC=''${MATTER_OFFICE_REMOTE_MAC:-''${MATTER_REMOTE_MAC:-}}
+      export MATTER_OFFICE_BLINDS_MAC=''${MATTER_OFFICE_BLINDS_MAC:-''${MATTER_BLINDS_MAC:-}}
+      # Nursery binding.
+      export MATTER_NURSERY_REMOTE_MAC=''${MATTER_NURSERY_REMOTE_MAC:-''${MATTER_MAC_NURSERY_BLINDS_REMOTE:-}}
+      export MATTER_NURSERY_BLINDS_MAC=''${MATTER_NURSERY_BLINDS_MAC:-''${MATTER_MAC_NURSERY_BLINDS:-}}
       export MATTER_KEEPALIVE_NODE_IDS='${lib.concatStringsSep "," (map toString keepaliveNodeIds)}'
       export MATTER_KEEPALIVE_INTERVAL_SEC='${toString keepaliveIntervalSec}'
+      export MATTER_KEEPALIVE_DISCOVER_DYNAMIC=''${MATTER_KEEPALIVE_DISCOVER_DYNAMIC:-0}
+      export MATTER_REMOTE_ACTION_DEDUPE_WINDOW_SEC=''${MATTER_REMOTE_ACTION_DEDUPE_WINDOW_SEC:-0.8}
       exec ${pythonEnv}/bin/python3 ${matterRemoteActionsScript} "$@"
     '';
   };
@@ -69,7 +77,7 @@ in {
   ];
 
   systemd.services.matter-remote-actions = {
-    description = "Matter.js remote actions for office blinds";
+    description = "Matter.js remote actions for office and nursery blinds";
     wantedBy = [
       "multi-user.target"
     ];

@@ -5,20 +5,27 @@ import json
 import os
 import sys
 import time
+from dataclasses import dataclass
 
 import websockets
 
 WS_URL_DEFAULT = "ws://127.0.0.1:5580/ws"
-REMOTE_MAC = os.getenv("MATTER_REMOTE_MAC", "")
 REMOTE_NODE_ID = int(os.getenv("MATTER_REMOTE_NODE_ID", "0"))
-BLINDS_MAC = os.getenv("MATTER_BLINDS_MAC", "")
 BLINDS_ENDPOINT = int(os.getenv("MATTER_BLINDS_ENDPOINT", "1"))
 KEEPALIVE_NODE_IDS_ENV = os.getenv("MATTER_KEEPALIVE_NODE_IDS", "")
 KEEPALIVE_INTERVAL_SEC = int(os.getenv("MATTER_KEEPALIVE_INTERVAL_SEC", "30"))
+KEEPALIVE_DISCOVER_DYNAMIC = os.getenv("MATTER_KEEPALIVE_DISCOVER_DYNAMIC", "1").strip().lower() in (
+    "1",
+    "true",
+    "yes",
+    "on",
+)
 KEEPALIVE_LATENCY_FILE = os.getenv("MATTER_KEEPALIVE_LATENCY_FILE", "/run/matter-keepalive-latency.json")
 SWITCH_CLUSTER_ID = 59
 WINDOW_COVERING_CLUSTER_ID = 258
+SWITCH_EVENT_INITIAL_PRESS = 1
 SWITCH_EVENT_MULTI_PRESS_COMPLETE = 6
+ACTION_DEDUPE_WINDOW_SEC = float(os.getenv("MATTER_REMOTE_ACTION_DEDUPE_WINDOW_SEC", "0.8"))
 THREAD_VENDOR_KEYWORDS = (
     "inovelli",
     "meross",
@@ -27,6 +34,47 @@ THREAD_VENDOR_KEYWORDS = (
     "aqara",
     "nanoleaf",
 )
+
+
+@dataclass
+class Binding:
+    name: str
+    remote_mac: str
+    blinds_mac: str
+    remote_node_id: int | None = None
+    blinds_node_id: int | None = None
+    current_direction: str = "idle"
+
+
+def _env(value: str) -> str:
+    return os.getenv(value, "").strip()
+
+
+def _binding_specs() -> list[Binding]:
+    # Keep compatibility with existing MATTER_REMOTE_MAC / MATTER_BLINDS_MAC.
+    office_remote_mac = _env("MATTER_REMOTE_MAC") or _env("MATTER_OFFICE_REMOTE_MAC")
+    office_blinds_mac = _env("MATTER_BLINDS_MAC") or _env("MATTER_OFFICE_BLINDS_MAC")
+    nursery_remote_mac = _env("MATTER_NURSERY_REMOTE_MAC")
+    nursery_blinds_mac = _env("MATTER_NURSERY_BLINDS_MAC")
+
+    bindings: list[Binding] = []
+    if office_remote_mac and office_blinds_mac:
+        bindings.append(
+            Binding(
+                name="Office",
+                remote_mac=office_remote_mac,
+                blinds_mac=office_blinds_mac,
+            )
+        )
+    if nursery_remote_mac and nursery_blinds_mac:
+        bindings.append(
+            Binding(
+                name="Nursery",
+                remote_mac=nursery_remote_mac,
+                blinds_mac=nursery_blinds_mac,
+            )
+        )
+    return bindings
 
 
 def _b64_to_bytes(value: str) -> bytes | None:
@@ -76,6 +124,9 @@ def _is_thread_candidate(attrs: dict) -> bool:
 
 async def _discover_keepalive_nodes(ws, seed_node_ids: set[int]) -> set[int]:
     keepalive_node_ids = set(seed_node_ids)
+    if not KEEPALIVE_DISCOVER_DYNAMIC:
+        return keepalive_node_ids
+
     start = await _call(ws, "keepalive:start", "start_listening")
     nodes = start.get("result") or []
     for node in nodes:
@@ -213,6 +264,15 @@ async def _keepalive_loop(ws_url: str, node_ids: set[int], interval_sec: int) ->
 async def _run() -> int:
     ws_url = os.getenv("MATTER_WS_URL", WS_URL_DEFAULT)
     keepalive_node_ids = _parse_node_ids(KEEPALIVE_NODE_IDS_ENV)
+    bindings = _binding_specs()
+
+    if not bindings:
+        print(
+            "no bindings configured; set MATTER_REMOTE_MAC/MATTER_BLINDS_MAC "
+            "and/or MATTER_NURSERY_REMOTE_MAC/MATTER_NURSERY_BLINDS_MAC",
+            file=sys.stderr,
+        )
+        return 1
 
     async with websockets.connect(ws_url) as ws:
         await ws.recv()  # server info frame
@@ -224,40 +284,66 @@ async def _run() -> int:
             return 1
 
         nodes = start.get("result") or []
-        remote_node_id = REMOTE_NODE_ID if REMOTE_NODE_ID > 0 else None
-        blinds_node_id = None
 
         for node in nodes:
             node_id = node.get("node_id")
+            if not isinstance(node_id, int) or node_id <= 0:
+                continue
             attrs = node.get("attributes") or {}
             mac = _mac_from_attrs(attrs)
-            if REMOTE_MAC and mac and mac.lower() == REMOTE_MAC.lower():
-                remote_node_id = node_id
-            if BLINDS_MAC and mac and mac.lower() == BLINDS_MAC.lower():
-                blinds_node_id = node_id
+            if not mac:
+                continue
+            mac_lower = mac.lower()
+            for binding in bindings:
+                if mac_lower == binding.remote_mac.lower():
+                    binding.remote_node_id = node_id
+                if mac_lower == binding.blinds_mac.lower():
+                    binding.blinds_node_id = node_id
 
-        if remote_node_id is None:
-            print("remote node not found; set MATTER_REMOTE_NODE_ID or MATTER_REMOTE_MAC", file=sys.stderr)
+        if REMOTE_NODE_ID > 0 and bindings:
+            bindings[0].remote_node_id = REMOTE_NODE_ID
+
+        missing = [
+            binding
+            for binding in bindings
+            if binding.remote_node_id is None or binding.blinds_node_id is None
+        ]
+        if missing:
+            for binding in missing:
+                if binding.remote_node_id is None:
+                    print(
+                        f"{binding.name}: remote node not found by mac {binding.remote_mac}",
+                        file=sys.stderr,
+                    )
+                if binding.blinds_node_id is None:
+                    print(
+                        f"{binding.name}: blinds node not found by mac {binding.blinds_mac}",
+                        file=sys.stderr,
+                    )
             return 1
-        if blinds_node_id is None:
-            print(f"blinds node not found by mac {BLINDS_MAC}", file=sys.stderr)
-            return 1
 
-        keepalive_node_ids.add(remote_node_id)
+        for binding in bindings:
+            keepalive_node_ids.add(binding.remote_node_id)
+            keepalive_node_ids.add(binding.blinds_node_id)
 
+        binding_summary = ", ".join(
+            f"{binding.name}: remote={binding.remote_node_id} blinds={binding.blinds_node_id}"
+            for binding in bindings
+        )
         print(
-            "listening for remote node_id="
-            f"{remote_node_id}, controlling blinds node_id={blinds_node_id}, "
-            f"keepalive_seed_nodes={sorted(keepalive_node_ids)} "
-            f"(plus dynamic thread devices) interval={KEEPALIVE_INTERVAL_SEC}s",
+            "listening for bindings: "
+            f"{binding_summary}, keepalive_seed_nodes={sorted(keepalive_node_ids)} "
+            f"(dynamic_discovery={KEEPALIVE_DISCOVER_DYNAMIC}) interval={KEEPALIVE_INTERVAL_SEC}s "
+            f"trigger=initial_press fallback=multi_press_complete",
             flush=True,
         )
+
+        binding_by_remote_node_id = {binding.remote_node_id: binding for binding in bindings}
 
         keepalive_task = asyncio.create_task(
             _keepalive_loop(ws_url, keepalive_node_ids, KEEPALIVE_INTERVAL_SEC)
         )
-
-        current_direction = "idle"  # one of: idle, up, down
+        last_action_ts: dict[tuple[int, int], float] = {}
 
         try:
             while True:
@@ -266,18 +352,24 @@ async def _run() -> int:
                     continue
 
                 data = message.get("data") or {}
-                if data.get("node_id") != remote_node_id:
+                binding = binding_by_remote_node_id.get(data.get("node_id"))
+                if binding is None:
                     continue
 
                 endpoint_id = data.get("endpoint_id")
                 cluster_id = data.get("cluster_id")
                 event_id = data.get("event_id")
 
-                if cluster_id != SWITCH_CLUSTER_ID or event_id != SWITCH_EVENT_MULTI_PRESS_COMPLETE:
+                if cluster_id != SWITCH_CLUSTER_ID:
                     continue
 
-                press_count = (data.get("data") or {}).get("totalNumberOfPressesCounted")
-                if press_count != 1:
+                if event_id == SWITCH_EVENT_INITIAL_PRESS:
+                    pass
+                elif event_id == SWITCH_EVENT_MULTI_PRESS_COMPLETE:
+                    press_count = (data.get("data") or {}).get("totalNumberOfPressesCounted")
+                    if press_count != 1:
+                        continue
+                else:
                     continue
 
                 desired_direction = None
@@ -289,31 +381,44 @@ async def _run() -> int:
                 if desired_direction is None:
                     continue
 
+                action_key = (binding.remote_node_id, endpoint_id)
+                now = time.monotonic()
+                previous = last_action_ts.get(action_key)
+                if previous is not None and (now - previous) < ACTION_DEDUPE_WINDOW_SEC:
+                    continue
+                last_action_ts[action_key] = now
+
                 try:
-                    if current_direction == desired_direction:
+                    if binding.current_direction == desired_direction:
                         await _device_command(
                             ws,
-                            node_id=blinds_node_id,
+                            node_id=binding.blinds_node_id,
                             endpoint_id=BLINDS_ENDPOINT,
                             cluster_id=WINDOW_COVERING_CLUSTER_ID,
                             command_name="StopMotion",
                             payload={},
                         )
-                        current_direction = "idle"
-                        print(f"remote button {endpoint_id}: stop blinds", flush=True)
+                        binding.current_direction = "idle"
+                        print(
+                            f"{binding.name} remote button {endpoint_id} event={event_id}: stop blinds",
+                            flush=True,
+                        )
                     else:
                         command_name = "UpOrOpen" if desired_direction == "up" else "DownOrClose"
-                        mode = "reverse" if current_direction in ("up", "down") else "start"
+                        mode = "reverse" if binding.current_direction in ("up", "down") else "start"
                         await _device_command(
                             ws,
-                            node_id=blinds_node_id,
+                            node_id=binding.blinds_node_id,
                             endpoint_id=BLINDS_ENDPOINT,
                             cluster_id=WINDOW_COVERING_CLUSTER_ID,
                             command_name=command_name,
                             payload={},
                         )
-                        current_direction = desired_direction
-                        print(f"remote button {endpoint_id}: {mode} {desired_direction}", flush=True)
+                        binding.current_direction = desired_direction
+                        print(
+                            f"{binding.name} remote button {endpoint_id} event={event_id}: {mode} {desired_direction}",
+                            flush=True,
+                        )
                 except Exception as err:
                     print(f"command failed: {err}", file=sys.stderr, flush=True)
         finally:

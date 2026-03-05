@@ -100,6 +100,9 @@
       cmd = [
         "--paa-root-cert-dir"
         "/data/paa-root-certs"
+        "--enable-test-net-dcl"
+        "--ota-provider-dir"
+        "/data/ota-provider"
         "--bluetooth-adapter"
         "0"
         "--primary-interface"
@@ -109,6 +112,7 @@
         "/earth/home-assistant/matter-server:/data"
         "/earth/home-assistant/matter-server/.matter_server:/root/.matter_server"
         "/earth/home-assistant/matter-server/paa-root-certs:/data/paa-root-certs"
+        "/earth/home-assistant/matter-server/ota-provider:/data/ota-provider"
         "/run/dbus:/run/dbus:ro"
       ];
       extraOptions = [
@@ -170,6 +174,7 @@
     "d /earth/home-assistant/matter-server 0755 root root - -"
     "d /earth/home-assistant/matter-server/.matter_server 0755 root root - -"
     "d /earth/home-assistant/matter-server/paa-root-certs 0755 root root - -"
+    "d /earth/home-assistant/matter-server/ota-provider 0755 root root - -"
     "d /earth/home-assistant/otbr 0755 root root - -"
     "d /var/lib/matter-thread-watchdog 0750 root root - -"
   ];
@@ -188,6 +193,7 @@
     preStart = ''
       ${pkgs.coreutils}/bin/mkdir -p /earth/home-assistant/matter-server/.matter_server
       ${pkgs.coreutils}/bin/mkdir -p /earth/home-assistant/matter-server/paa-root-certs
+      ${pkgs.coreutils}/bin/mkdir -p /earth/home-assistant/matter-server/ota-provider
     '';
   };
 
