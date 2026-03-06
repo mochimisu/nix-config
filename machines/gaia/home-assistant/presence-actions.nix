@@ -45,7 +45,7 @@
       # 2) current time is between sunset and next sunrise.
       # (all still gated by presence=true)
       on_eligibility_mode = "any";
-      dark_when_lux_below = 20.0;
+      dark_when_lux_below = 100.0;
       require_luminance_for_on = true;
       on_active_solar_window = {
         mode = "sunset_to_sunrise";
@@ -223,6 +223,7 @@ in {
       EnvironmentFile = config.sops.secrets."matter-env".path;
       Environment = [
         "MATTER_PRESENCE_POLL_INTERVAL_SEC=0.5"
+        "MATTER_PRESENCE_KEEPALIVE_INTERVAL_SEC=30"
       ];
       ExecStartPre = "${pkgs.bash}/bin/bash -c 'for i in {1..60}; do (echo > /dev/tcp/127.0.0.1/5580) >/dev/null 2>&1 && exit 0; sleep 1; done; echo matter-server ws not ready >&2; exit 1'";
       ExecStart = "${matterPresenceActionsTool}/bin/matter-presence-actions";
