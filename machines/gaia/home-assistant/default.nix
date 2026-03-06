@@ -179,6 +179,39 @@
     "d /var/lib/matter-thread-watchdog 0750 root root - -"
   ];
 
+  # NetworkManager can occasionally reset per-interface RA handling on links where
+  # forwarding is enabled. Re-assert accept_ra on the HA infra NIC so alternate
+  # Thread BRs (e.g. Aqara M3) remain usable during OTBR recovery.
+  systemd.services.enforce-enp5s0-accept-ra = {
+    description = "Enforce IPv6 RA acceptance on enp5s0 for Thread BR failover";
+    after = [
+      "NetworkManager.service"
+      "network-online.target"
+    ];
+    wants = [
+      "NetworkManager.service"
+      "network-online.target"
+    ];
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = pkgs.writeShellScript "enforce-enp5s0-accept-ra" ''
+        set -euo pipefail
+        ${pkgs.procps}/bin/sysctl -w net.ipv6.conf.enp5s0.accept_ra=2 >/dev/null
+        ${pkgs.procps}/bin/sysctl -w net.ipv6.conf.enp5s0.accept_ra_rt_info_max_plen=64 >/dev/null
+      '';
+    };
+  };
+
+  systemd.timers.enforce-enp5s0-accept-ra = {
+    enable = true;
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnBootSec = "1min";
+      OnUnitActiveSec = "2min";
+      Unit = "enforce-enp5s0-accept-ra.service";
+    };
+  };
+
   systemd.services."home-assistant" = {
     # Ensure HA actually starts on boot and only after /earth is available.
     wantedBy = [ "multi-user.target" ];
@@ -371,6 +404,7 @@
 
         state_dir="/var/lib/matter-thread-watchdog"
         last_restart_file="$state_dir/last-restart-epoch"
+        bad_checks_file="$state_dir/consecutive-bad-checks"
         mkdir -p "$state_dir"
 
         offline_threshold="''${THREAD_WATCHDOG_OFFLINE_THRESHOLD:-5}"
@@ -428,9 +462,17 @@
         fi
 
         if [ -z "$bad_reason" ]; then
+          rm -f "$bad_checks_file"
           echo "matter-thread-watchdog: healthy"
           exit 0
         fi
+
+        bad_checks=0
+        if [ -f "$bad_checks_file" ]; then
+          bad_checks="$(cat "$bad_checks_file" 2>/dev/null || echo 0)"
+        fi
+        bad_checks="$((bad_checks + 1))"
+        echo "$bad_checks" > "$bad_checks_file"
 
         now_epoch="$(date +%s)"
         last_restart=0
@@ -439,16 +481,29 @@
         fi
         elapsed="$((now_epoch - last_restart))"
         force_recover=0
-        if printf '%s' "$bad_reason" | grep -q "rcp-timeout"; then
+        # Only bypass cooldown when RCP timeout is happening right now *and*
+        # ot-ctl is currently unreachable.
+        if printf '%s' "$bad_reason" | grep -q "rcp-timeout" && printf '%s' "$bad_reason" | grep -q "ot-ctl unreachable"; then
           force_recover=1
         fi
+
+        # Two-stage recovery:
+        # 1st bad check -> OTBR restart only (lets alternate BR path carry traffic).
+        # 2nd+ bad check -> hard recovery (USB cycle + OTBR restart), cooldown-gated.
+        if [ "$bad_checks" -eq 1 ]; then
+          echo "matter-thread-watchdog: soft recovery from bad state: $bad_reason"
+          systemctl restart podman-otbr.service
+          systemctl start otbr-ensure-dataset.service matter-reconcile.service matter-apply-node-labels.service matter-apply-ha-names.service
+          exit 0
+        fi
+
         if [ "$elapsed" -lt "$cooldown_sec" ] && [ "$force_recover" -ne 1 ]; then
-          echo "matter-thread-watchdog: bad state detected ($bad_reason) but in cooldown (''${elapsed}s < ''${cooldown_sec}s)"
+          echo "matter-thread-watchdog: bad state persists ($bad_reason) but hard-recovery cooldown active (''${elapsed}s < ''${cooldown_sec}s)"
           exit 0
         fi
 
         echo "$now_epoch" > "$last_restart_file"
-        echo "matter-thread-watchdog: recovering from bad state: $bad_reason"
+        echo "matter-thread-watchdog: hard recovery from bad state: $bad_reason"
         thread_dev_by_id="/dev/serial/by-id/usb-Nabu_Casa_ZBT-2_DCB4D9123AF0-if00"
         thread_dev_fallback=""
         for candidate in /dev/ttyACM*; do
@@ -501,7 +556,7 @@
 Time: $(date -Iseconds)
 Reason: $bad_reason
 OfflineThreadNodes: $offline_thread_nodes
-Action: cycled Thread USB (when possible), restarted podman-otbr; started reconcile/label timers."
+Action: hard recovery (cycled Thread USB when possible, restarted podman-otbr); started reconcile/label timers."
 
           if command -v sendmail >/dev/null 2>&1; then
             {
