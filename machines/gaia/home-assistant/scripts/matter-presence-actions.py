@@ -440,21 +440,6 @@ def _luminance_lux_from_attrs(attrs: dict, candidate_paths: list[str], mode: str
     return None
 
 
-def _luminance_lux_from_sources(sources: list[dict], candidate_paths: list[str], mode: str) -> float | None:
-    lux_values: list[float] = []
-    for source in sources:
-        attrs = source.get("attrs") if isinstance(source, dict) else None
-        if not isinstance(attrs, dict):
-            continue
-        lux = _luminance_lux_from_attrs(attrs, candidate_paths, mode)
-        if lux is not None:
-            lux_values.append(lux)
-    if not lux_values:
-        return None
-    # Use the darkest reported value so any occupied dark zone can trigger lighting.
-    return min(lux_values)
-
-
 def _normalize_rule(raw: dict, index: int) -> dict | None:
     if not isinstance(raw, dict):
         return None
@@ -639,33 +624,6 @@ async def _refresh_snapshot(ws) -> dict[str, dict]:
         raise RuntimeError(f"get_nodes failed: {details}")
     nodes = response.get("result") or []
     return _build_by_key(nodes)
-
-
-async def _keepalive_nodes(ws, node_ids: set[int]) -> None:
-    for node_id in sorted(node_ids):
-        try:
-            response = await _call(
-                ws,
-                f"presence-keepalive:{node_id}",
-                "read_attribute",
-                {
-                    "node_id": node_id,
-                    "attribute_path": "0/40/5",  # BasicInformation.NodeLabel
-                },
-            )
-            if "error_code" in response:
-                details = response.get("details") or "unknown error"
-                print(
-                    f"presence keepalive node_id={node_id} failed: {details}",
-                    file=sys.stderr,
-                    flush=True,
-                )
-        except Exception as err:
-            print(
-                f"presence keepalive node_id={node_id} error: {err}",
-                file=sys.stderr,
-                flush=True,
-            )
 
 
 async def _evaluate_rules(
@@ -900,8 +858,8 @@ async def _evaluate_rules(
         fail_conditions: list[str] = []
 
         if present and rule["dark_when_lux_below"] is not None:
-            lux = _luminance_lux_from_sources(
-                sources,
+            lux = _luminance_lux_from_attrs(
+                sources[0]["attrs"],
                 rule["luminance_attribute_paths"],
                 rule["luminance_mode"],
             )
@@ -1033,7 +991,6 @@ async def _run() -> int:
     # time-window and override-expiry logic.
     poll_interval_sec = float(os.getenv("MATTER_PRESENCE_POLL_INTERVAL_SEC", "1.0"))
     refresh_interval_sec = float(os.getenv("MATTER_PRESENCE_REFRESH_INTERVAL_SEC", "10.0"))
-    keepalive_interval_sec = float(os.getenv("MATTER_PRESENCE_KEEPALIVE_INTERVAL_SEC", "30.0"))
     raw_rules = os.getenv("MATTER_PRESENCE_RULES_JSON", "[]")
 
     try:
@@ -1055,9 +1012,7 @@ async def _run() -> int:
         return 1
 
     print(
-        "matter-presence-actions: "
-        f"rules={len(rules)} event_driven=true tick={poll_interval_sec}s "
-        f"refresh={refresh_interval_sec}s keepalive={keepalive_interval_sec}s",
+        f"matter-presence-actions: rules={len(rules)} event_driven=true tick={poll_interval_sec}s",
         flush=True,
     )
     rule_state: dict[str, dict] = {}
@@ -1074,7 +1029,6 @@ async def _run() -> int:
                 tick = max(0.25, poll_interval_sec)
                 refresh_interval = max(1.0, refresh_interval_sec)
                 next_refresh_epoch = asyncio.get_running_loop().time() + refresh_interval
-                next_keepalive_epoch = asyncio.get_running_loop().time() + max(1.0, keepalive_interval_sec)
                 while True:
                     try:
                         raw = await asyncio.wait_for(ws.recv(), timeout=tick)
@@ -1085,9 +1039,6 @@ async def _run() -> int:
                             by_node_id = _index_by_node_id(by_key)
                             watched = _watched_node_ids(rules, by_key)
                             next_refresh_epoch = now + refresh_interval
-                        if keepalive_interval_sec > 0 and now >= next_keepalive_epoch:
-                            await _keepalive_nodes(ws, watched)
-                            next_keepalive_epoch = now + max(1.0, keepalive_interval_sec)
                         # Keep rule timing logic active on a fast tick.
                         await _evaluate_rules(ws, rules, rule_state, by_key, "tick")
                         continue
