@@ -103,6 +103,7 @@
     "download-dir" = "/earth/transmission";
     "incomplete-dir" = "/earth/transmission/incomplete";
     "incomplete-dir-enabled" = true;
+    "peer-port" = 51413;
     "umask" = 2;
     "rpc-bind-address" = "0.0.0.0";
     "rpc-host-whitelist-enabled" = false;
@@ -149,6 +150,7 @@ in {
     enable = true;
     user = "transmission";
     group = "media";
+    openPeerPorts = true;
     openRPCPort = true;
     package = pkgs.transmission_4;
     settings = transmissionSettings;

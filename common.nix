@@ -63,6 +63,7 @@ in {
     openssh
     lm_sensors
     jq
+    rclone
     sops
     proton-pass-cli
 

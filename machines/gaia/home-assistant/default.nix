@@ -1,4 +1,62 @@
-{config, pkgs, lib, ...}: {
+{config, pkgs, lib, ...}: let
+  matterStateDir = "/earth/home-assistant/matter-server/.matter_server";
+  matterStateBackupDir = "${matterStateDir}/backups";
+  matterProtonDriveBackupScript = ./scripts/matter-protondrive-backup.sh;
+  matterStateBackupScript = pkgs.writeShellScript "matter-server-backup-state" ''
+    set -euo pipefail
+
+    state_dir="${matterStateDir}"
+    backup_dir="${matterStateBackupDir}"
+    timestamp="$(${pkgs.coreutils}/bin/date +%Y%m%d-%H%M%S)"
+    archive="$backup_dir/matter-state-$timestamp.tar.zst"
+    tmp_archive="$archive.tmp"
+
+    ${pkgs.coreutils}/bin/mkdir -p "$backup_dir"
+
+    tmp_list="$(${pkgs.coreutils}/bin/mktemp)"
+    cleanup() {
+      ${pkgs.coreutils}/bin/rm -f "$tmp_list" "$tmp_archive"
+    }
+    trap cleanup EXIT
+
+    ${pkgs.findutils}/bin/find "$state_dir" -maxdepth 1 -type f \
+      \( -name 'chip.json' -o -name '*.json' -o -name '*.json.backup' \) \
+      ! -name 'tmp*' \
+      ! -name '*.reset-*' \
+      ! -name '*.pre-restore-*' \
+      -printf '%f\n' | ${pkgs.coreutils}/bin/sort > "$tmp_list"
+
+    if ! [ -s "$tmp_list" ]; then
+      echo "matter-server-backup-state: no state files found in $state_dir" >&2
+      exit 0
+    fi
+
+    ${pkgs.gnutar}/bin/tar \
+      --directory "$state_dir" \
+      --use-compress-program=${pkgs.zstd}/bin/zstd \
+      --create \
+      --file "$tmp_archive" \
+      --files-from "$tmp_list"
+
+    ${pkgs.coreutils}/bin/mv "$tmp_archive" "$archive"
+
+    ${pkgs.findutils}/bin/find "$backup_dir" -maxdepth 1 -type f -name 'matter-state-*.tar.zst' \
+      -printf '%T@ %p\n' | ${pkgs.coreutils}/bin/sort -n | ${pkgs.gawk}/bin/awk 'NR<=30 { next } { print $2 }' | while read -r old; do
+      ${pkgs.coreutils}/bin/rm -f "$old"
+    done
+  '';
+
+  matterProtonDriveBackupTool = pkgs.writeShellApplication {
+    name = "matter-protondrive-backup";
+    runtimeInputs = [
+      pkgs.age
+      pkgs.coreutils
+      pkgs.jq
+      pkgs.zstd
+    ];
+    text = builtins.readFile matterProtonDriveBackupScript;
+  };
+in {
   imports = [
     ./devices.nix
     ./remote-actions.nix
@@ -62,6 +120,10 @@
     "dialout"
   ];
 
+  environment.systemPackages = [
+    matterProtonDriveBackupTool
+  ];
+
   # Avoid serial probing races on the Thread radio (common with ttyACM devices).
   networking.modemmanager.enable = lib.mkForce false;
 
@@ -74,6 +136,9 @@
   services.udev.extraRules = ''
     ACTION=="add|change", SUBSYSTEM=="usb", ATTR{idVendor}=="303a", ATTR{idProduct}=="831a", ATTR{serial}=="DCB4D9123AF0", TEST=="power/control", ATTR{power/control}="on"
     ACTION=="add|change", SUBSYSTEM=="tty", ATTRS{idVendor}=="303a", ATTRS{idProduct}=="831a", ENV{ID_MM_DEVICE_IGNORE}="1"
+    # Realtek RTL8761BU Bluetooth adapter: keep it out of USB autosuspend or it
+    # can time out, reset, and come back as a new hci index mid-commissioning.
+    ACTION=="add|change", SUBSYSTEM=="usb", ATTR{idVendor}=="0bda", ATTR{idProduct}=="a729", TEST=="power/control", ATTR{power/control}="on"
   '';
 
   # mDNS is required for many Matter devices (discovery + commissioning).
@@ -104,7 +169,8 @@
         "--ota-provider-dir"
         "/data/ota-provider"
         "--bluetooth-adapter"
-        "0"
+        # Gaia currently exposes only hci1, not hci0.
+        "1"
         "--primary-interface"
         "enp5s0"
       ];
@@ -170,14 +236,36 @@
   ];
 
   systemd.tmpfiles.rules = [
+    "d /earth/backups 0755 root root - -"
+    "d /earth/backups/matter 0750 root root - -"
     "d /earth/home-assistant 0750 hass hass - -"
     "d /earth/home-assistant/matter-server 0755 root root - -"
     "d /earth/home-assistant/matter-server/.matter_server 0755 root root - -"
+    "d /earth/home-assistant/matter-server/.matter_server/backups 0755 root root - -"
     "d /earth/home-assistant/matter-server/paa-root-certs 0755 root root - -"
     "d /earth/home-assistant/matter-server/ota-provider 0755 root root - -"
     "d /earth/home-assistant/otbr 0755 root root - -"
     "d /var/lib/matter-thread-watchdog 0750 root root - -"
   ];
+
+  systemd.services.matter-server-backup-state = {
+    description = "Back up Matter controller state";
+    after = [ "earth.mount" ];
+    requires = [ "earth.mount" ];
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = matterStateBackupScript;
+    };
+  };
+
+  systemd.timers.matter-server-backup-state = {
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnBootSec = "5min";
+      OnUnitActiveSec = "30min";
+      Unit = "matter-server-backup-state.service";
+    };
+  };
 
   # NetworkManager can occasionally reset per-interface RA handling on links where
   # forwarding is enabled. Re-assert accept_ra on the HA infra NIC so alternate
@@ -223,10 +311,13 @@
     after = [ "earth.mount" ];
     requires = [ "earth.mount" ];
     unitConfig.RequiresMountsFor = [ "/earth" ];
+    serviceConfig.TimeoutStopSec = lib.mkForce "2min";
     preStart = ''
       ${pkgs.coreutils}/bin/mkdir -p /earth/home-assistant/matter-server/.matter_server
+      ${pkgs.coreutils}/bin/mkdir -p /earth/home-assistant/matter-server/.matter_server/backups
       ${pkgs.coreutils}/bin/mkdir -p /earth/home-assistant/matter-server/paa-root-certs
       ${pkgs.coreutils}/bin/mkdir -p /earth/home-assistant/matter-server/ota-provider
+      ${matterStateBackupScript} || echo "podman-matter-server: warning: state backup failed; continuing startup" >&2
     '';
   };
 
@@ -493,7 +584,7 @@
         if [ "$bad_checks" -eq 1 ]; then
           echo "matter-thread-watchdog: soft recovery from bad state: $bad_reason"
           systemctl restart podman-otbr.service
-          systemctl start otbr-ensure-dataset.service matter-reconcile.service matter-apply-node-labels.service matter-apply-ha-names.service
+          systemctl start otbr-ensure-dataset.service matter-apply-node-labels.service matter-apply-ha-names.service
           exit 0
         fi
 
@@ -548,7 +639,7 @@
           echo "matter-thread-watchdog: USB reset path not found; continuing with OTBR restart"
         fi
         systemctl restart podman-otbr.service
-        systemctl start otbr-ensure-dataset.service matter-reconcile.service matter-apply-node-labels.service matter-apply-ha-names.service
+        systemctl start otbr-ensure-dataset.service matter-apply-node-labels.service matter-apply-ha-names.service
 
         if [ -n "$alert_email" ]; then
           subject="[gaia] Matter/Thread watchdog recovery triggered"
@@ -556,7 +647,7 @@
 Time: $(date -Iseconds)
 Reason: $bad_reason
 OfflineThreadNodes: $offline_thread_nodes
-Action: hard recovery (cycled Thread USB when possible, restarted podman-otbr); started reconcile/label timers."
+Action: hard recovery (cycled Thread USB when possible, restarted podman-otbr); started label timers."
 
           if command -v sendmail >/dev/null 2>&1; then
             {
