@@ -48,17 +48,28 @@ def _mac_from_attrs(attrs: dict) -> str | None:
     return None
 
 
-def _node_key(attrs: dict) -> str | None:
+def _node_keys(attrs: dict) -> list[str]:
+    keys: list[str] = []
+    label = attrs.get("0/40/5")
+    if isinstance(label, str):
+        label = label.strip()
+        if label:
+            keys.append(f"label:{label}")
     unique_id = attrs.get("0/40/18")
     if isinstance(unique_id, str) and unique_id:
-        return f"unique_id:{unique_id}"
+        keys.append(f"unique_id:{unique_id}")
     serial = attrs.get("0/40/15")
     if isinstance(serial, str) and serial:
-        return f"serial:{serial}"
+        keys.append(f"serial:{serial}")
     mac = _mac_from_attrs(attrs)
     if mac:
-        return f"mac:{mac}"
-    return None
+        keys.append(f"mac:{mac}")
+    return keys
+
+
+def _node_key(attrs: dict) -> str | None:
+    keys = _node_keys(attrs)
+    return keys[0] if keys else None
 
 
 def _as_present(value) -> bool:
@@ -327,6 +338,9 @@ def _resolve_node_key(raw_key: str | None) -> str | None:
         env_name = key.split(":", 1)[1].strip()
         value = (os.getenv(env_name, "") or "").strip().lower()
         return f"mac:{value}" if value else None
+    if key.startswith("label:"):
+        label = key.split(":", 1)[1].strip()
+        return f"label:{label}" if label else None
     return key
 
 
@@ -576,13 +590,13 @@ def _build_by_key(nodes: list[dict]) -> dict[str, dict]:
         if not isinstance(node_id, int):
             continue
         attrs = node.get("attributes") or {}
-        key = _node_key(attrs)
-        if key:
-            by_key[key] = {
-                "node_id": node_id,
-                "attrs": attrs,
-                "available": bool(node.get("available", False)),
-            }
+        entry = {
+            "node_id": node_id,
+            "attrs": attrs,
+            "available": bool(node.get("available", False)),
+        }
+        for key in _node_keys(attrs):
+            by_key[key] = entry
     return by_key
 
 

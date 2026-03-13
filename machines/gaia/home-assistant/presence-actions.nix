@@ -13,18 +13,9 @@
   matterPresenceActionsScript = "${matterScriptsDir}/matter-presence-actions.py";
   matterSolarApiScript = "${matterScriptsDir}/matter-solar-api.py";
 
-  # Derive lookup from pairings.nix labels so device identity has one source of truth.
-  nodeKeyByName =
-    lib.mapAttrs'
-    (key: label: lib.nameValuePair label key)
-    matterNodeLabels;
-
-  nodeKeyForName = name: let
-    key = nodeKeyByName.${name} or null;
-  in
-    if key != null
-    then key
-    else throw "presence-actions.nix: no node key for device name '${name}' in pairings.nix";
+  # Presence rules should follow the Matter NodeLabel because labels are restored
+  # onto the node after re-pairing, while unique IDs can churn.
+  nodeKeyForName = name: "label:${name}";
 
   # Rule-driven automation. Add more objects to this list to extend behavior.
   presenceRules = [
