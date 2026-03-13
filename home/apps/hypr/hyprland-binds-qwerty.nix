@@ -10,7 +10,7 @@
       "$mod, o, exec, $menu"
       "$mod SHIFT, o, exec, $menuAll"
       "$mod, r, pseudo, # dwindle"
-      "$mod, f, togglesplit, # dwindle"
+      "$mod, f, layoutmsg, togglesplit"
 
       # Move focus with mainMod + arrow keys
       "$mod, a, movefocus, l"

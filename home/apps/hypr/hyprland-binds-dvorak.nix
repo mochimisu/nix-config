@@ -12,7 +12,7 @@
       "$mod, G, exec, $fileManager"
       "$mod, V, togglefloating,"
       "$mod, U, pseudo, # dwindle"
-      "$mod, P, togglesplit, # dwindle"
+      "$mod, P, layoutmsg, togglesplit"
 
       # Move focus with mod + arrow keys
       "$mod, a, movefocus, l"
