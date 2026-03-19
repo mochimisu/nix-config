@@ -17,6 +17,14 @@
       fi
     '';
   };
+  pythonEnv = pkgs.python3.withPackages (ps: [
+    ps.websockets
+  ]);
+  pythonCli = pkgs.runCommand "python-cli" {} ''
+    mkdir -p "$out/bin"
+    ln -s ${pythonEnv}/bin/python3 "$out/bin/python3"
+    ln -s ${pythonEnv}/bin/python3 "$out/bin/python"
+  '';
 in {
   # Nix
   nix = {
@@ -60,6 +68,7 @@ in {
 
     fzf
     nodejs
+    pythonCli
     openssh
     lm_sensors
     jq

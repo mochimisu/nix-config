@@ -58,6 +58,16 @@
     }
 
     {
+      name = "Office Floor Lamp";
+      room = "Office";
+      code_env = "MATTER_CODE_OFFICE_FLOOR_LAMP";
+      network_only = false;
+      match = {
+        unique_id_env = "MATTER_UID_OFFICE_FLOOR_LAMP";
+      };
+    }
+
+    {
       name = "MBR Bathroom Main";
       room = "MBR Bathroom";
       code_env = "MATTER_CODE_MBR_BATHROOM_MAIN";
@@ -258,12 +268,32 @@
     }
 
     {
-      name = "MBR Dehumidifier";
+      name = "MBR Bathroom Right Outlet";
       room = "MBR Bathroom";
-      code_env = "MATTER_CODE_MBR_DEHUMIDIFIER";
+      code_env = "MATTER_CODE_MBR_OUTLET_RIGHT";
       network_only = false;
       match = {
-        unique_id_env = "MATTER_UID_MBR_DEHUMIDIFIER";
+        unique_id_env = "MATTER_UID_MBR_OUTLET_RIGHT";
+      };
+    }
+
+    {
+      name = "MBR Bathroom Toilet Fan";
+      room = "MBR Bathroom";
+      code_env = "MATTER_CODE_MBR_BATHROOM_TOILET_FAN";
+      network_only = false;
+      match = {
+        unique_id_env = "MATTER_UID_MBR_BATHROOM_TOILET_FAN";
+      };
+    }
+
+    {
+      name = "MBR Bathroom Toilet Light";
+      room = "MBR Bathroom";
+      code_env = "MATTER_CODE_MBR_BATHROOM_TOILET_LIGHT";
+      network_only = false;
+      match = {
+        unique_id_env = "MATTER_UID_MBR_BATHROOM_TOILET_LIGHT";
       };
     }
 

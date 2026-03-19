@@ -55,6 +55,21 @@
     }
 
     {
+      name = "office-presence-floor-lamp";
+      source_keys = [
+        (nodeKeyForName "Office Presence")
+        (nodeKeyForName "Office Presence - Far")
+      ];
+      target_key = nodeKeyForName "Office Floor Lamp";
+      target_endpoint = 1;
+      cluster_id = 6;
+      on_command = "On";
+      off_command = "Off";
+      payload = {};
+      target_onoff_attribute_path = "1/6/0";
+    }
+
+    {
       name = "mbr-bathroom-presence-main";
       # Shower presence also triggers bathroom logic.
       source_keys = [
@@ -108,6 +123,60 @@
       payload = {};
       # 11:30pm-5:00am only.
       on_active_windows = [{ start = "23:30"; end = "05:00"; }];
+      target_onoff_attribute_path = "1/6/0";
+    }
+
+    {
+      name = "mbr-bathroom-toilet-light-day";
+      source_keys = [ (nodeKeyForName "MBR Bathroom Toilet Presence") ];
+      target_key = nodeKeyForName "MBR Bathroom Toilet Light";
+      target_endpoint = 1;
+      on_cluster_id = 8;
+      cluster_id = 6;
+      on_command = "MoveToLevelWithOnOff";
+      off_command = "Off";
+      on_payload = {
+        level = 254;
+        transitionTime = 0;
+        optionsMask = 0;
+        optionsOverride = 0;
+      };
+      payload = {};
+      on_active_windows = [{ start = "05:00"; end = "23:30"; }];
+      target_onoff_attribute_path = "1/6/0";
+    }
+
+    {
+      name = "mbr-bathroom-toilet-light-warm";
+      source_keys = [ (nodeKeyForName "MBR Bathroom Toilet Presence") ];
+      target_key = nodeKeyForName "MBR Bathroom Toilet Light";
+      target_endpoint = 1;
+      on_cluster_id = 8;
+      cluster_id = 6;
+      on_command = "MoveToLevelWithOnOff";
+      off_command = "Off";
+      on_payload = {
+        level = 64;
+        transitionTime = 0;
+        optionsMask = 0;
+        optionsOverride = 0;
+      };
+      payload = {};
+      on_active_windows = [{ start = "23:30"; end = "05:00"; }];
+      target_onoff_attribute_path = "1/6/0";
+    }
+
+    {
+      name = "mbr-bathroom-toilet-fan";
+      source_keys = [ (nodeKeyForName "MBR Bathroom Toilet Presence") ];
+      target_key = nodeKeyForName "MBR Bathroom Toilet Fan";
+      target_endpoint = 1;
+      cluster_id = 6;
+      on_command = "On";
+      off_command = "Off";
+      payload = {};
+      off_delay_sec = 5 * 60;
+      off_delay_min_presence_sec = 2 * 60;
       target_onoff_attribute_path = "1/6/0";
     }
 

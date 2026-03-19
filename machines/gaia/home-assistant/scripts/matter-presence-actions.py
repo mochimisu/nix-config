@@ -158,7 +158,7 @@ def _set_target_light_onoff_in_attrs(
 
 def _command_desired_onoff(command_name: str) -> bool | None:
     name = (command_name or "").strip().lower()
-    if name == "on":
+    if name in {"on", "movetolevelwithonoff"}:
         return True
     if name == "off":
         return False
@@ -529,9 +529,13 @@ def _normalize_rule(raw: dict, index: int) -> dict | None:
         "target_key": target_key,
         "target_endpoint": int(raw.get("target_endpoint", 1)),
         "cluster_id": int(raw.get("cluster_id", 6)),
+        "on_cluster_id": int(raw.get("on_cluster_id", raw.get("cluster_id", 6))),
+        "off_cluster_id": int(raw.get("off_cluster_id", raw.get("cluster_id", 6))),
         "on_command": str(raw.get("on_command", "On")),
         "off_command": str(raw.get("off_command", "Off")),
         "payload": raw.get("payload") if isinstance(raw.get("payload"), dict) else {},
+        "on_payload": raw.get("on_payload") if isinstance(raw.get("on_payload"), dict) else None,
+        "off_payload": raw.get("off_payload") if isinstance(raw.get("off_payload"), dict) else None,
         "presence_attribute_paths": candidate_paths,
         "presence_paths_explicit": presence_paths_explicit,
         "luminance_attribute_paths": candidate_luminance_paths,
@@ -543,6 +547,13 @@ def _normalize_rule(raw: dict, index: int) -> dict | None:
         "on_eligibility_mode": on_eligibility_mode,
         "on_active_solar_window": on_active_solar_window,
         "manual_override_timeout_sec": manual_override_timeout_sec,
+        "off_delay_sec": max(0.0, _as_float(raw.get("off_delay_sec")) or 0.0),
+        "off_delay_min_presence_sec": max(
+            0.0,
+            _as_float(raw.get("off_delay_min_presence_sec"))
+            or _as_float(raw.get("min_presence_for_off_delay_sec"))
+            or 0.0,
+        ),
     }
 
 
@@ -661,6 +672,8 @@ async def _evaluate_rules(
                 "manual_override_expires_epoch": 0.0,
                 "last_auto_command_epoch": 0.0,
                 "last_presence_change_epoch": 0.0,
+                "present_since_epoch": None,
+                "pending_off_deadline_epoch": 0.0,
             },
         )
         sources = [by_key.get(key) for key in rule["source_keys"]]
@@ -815,15 +828,25 @@ async def _evaluate_rules(
             state["manual_indicator_enabled"] = False
 
         if override_active:
+            state["pending_off_deadline_epoch"] = 0.0
             present = bool(override_value)
             previous_presence = state.get("last_presence")
             presence_changed = (previous_presence is None) or (previous_presence != present)
             state["last_presence"] = present
             if presence_changed:
                 state["last_presence_change_epoch"] = now
+                state["present_since_epoch"] = now if present else None
             state["last_on_eligible"] = present
 
             command_name = rule["on_command"] if present else rule["off_command"]
+            cluster_id = rule["on_cluster_id"] if present else rule["off_cluster_id"]
+            payload = (
+                rule["on_payload"]
+                if present and isinstance(rule.get("on_payload"), dict)
+                else rule["off_payload"]
+                if (not present) and isinstance(rule.get("off_payload"), dict)
+                else rule["payload"]
+            )
             desired_onoff = _command_desired_onoff(command_name)
             if desired_onoff is None:
                 should_issue_manual = presence_changed
@@ -839,9 +862,9 @@ async def _evaluate_rules(
                 ws,
                 node_id=target["node_id"],
                 endpoint_id=rule["target_endpoint"],
-                cluster_id=rule["cluster_id"],
+                cluster_id=cluster_id,
                 command_name=command_name,
-                payload=rule["payload"],
+                payload=payload,
             )
             cmd_rtt_ms = (time.monotonic() - cmd_started) * 1000.0
             state["last_auto_command_epoch"] = now
@@ -865,6 +888,12 @@ async def _evaluate_rules(
         state["last_presence"] = present
         if presence_changed:
             state["last_presence_change_epoch"] = now
+            if present:
+                state["present_since_epoch"] = now
+                state["pending_off_deadline_epoch"] = 0.0
+
+        if present:
+            state["pending_off_deadline_epoch"] = 0.0
 
         previous_on_eligible = state.get("last_on_eligible")
         skip_on_reasons: list[str] = []
@@ -938,7 +967,39 @@ async def _evaluate_rules(
         should_issue_on = bool(on_eligible) and (
             presence_changed or (previous_on_eligible is not True)
         )
-        should_issue_off = (not present) and presence_changed
+        should_issue_off = False
+
+        if not present:
+            off_delay_sec = float(rule.get("off_delay_sec") or 0.0)
+            off_delay_min_presence_sec = float(rule.get("off_delay_min_presence_sec") or 0.0)
+            present_since_epoch = state.get("present_since_epoch")
+            dwell_sec = (
+                max(0.0, now - float(present_since_epoch))
+                if isinstance(present_since_epoch, (int, float))
+                else 0.0
+            )
+            eligible_for_delayed_off = (
+                off_delay_sec > 0.0 and dwell_sec >= off_delay_min_presence_sec
+            )
+            if presence_changed:
+                state["present_since_epoch"] = None
+                if eligible_for_delayed_off:
+                    state["pending_off_deadline_epoch"] = now + off_delay_sec
+                    print(
+                        f"presence rule {rule['name']}: scheduling Off in {int(off_delay_sec)}s "
+                        f"after {int(dwell_sec)}s presence",
+                        flush=True,
+                    )
+                else:
+                    state["pending_off_deadline_epoch"] = 0.0
+                    should_issue_off = True
+            elif (
+                isinstance(state.get("pending_off_deadline_epoch"), (int, float))
+                and float(state["pending_off_deadline_epoch"]) > 0.0
+                and now >= float(state["pending_off_deadline_epoch"])
+            ):
+                state["pending_off_deadline_epoch"] = 0.0
+                should_issue_off = True
 
         if present and (not on_eligible) and (
             presence_changed or (previous_on_eligible is not False)
@@ -956,6 +1017,14 @@ async def _evaluate_rules(
             continue
 
         command_name = rule["on_command"] if should_issue_on else rule["off_command"]
+        cluster_id = rule["on_cluster_id"] if should_issue_on else rule["off_cluster_id"]
+        payload = (
+            rule["on_payload"]
+            if should_issue_on and isinstance(rule.get("on_payload"), dict)
+            else rule["off_payload"]
+            if (not should_issue_on) and isinstance(rule.get("off_payload"), dict)
+            else rule["payload"]
+        )
         desired_onoff = _command_desired_onoff(command_name)
         if desired_onoff is not None and light_state is not None and light_state == desired_onoff:
             print(
@@ -971,9 +1040,9 @@ async def _evaluate_rules(
             ws,
             node_id=target["node_id"],
             endpoint_id=rule["target_endpoint"],
-            cluster_id=rule["cluster_id"],
+            cluster_id=cluster_id,
             command_name=command_name,
-            payload=rule["payload"],
+            payload=payload,
         )
         cmd_rtt_ms = (time.monotonic() - cmd_started) * 1000.0
         state["last_auto_command_epoch"] = now

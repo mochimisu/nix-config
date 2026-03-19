@@ -79,6 +79,7 @@
 in {
   imports = [
     ./sops.nix
+    ./obsidian-sync.nix
     ./transmission.nix
     ./home-assistant
     ./openclaw-container.nix
