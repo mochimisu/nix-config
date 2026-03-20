@@ -178,6 +178,16 @@
     }
 
     {
+      name = "MBR Presence 2";
+      room = "MBR";
+      code_env = "MATTER_CODE_MBR_PRESENCE_2";
+      network_only = false;
+      match = {
+        unique_id_env = "MATTER_UID_MBR_PRESENCE_2";
+      };
+    }
+
+    {
       name = "Upstairs Bathroom Light";
       room = "Upstairs Bathroom";
       code_env = "MATTER_CODE_UPSTAIRS_BATHROOM_LIGHT";

@@ -192,21 +192,17 @@
       target_onoff_attribute_path = "1/6/0";
     }
 
-    # Temporarily disabled: mbr bed light automation.
-    # Re-enable by uncommenting this rule block.
-    # {
-    #   name = "mbr-presence2-bed-light";
-    #   source_keys = [ (nodeKeyForName "MBR Presence") ];
-    #   target_key = nodeKeyForName "MBR Bed Light";
-    #   # Trigger only from the third occupancy endpoint on this multi-occupancy sensor.
-    #   presence_attribute_paths = [ "3/1030/0" ];
-    #   target_endpoint = 1;
-    #   cluster_id = 6;
-    #   on_command = "On";
-    #   off_command = "Off";
-    #   payload = {};
-    #   target_onoff_attribute_path = "1/6/0";
-    # }
+    {
+      name = "mbr-presence2-bed-light";
+      source_keys = [ (nodeKeyForName "MBR Presence 2") ];
+      target_key = nodeKeyForName "MBR Bed Light";
+      target_endpoint = 1;
+      cluster_id = 6;
+      on_command = "On";
+      off_command = "Off";
+      payload = {};
+      target_onoff_attribute_path = "1/6/0";
+    }
 
     {
       name = "pantry-presence-light";
