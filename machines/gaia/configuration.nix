@@ -78,6 +78,7 @@
 
 in {
   imports = [
+    ./blackvue-sync.nix
     ./sops.nix
     ./obsidian-sync.nix
     ./transmission.nix

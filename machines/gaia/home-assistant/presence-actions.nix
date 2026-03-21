@@ -83,8 +83,8 @@
       on_command = "On";
       off_command = "Off";
       payload = {};
-      # Unless 11:30pm-5:00am.
-      on_active_windows = [{ start = "05:00"; end = "23:30"; }];
+      # Unless 10:00pm-7:30am.
+      on_active_windows = [{ start = "07:30"; end = "22:00"; }];
       target_onoff_attribute_path = "1/6/0";
     }
 
@@ -121,8 +121,8 @@
       on_command = "On";
       off_command = "Off";
       payload = {};
-      # 11:30pm-5:00am only.
-      on_active_windows = [{ start = "23:30"; end = "05:00"; }];
+      # 10:00pm-7:30am only.
+      on_active_windows = [{ start = "22:00"; end = "07:30"; }];
       target_onoff_attribute_path = "1/6/0";
     }
 

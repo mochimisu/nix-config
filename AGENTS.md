@@ -23,3 +23,4 @@
 - Gaia Matter declarative pairing reconcile lives at `machines/gaia/home-assistant/pairings.nix` and reads setup codes from `/etc/secret/matter-reconcile.env`.
 - Gaia Matter custom OTA drop directory is `/earth/home-assistant/matter-server/ota-provider` (files are imported by matter-server and removed after successful import).
 - For new Matter devices on Gaia, define the device in `machines/gaia/home-assistant/pairings.nix` and keep sensitive/unique identifiers (setup codes, MACs, unique IDs, serials) in sops (`machines/gaia/secrets/matter-env.env`) referenced via `*_env` keys.
+- Gaia BlackVue sync lives in `machines/gaia/blackvue-sync.nix` and pulls from dashcam `192.168.1.208` into `/earth/blackvue` on a 15-minute systemd timer with daily grouping, `90d` retention, `90%` max disk use, and `1h` failed-download retry.
