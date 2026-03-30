@@ -1,4 +1,6 @@
-self: super: {
+self: super: let
+  haPythonPackages = super.home-assistant.python.pkgs;
+in {
   home-assistant-custom-components =
     super.home-assistant-custom-components
     // {
@@ -14,8 +16,8 @@ self: super: {
           hash = "sha256-BRTbo9v9a4iCkrgVfyFzZXZS4ogDr+Kkx9qz8bhAaDc=";
         };
 
-        dependencies = with super.python3Packages; [
-          beautifulsoup4
+        dependencies = [
+          haPythonPackages.beautifulsoup4
         ];
 
         meta = with super.lib; {
