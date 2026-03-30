@@ -142,7 +142,7 @@
         optionsOverride = 0;
       };
       payload = {};
-      on_active_windows = [{ start = "05:00"; end = "23:30"; }];
+      on_active_windows = [{ start = "07:30"; end = "22:00"; }];
       target_onoff_attribute_path = "1/6/0";
     }
 
@@ -162,7 +162,7 @@
         optionsOverride = 0;
       };
       payload = {};
-      on_active_windows = [{ start = "23:30"; end = "05:00"; }];
+      on_active_windows = [{ start = "22:00"; end = "07:30"; }];
       target_onoff_attribute_path = "1/6/0";
     }
 
