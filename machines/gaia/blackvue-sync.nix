@@ -23,6 +23,7 @@
       pkgs.curl
       pkgs.gnused
       pkgs.python3
+      pkgs.systemd
     ];
     text = ''
       set -euo pipefail
@@ -40,14 +41,21 @@
       last_error=""
       latest_synced_footage=""
       sync_speed_mib_s=""
+      local_recordings_range=""
+      dashcam_recordings_range=""
       probe_error="$(${pkgs.coreutils}/bin/mktemp)"
       sync_log=""
+      updater_pid=""
 
       # shellcheck disable=SC2329
       cleanup() {
         ${pkgs.coreutils}/bin/rm -f "$probe_error"
         if [ -n "$sync_log" ]; then
           ${pkgs.coreutils}/bin/rm -f "$sync_log"
+        fi
+        if [ -n "$updater_pid" ]; then
+          kill "$updater_pid" 2>/dev/null || true
+          wait "$updater_pid" 2>/dev/null || true
         fi
       }
 
@@ -108,6 +116,32 @@ else:
     print("" if value is None else value)
 PY
 )"
+        local_recordings_range="$(${pkgs.python3}/bin/python3 - "$status_file" <<'PY'
+import json
+import sys
+
+try:
+    with open(sys.argv[1], "r", encoding="utf-8") as f:
+        data = json.load(f)
+except Exception:
+    print("")
+else:
+    print(data.get("local_recordings_range") or "")
+PY
+)"
+        dashcam_recordings_range="$(${pkgs.python3}/bin/python3 - "$status_file" <<'PY'
+import json
+import sys
+
+try:
+    with open(sys.argv[1], "r", encoding="utf-8") as f:
+        data = json.load(f)
+except Exception:
+    print("")
+else:
+    print(data.get("dashcam_recordings_range") or "")
+PY
+)"
       fi
 
       write_status() {
@@ -120,6 +154,8 @@ PY
         LAST_ERROR="$last_error" \
         LATEST_SYNCED_FOOTAGE="$latest_synced_footage" \
         SYNC_SPEED_MIB_S="$sync_speed_mib_s" \
+        LOCAL_RECORDINGS_RANGE="$local_recordings_range" \
+        DASHCAM_RECORDINGS_RANGE="$dashcam_recordings_range" \
         ${pkgs.python3}/bin/python3 - <<'PY'
 import json
 import os
@@ -140,6 +176,8 @@ payload = {
     "sync_speed_mib_s": (
         None if os.environ["SYNC_SPEED_MIB_S"] == "" else float(os.environ["SYNC_SPEED_MIB_S"])
     ),
+    "local_recordings_range": os.environ["LOCAL_RECORDINGS_RANGE"] or None,
+    "dashcam_recordings_range": os.environ["DASHCAM_RECORDINGS_RANGE"] or None,
 }
 
 fd, tmp_path = tempfile.mkstemp(dir=directory, prefix=".blackvue-status.", text=True)
@@ -168,7 +206,7 @@ PY
         esac
       }
 
-      probe_pending_count() {
+      probe_dashcam_status() {
         local vod_file
         vod_file="$(${pkgs.coreutils}/bin/mktemp)"
         trap '${pkgs.coreutils}/bin/rm -f "$vod_file"' RETURN
@@ -188,6 +226,8 @@ recording_re = re.compile(
 )
 
 pending = 0
+earliest = None
+latest = None
 with open(vod_path, "r", encoding="utf-8") as f:
     for raw_line in f:
         line = raw_line.strip()
@@ -196,6 +236,11 @@ with open(vod_path, "r", encoding="utf-8") as f:
           continue
 
         base = match.group("base")
+        if earliest is None or base < earliest:
+            earliest = base
+        if latest is None or base > latest:
+            latest = base
+
         file_date = dt.date(
             int(base[0:4]),
             int(base[4:6]),
@@ -211,6 +256,8 @@ with open(vod_path, "r", encoding="utf-8") as f:
             pending += 1
 
 print(pending)
+print("" if earliest is None else f"{earliest[0:4]}-{earliest[4:6]}-{earliest[6:8]} to {latest[0:4]}-{latest[4:6]}-{latest[6:8]}")
+print("" if latest is None else f"{latest[0:4]}-{latest[4:6]}-{latest[6:8]}")
 PY
       }
 
@@ -222,6 +269,7 @@ import sys
 
 destination = sys.argv[1]
 recording_re = re.compile(r"^\d{8}_\d{6}_[A-Z][A-Z][LS]?\.mp4$")
+earliest = None
 latest = None
 total_size = 0
 
@@ -230,27 +278,69 @@ for root, _, files in os.walk(destination):
         if not recording_re.match(filename):
             continue
         path = os.path.join(root, filename)
+        base = filename[0:8]
         try:
             size = os.path.getsize(path)
         except OSError:
             continue
 
         total_size += size
+        if earliest is None or base < earliest:
+            earliest = base
         if latest is None or filename > latest:
             latest = filename
 
+print("" if earliest is None or latest is None else f"{earliest[0:4]}-{earliest[4:6]}-{earliest[6:8]} to {latest[0:4]}-{latest[4:6]}-{latest[6:8]}")
 print(latest or "")
 print(total_size)
 PY
       }
 
+      compute_speed_mib_s() {
+        local ingress_bytes="$1"
+        local started_epoch="$2"
+        local current_epoch="$3"
+        ${pkgs.python3}/bin/python3 - "$ingress_bytes" "$started_epoch" "$current_epoch" <<'PY'
+import sys
+
+ingress = int(sys.argv[1] or "0")
+started = int(sys.argv[2] or "0")
+current = int(sys.argv[3] or "0")
+elapsed = max(current - started, 1)
+speed = ingress / elapsed / (1024 * 1024)
+print(f"{speed:.2f}")
+PY
+      }
+
+      start_sync_updater() {
+        (
+          while true; do
+            ${pkgs.coreutils}/bin/sleep 15
+            ingress_bytes="$(${pkgs.systemd}/bin/systemctl show --property=IPIngressBytes --value blackvuesync-worker.service 2>/dev/null || printf '0\n')"
+            current_epoch="$(${pkgs.coreutils}/bin/date +%s)"
+            sync_speed_mib_s="$(compute_speed_mib_s "$ingress_bytes" "$sync_started_epoch" "$current_epoch")"
+            write_status || true
+          done
+        ) &
+        updater_pid="$!"
+      }
+
       metrics_bootstrap="$(status_metrics)"
-      latest_bootstrap="$(printf '%s\n' "$metrics_bootstrap" | ${pkgs.gnused}/bin/sed -n '1p')"
+      local_range_bootstrap="$(printf '%s\n' "$metrics_bootstrap" | ${pkgs.gnused}/bin/sed -n '1p')"
+      latest_bootstrap="$(printf '%s\n' "$metrics_bootstrap" | ${pkgs.gnused}/bin/sed -n '2p')"
       if [ -z "$latest_synced_footage" ] && [ -n "$latest_bootstrap" ]; then
         latest_synced_footage="$latest_bootstrap"
       fi
+      if [ -z "$local_recordings_range" ] && [ -n "$local_range_bootstrap" ]; then
+        local_recordings_range="$local_range_bootstrap"
+      fi
 
-      if pending_count="$(probe_pending_count 2>"$probe_error")"; then
+      if dashcam_probe="$(probe_dashcam_status 2>"$probe_error")"; then
+        pending_count="$(printf '%s\n' "$dashcam_probe" | ${pkgs.gnused}/bin/sed -n '1p')"
+        dashcam_recordings_range_probe="$(printf '%s\n' "$dashcam_probe" | ${pkgs.gnused}/bin/sed -n '2p')"
+        if [ -n "$dashcam_recordings_range_probe" ]; then
+          dashcam_recordings_range="$dashcam_recordings_range_probe"
+        fi
         connected=true
         if [ "$pending_count" -eq 0 ]; then
           sync_status="up_to_date"
@@ -276,9 +366,12 @@ PY
 
       sync_log="$(${pkgs.coreutils}/bin/mktemp)"
       metrics_before="$(status_metrics)"
-      latest_before="$(printf '%s\n' "$metrics_before" | ${pkgs.gnused}/bin/sed -n '1p')"
-      size_before="$(printf '%s\n' "$metrics_before" | ${pkgs.gnused}/bin/sed -n '2p')"
+      local_range_before="$(printf '%s\n' "$metrics_before" | ${pkgs.gnused}/bin/sed -n '1p')"
+      latest_before="$(printf '%s\n' "$metrics_before" | ${pkgs.gnused}/bin/sed -n '2p')"
+      size_before="$(printf '%s\n' "$metrics_before" | ${pkgs.gnused}/bin/sed -n '3p')"
       sync_started_epoch="$(${pkgs.coreutils}/bin/date +%s)"
+      sync_speed_mib_s="0.00"
+      start_sync_updater
 
       if ${blackvuesync}/bin/blackvuesync "$address" \
         --destination "$destination" \
@@ -290,13 +383,20 @@ PY
         last_error=""
         sync_finished_epoch="$(${pkgs.coreutils}/bin/date +%s)"
         metrics_after="$(status_metrics)"
-        latest_after="$(printf '%s\n' "$metrics_after" | ${pkgs.gnused}/bin/sed -n '1p')"
-        size_after="$(printf '%s\n' "$metrics_after" | ${pkgs.gnused}/bin/sed -n '2p')"
+        local_range_after="$(printf '%s\n' "$metrics_after" | ${pkgs.gnused}/bin/sed -n '1p')"
+        latest_after="$(printf '%s\n' "$metrics_after" | ${pkgs.gnused}/bin/sed -n '2p')"
+        size_after="$(printf '%s\n' "$metrics_after" | ${pkgs.gnused}/bin/sed -n '3p')"
 
         if [ -n "$latest_after" ]; then
           latest_synced_footage="$latest_after"
         elif [ -n "$latest_before" ]; then
           latest_synced_footage="$latest_before"
+        fi
+
+        if [ -n "$local_range_after" ]; then
+          local_recordings_range="$local_range_after"
+        elif [ -n "$local_range_before" ]; then
+          local_recordings_range="$local_range_before"
         fi
 
         sync_speed_mib_s="$(${pkgs.python3}/bin/python3 - "$size_before" "$size_after" "$sync_started_epoch" "$sync_finished_epoch" <<'PY'
@@ -313,7 +413,16 @@ print(f"{speed:.2f}")
 PY
 )"
 
-        if pending_after="$(probe_pending_count 2>"$probe_error")"; then
+        kill "$updater_pid" 2>/dev/null || true
+        wait "$updater_pid" 2>/dev/null || true
+        updater_pid=""
+
+        if dashcam_probe_after="$(probe_dashcam_status 2>"$probe_error")"; then
+          pending_after="$(printf '%s\n' "$dashcam_probe_after" | ${pkgs.gnused}/bin/sed -n '1p')"
+          dashcam_recordings_range_after="$(printf '%s\n' "$dashcam_probe_after" | ${pkgs.gnused}/bin/sed -n '2p')"
+          if [ -n "$dashcam_recordings_range_after" ]; then
+            dashcam_recordings_range="$dashcam_recordings_range_after"
+          fi
           connected=true
           pending_count="$pending_after"
           if [ "$pending_count" -eq 0 ]; then
@@ -336,6 +445,9 @@ PY
       fi
 
       rc=$?
+      kill "$updater_pid" 2>/dev/null || true
+      wait "$updater_pid" 2>/dev/null || true
+      updater_pid=""
       connected=true
       last_error="$(${pkgs.python3}/bin/python3 - "$sync_log" <<'PY'
 import sys
@@ -347,6 +459,9 @@ summary = " | ".join(lines[-10:])
 print(summary[:4000])
 PY
 )"
+      ingress_bytes="$(${pkgs.systemd}/bin/systemctl show --property=IPIngressBytes --value blackvuesync-worker.service 2>/dev/null || printf '0\n')"
+      current_epoch="$(${pkgs.coreutils}/bin/date +%s)"
+      sync_speed_mib_s="$(compute_speed_mib_s "$ingress_bytes" "$sync_started_epoch" "$current_epoch")"
       if normalized_error="$(normalize_offline_error "$last_error")" && [ "$normalized_error" = "offline" ]; then
         connected=false
         sync_status="offline"
@@ -426,6 +541,8 @@ in {
             "pending_count"
             "latest_synced_footage"
             "sync_speed_mib_s"
+            "local_recordings_range"
+            "dashcam_recordings_range"
           ];
           scan_interval = 60;
         };
