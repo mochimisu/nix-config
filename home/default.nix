@@ -45,6 +45,7 @@ in {
   programs = {
     git = {
       enable = true;
+      signing.format = "openpgp";
       settings = {
         user.name = "mochimisu";
         user.email = "brandonwang@me.com";
@@ -82,6 +83,7 @@ in {
 
   gtk = lib.mkIf isLinuxGui {
     enable = true;
+    gtk4.theme = config.gtk.theme;
     gtk3.extraConfig = {
       "gtk-application-prefer-dark-theme" = "1";
     };

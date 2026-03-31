@@ -61,7 +61,7 @@ in {
     ani-cli
     transmission-remote-gtk
     ledger-live-desktop
-    protonvpn-gui
+    proton-vpn
     thunar
     signal-desktop
 
