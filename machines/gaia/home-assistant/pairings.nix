@@ -68,6 +68,16 @@
     }
 
     {
+      name = "Couch light";
+      room = "Living Room";
+      code_env = "MATTER_CODE_COUCH_LIGHT";
+      network_only = false;
+      match = {
+        unique_id_env = "MATTER_UID_COUCH_LIGHT";
+      };
+    }
+
+    {
       name = "MBR Bathroom Main";
       room = "MBR Bathroom";
       code_env = "MATTER_CODE_MBR_BATHROOM_MAIN";
@@ -314,6 +324,16 @@
       network_only = false;
       match = {
         unique_id_env = "MATTER_UID_MBR_BED_LIGHT";
+      };
+    }
+
+    {
+      name = "Network closet light";
+      room = "Network Closet";
+      code_env = "MATTER_CODE_NETWORK_CLOSET_LIGHT";
+      network_only = false;
+      match = {
+        unique_id_env = "MATTER_UID_NETWORK_CLOSET_LIGHT";
       };
     }
 
