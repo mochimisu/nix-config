@@ -478,6 +478,10 @@ def _normalize_rule(raw: dict, index: int) -> dict | None:
     source_keys = raw.get("source_keys")
     source_key_env = raw.get("source_key_env")
     source_keys_env = raw.get("source_keys_env")
+    pulse_source_key = raw.get("pulse_source_key")
+    pulse_source_keys = raw.get("pulse_source_keys")
+    pulse_source_key_env = raw.get("pulse_source_key_env")
+    pulse_source_keys_env = raw.get("pulse_source_keys_env")
     target_key = raw.get("target_key")
     target_key_env = raw.get("target_key_env")
     if not isinstance(target_key, str) or not target_key:
@@ -503,6 +507,29 @@ def _normalize_rule(raw: dict, index: int) -> dict | None:
     normalized_source_keys = [k for k in (_resolve_node_key(x) for x in normalized_source_keys) if k]
     if not normalized_source_keys:
         return None
+
+    normalized_pulse_source_keys: list[str] = []
+    if isinstance(pulse_source_keys, list):
+        normalized_pulse_source_keys = [str(x) for x in pulse_source_keys if isinstance(x, str) and x]
+    elif isinstance(pulse_source_key, str) and pulse_source_key:
+        normalized_pulse_source_keys = [pulse_source_key]
+    elif isinstance(pulse_source_keys_env, list):
+        for env_name in pulse_source_keys_env:
+            key = _node_key_from_env_name(env_name if isinstance(env_name, str) else None)
+            if key:
+                normalized_pulse_source_keys.append(key)
+    else:
+        key = _node_key_from_env_name(pulse_source_key_env if isinstance(pulse_source_key_env, str) else None)
+        if key:
+            normalized_pulse_source_keys = [key]
+    normalized_pulse_source_keys = [k for k in (_resolve_node_key(x) for x in normalized_pulse_source_keys) if k]
+    pulse_source_duration_sec = max(
+        0.0,
+        _as_float(raw.get("pulse_source_duration_sec"))
+        or _as_float(raw.get("source_pulse_duration_sec"))
+        or _as_float(raw.get("source_pulse_sec"))
+        or 0.0,
+    )
 
     name = raw.get("name")
     if not isinstance(name, str) or not name:
@@ -542,7 +569,9 @@ def _normalize_rule(raw: dict, index: int) -> dict | None:
     source_active_when = raw.get("source_active_when", True)
     if not isinstance(source_active_when, bool):
         source_active_when = True
-
+    pulse_source_active_when = raw.get("pulse_source_active_when", source_active_when)
+    if not isinstance(pulse_source_active_when, bool):
+        pulse_source_active_when = source_active_when
     return {
         "name": name,
         "source_keys": normalized_source_keys,
@@ -568,6 +597,9 @@ def _normalize_rule(raw: dict, index: int) -> dict | None:
         "on_active_solar_window": on_active_solar_window,
         "manual_override_timeout_sec": manual_override_timeout_sec,
         "source_active_when": source_active_when,
+        "pulse_source_keys": normalized_pulse_source_keys,
+        "pulse_source_duration_sec": pulse_source_duration_sec,
+        "pulse_source_active_when": pulse_source_active_when,
         "off_delay_sec": max(0.0, _as_float(raw.get("off_delay_sec")) or 0.0),
         "off_delay_min_presence_sec": max(
             0.0,
@@ -695,10 +727,12 @@ async def _evaluate_rules(
                 "last_presence_change_epoch": 0.0,
                 "present_since_epoch": None,
                 "pending_off_deadline_epoch": 0.0,
+                "pulse_source_expires_epoch_by_key": {},
+                "source_active_by_key": {},
             },
         )
-        sources = [by_key.get(key) for key in rule["source_keys"]]
-        sources = [x for x in sources if x is not None]
+        source_entries = [(key, by_key.get(key)) for key in rule["source_keys"]]
+        sources = [entry for _, entry in source_entries if entry is not None]
         target = by_key.get(rule["target_key"])
         if not sources:
             print(
@@ -726,14 +760,47 @@ async def _evaluate_rules(
         )
         state["last_light_state"] = light_state
 
+        pulse_source_keys = set(rule.get("pulse_source_keys") or [])
+        pulse_source_duration_sec = float(rule.get("pulse_source_duration_sec") or 0.0)
+        pulse_source_expires_epoch_by_key = state.setdefault("pulse_source_expires_epoch_by_key", {})
+        source_active_by_key = state.setdefault("source_active_by_key", {})
         presence_values: list[bool] = []
-        for source in sources:
+        for key, source in source_entries:
+            if source is None:
+                continue
+            source_active_when = bool(rule.get("source_active_when", True))
+            if key in pulse_source_keys:
+                source_active_when = bool(rule.get("pulse_source_active_when", source_active_when))
             source_presence = _source_active_state(
                 source["attrs"],
                 rule["presence_attribute_paths"],
                 allow_any_fallback=not bool(rule.get("presence_paths_explicit")),
-                active_when=bool(rule.get("source_active_when", True)),
+                active_when=source_active_when,
             )
+            previous_source_presence = source_active_by_key.get(key)
+            if isinstance(source_presence, bool):
+                source_active_by_key[key] = source_presence
+
+            if key in pulse_source_keys:
+                if (
+                    pulse_source_duration_sec > 0.0
+                    and previous_source_presence is False
+                    and source_presence is True
+                ):
+                    pulse_source_expires_epoch_by_key[key] = now + pulse_source_duration_sec
+                    print(
+                        f"presence rule {rule['name']}: pulse source {key} active for "
+                        f"{int(pulse_source_duration_sec)}s",
+                        flush=True,
+                    )
+                pulse_expires_epoch = pulse_source_expires_epoch_by_key.get(key)
+                if (
+                    isinstance(pulse_expires_epoch, (int, float))
+                    and now < float(pulse_expires_epoch)
+                ):
+                    presence_values.append(True)
+                continue
+
             if source_presence is not None:
                 presence_values.append(source_presence)
         if not presence_values:

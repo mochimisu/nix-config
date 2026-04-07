@@ -280,6 +280,23 @@ def _device_status(vendor: str, product: str, label: str, attrs: dict, color: bo
 
     is_mbr_bed_light = ("nanoleaf" in vendor_l) and ("mbr bed light" in label_l)
 
+    is_door_sensor = (
+        ("door/window sensor" in product_l)
+        or (" door" in label_l)
+        or label_l.endswith("door")
+        or any(isinstance(path, str) and path.endswith("/69/0") for path in attrs.keys())
+    )
+    if is_door_sensor:
+        is_closed = _cluster_attr_value(attrs, 69, 0)
+        if isinstance(is_closed, bool):
+            if is_closed:
+                return f"{WHITE}◼{RESET}" if color else "◼"
+            return f"{GREEN}◫{RESET}" if color else "◫"
+        if isinstance(is_closed, (int, float)):
+            if int(is_closed) != 0:
+                return f"{WHITE}◼{RESET}" if color else "◼"
+            return f"{GREEN}◫{RESET}" if color else "◫"
+
     switch_like = (
         ("inovelli" in vendor_l)
         or ("vtm31" in product_l)

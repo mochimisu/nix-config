@@ -24,7 +24,11 @@
       source_keys = [
         (nodeKeyForName "Office Presence")
         (nodeKeyForName "Office Presence - Far")
+        "unique_id_env:MATTER_UID_OFFICE_DOOR"
       ];
+      pulse_source_keys = [ "unique_id_env:MATTER_UID_OFFICE_DOOR" ];
+      pulse_source_duration_sec = 15;
+      pulse_source_active_when = false;
       target_key = nodeKeyForName "Office Light";
       target_endpoint = 1;
       cluster_id = 6;
@@ -50,8 +54,12 @@
         "0/1024/0"
       ];
       target_onoff_attribute_path = "1/6/0";
-      # Optional override per rule.
-      # presence_attribute_paths = [ "1/1030/0" ];
+      presence_attribute_paths = [
+        "1/1030/0"
+        "2/1030/0"
+        "0/1030/0"
+        "1/69/0"
+      ];
     }
 
     {
@@ -59,13 +67,23 @@
       source_keys = [
         (nodeKeyForName "Office Presence")
         (nodeKeyForName "Office Presence - Far")
+        "unique_id_env:MATTER_UID_OFFICE_DOOR"
       ];
+      pulse_source_keys = [ "unique_id_env:MATTER_UID_OFFICE_DOOR" ];
+      pulse_source_duration_sec = 15;
+      pulse_source_active_when = false;
       target_key = nodeKeyForName "Office Floor Lamp";
       target_endpoint = 1;
       cluster_id = 6;
       on_command = "On";
       off_command = "Off";
       payload = {};
+      presence_attribute_paths = [
+        "1/1030/0"
+        "2/1030/0"
+        "0/1030/0"
+        "1/69/0"
+      ];
       target_onoff_attribute_path = "1/6/0";
     }
 
@@ -76,7 +94,11 @@
         (nodeKeyForName "MBR Bathroom Toilet Presence")
         (nodeKeyForName "MBR Bathroom Main Presence")
         (nodeKeyForName "MBR Shower Presence")
+        (nodeKeyForName "Mbr bathroom Door")
       ];
+      pulse_source_keys = [ (nodeKeyForName "Mbr bathroom Door") ];
+      pulse_source_duration_sec = 15;
+      pulse_source_active_when = false;
       target_key = nodeKeyForName "MBR Bathroom Main";
       target_endpoint = 1;
       cluster_id = 6;
@@ -85,6 +107,12 @@
       payload = {};
       # Unless 10:00pm-7:30am.
       on_active_windows = [{ start = "07:30"; end = "22:00"; }];
+      presence_attribute_paths = [
+        "1/1030/0"
+        "2/1030/0"
+        "0/1030/0"
+        "1/69/0"
+      ];
       target_onoff_attribute_path = "1/6/0";
     }
 
@@ -194,13 +222,25 @@
 
     {
       name = "mbr-presence2-bed-light";
-      source_keys = [ (nodeKeyForName "MBR Presence 2") ];
+      source_keys = [
+        (nodeKeyForName "MBR Presence 2")
+        "unique_id_env:MATTER_UID_MBR_DOOR"
+      ];
+      pulse_source_keys = [ "unique_id_env:MATTER_UID_MBR_DOOR" ];
+      pulse_source_duration_sec = 15;
+      pulse_source_active_when = false;
       target_key = nodeKeyForName "MBR Bed Light";
       target_endpoint = 1;
       cluster_id = 6;
       on_command = "On";
       off_command = "Off";
       payload = {};
+      presence_attribute_paths = [
+        "1/1030/0"
+        "2/1030/0"
+        "0/1030/0"
+        "1/69/0"
+      ];
       target_onoff_attribute_path = "1/6/0";
     }
 

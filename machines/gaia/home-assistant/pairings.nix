@@ -68,7 +68,7 @@
     }
 
     {
-      name = "Couch light";
+      name = "Couch Light";
       room = "Living Room";
       code_env = "MATTER_CODE_COUCH_LIGHT";
       network_only = false;
@@ -348,7 +348,7 @@
     }
 
     {
-      name = "Network closet light";
+      name = "Network Closet Light";
       room = "Network Closet";
       code_env = "MATTER_CODE_NETWORK_CLOSET_LIGHT";
       network_only = false;
