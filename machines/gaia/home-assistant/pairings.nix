@@ -328,12 +328,42 @@
     }
 
     {
+      name = "MBR Door";
+      room = "MBR";
+      code_env = "MATTER_CODE_MBR_DOOR";
+      network_only = false;
+      match = {
+        unique_id_env = "MATTER_UID_MBR_DOOR";
+      };
+    }
+
+    {
+      name = "Office Door";
+      room = "Office";
+      code_env = "MATTER_CODE_OFFICE_DOOR";
+      network_only = false;
+      match = {
+        unique_id_env = "MATTER_UID_OFFICE_DOOR";
+      };
+    }
+
+    {
       name = "Network closet light";
       room = "Network Closet";
       code_env = "MATTER_CODE_NETWORK_CLOSET_LIGHT";
       network_only = false;
       match = {
         unique_id_env = "MATTER_UID_NETWORK_CLOSET_LIGHT";
+      };
+    }
+
+    {
+      name = "Network Closet Door";
+      room = "Network Closet";
+      code_env = "MATTER_CODE_NETWORK_CLOSET_DOOR";
+      network_only = false;
+      match = {
+        unique_id_env = "MATTER_UID_NETWORK_CLOSET_DOOR";
       };
     }
 

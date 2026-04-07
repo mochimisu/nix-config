@@ -52,7 +52,7 @@ async def _run() -> int:
     if not args.all and args.node_id is None and args.remote_mac is None:
         args.all = True
 
-    async with websockets.connect(args.ws_url) as ws:
+    async with websockets.connect(args.ws_url, max_size=None) as ws:
         await ws.recv()  # server_info
 
         start = await _call(ws, "start", "start_listening")

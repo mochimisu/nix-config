@@ -116,7 +116,7 @@
             return 2
         labels = _expand_labels(labels if isinstance(labels, dict) else {})
 
-        async with websockets.connect(args.ws_url) as ws:
+        async with websockets.connect(args.ws_url, max_size=None) as ws:
             # Server sends a server_info object immediately after connect.
             await ws.recv()
 
@@ -325,7 +325,7 @@
             return 2
         labels = _expand_labels(labels if isinstance(labels, dict) else {})
 
-        async with websockets.connect(args.matter_ws_url) as matter_ws:
+        async with websockets.connect(args.matter_ws_url, max_size=None) as matter_ws:
             await matter_ws.recv()  # server_info
             nodes_resp = await _matter_call(matter_ws, "ha-name-nodes", "start_listening")
             nodes = nodes_resp.get("result") or []

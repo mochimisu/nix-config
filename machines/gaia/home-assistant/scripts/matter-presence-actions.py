@@ -128,6 +128,23 @@ def _presence_from_attrs(
     return None
 
 
+def _source_active_state(
+    attrs: dict,
+    candidate_paths: list[str],
+    *,
+    allow_any_fallback: bool = True,
+    active_when: bool = True,
+) -> bool | None:
+    value = _presence_from_attrs(
+        attrs,
+        candidate_paths,
+        allow_any_fallback=allow_any_fallback,
+    )
+    if value is None:
+        return None
+    return value if active_when else (not value)
+
+
 def _target_light_onoff_from_attrs(attrs: dict, preferred_path: str | None) -> bool | None:
     if isinstance(preferred_path, str) and preferred_path:
         if preferred_path in attrs:
@@ -522,6 +539,9 @@ def _normalize_rule(raw: dict, index: int) -> dict | None:
         manual_override_timeout_sec = _as_float(raw.get("manual_override_sec"))
     if manual_override_timeout_sec is None or manual_override_timeout_sec <= 0:
         manual_override_timeout_sec = DEFAULT_MANUAL_OVERRIDE_TIMEOUT_SEC
+    source_active_when = raw.get("source_active_when", True)
+    if not isinstance(source_active_when, bool):
+        source_active_when = True
 
     return {
         "name": name,
@@ -547,6 +567,7 @@ def _normalize_rule(raw: dict, index: int) -> dict | None:
         "on_eligibility_mode": on_eligibility_mode,
         "on_active_solar_window": on_active_solar_window,
         "manual_override_timeout_sec": manual_override_timeout_sec,
+        "source_active_when": source_active_when,
         "off_delay_sec": max(0.0, _as_float(raw.get("off_delay_sec")) or 0.0),
         "off_delay_min_presence_sec": max(
             0.0,
@@ -707,16 +728,17 @@ async def _evaluate_rules(
 
         presence_values: list[bool] = []
         for source in sources:
-            source_presence = _presence_from_attrs(
+            source_presence = _source_active_state(
                 source["attrs"],
                 rule["presence_attribute_paths"],
                 allow_any_fallback=not bool(rule.get("presence_paths_explicit")),
+                active_when=bool(rule.get("source_active_when", True)),
             )
             if source_presence is not None:
                 presence_values.append(source_presence)
         if not presence_values:
             print(
-                f"presence rule {rule['name']}: no occupancy attribute found on any source",
+                f"presence rule {rule['name']}: no source state attribute found on any source",
                 file=sys.stderr,
                 flush=True,
             )
@@ -1102,7 +1124,7 @@ async def _run() -> int:
 
     while True:
         try:
-            async with websockets.connect(ws_url) as ws:
+            async with websockets.connect(ws_url, max_size=None) as ws:
                 await ws.recv()  # server_info
                 by_key = await _read_snapshot(ws)
                 by_node_id = _index_by_node_id(by_key)

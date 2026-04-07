@@ -95,7 +95,7 @@ async def _discover_keepalive_nodes(ws) -> list[tuple[int, dict]]:
 
 
 async def _keepalive_once(ws_url: str) -> None:
-    async with websockets.connect(ws_url) as ws:
+    async with websockets.connect(ws_url, max_size=None) as ws:
         await ws.recv()
         nodes = await _discover_keepalive_nodes(ws)
         previous_metrics = _load_keepalive_metrics()

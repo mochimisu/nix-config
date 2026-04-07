@@ -496,7 +496,7 @@ async def main() -> int:
 
     env = merged_env(args.env_file)
 
-    async with websockets.connect(args.ws_url) as ws:
+    async with websockets.connect(args.ws_url, max_size=None) as ws:
         await ws.recv()
 
         dataset = env.get("MATTER_THREAD_DATASET_HEX", "").strip()

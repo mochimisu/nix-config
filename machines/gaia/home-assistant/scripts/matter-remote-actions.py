@@ -127,7 +127,7 @@ async def _run() -> int:
         )
         return 1
 
-    async with websockets.connect(ws_url) as ws:
+    async with websockets.connect(ws_url, max_size=None) as ws:
         await ws.recv()  # server info frame
 
         start = await _call(ws, "start", "start_listening")

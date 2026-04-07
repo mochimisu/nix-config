@@ -616,7 +616,9 @@ def _zbt2_row(color: bool) -> tuple[str, dict] | None:
 
 
 async def _poll(ws_url: str) -> list[dict]:
-    async with websockets.connect(ws_url) as ws:
+    # Matter's start_listening snapshot can exceed the websocket library's
+    # default 1 MiB frame limit once enough devices are paired.
+    async with websockets.connect(ws_url, max_size=None) as ws:
         await ws.recv()  # server_info
         start = await _call(ws, "start", "start_listening")
         if "error_code" in start:

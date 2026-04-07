@@ -41,7 +41,7 @@ async def _call(ws, message_id: str, command: str, args: dict | None = None) -> 
 async def _run() -> int:
     ws_url = os.getenv("MATTER_WS_URL", WS_URL_DEFAULT)
 
-    async with websockets.connect(ws_url) as ws:
+    async with websockets.connect(ws_url, max_size=None) as ws:
         await ws.recv()  # server_info
 
         start = await _call(ws, "start", "start_listening")

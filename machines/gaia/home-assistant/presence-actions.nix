@@ -227,6 +227,21 @@
       payload = {};
       target_onoff_attribute_path = "1/6/0";
     }
+
+    {
+      name = "network-closet-door-light";
+      source_keys = [ "unique_id_env:MATTER_UID_NETWORK_CLOSET_DOOR" ];
+      target_key = "unique_id_env:MATTER_UID_NETWORK_CLOSET_LIGHT";
+      target_endpoint = 1;
+      cluster_id = 6;
+      on_command = "On";
+      off_command = "Off";
+      payload = {};
+      # IKEA MYGGBETT exposes BooleanState where true=closed, false=open.
+      presence_attribute_paths = [ "1/69/0" ];
+      source_active_when = false;
+      target_onoff_attribute_path = "1/6/0";
+    }
   ];
 
   presenceRulesJson = builtins.toJSON presenceRules;
