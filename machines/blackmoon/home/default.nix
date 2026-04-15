@@ -52,6 +52,8 @@ in {
     windowrule = [
       "workspace 2 silent, match:class ^(steam)$"
       "workspace 2 silent, match:class ^(discord)$"
+      # Endfield's launcher sometimes restores stale XWayland coordinates off-screen.
+      "match:class ^(steam_app_0)$, match:title ^(GRYPHLINK)$, center 1"
       "render_unfocused 1, match:class ^(Monster Hunter Wilds)$"
       "monitor DP-3 tile, match:class ^(ffxiv_dx11.exe)$"
     ];
@@ -72,6 +74,7 @@ in {
       # todo moon profile
       "openrgb --profile /home/brandon/.config/OpenRGB/moon.orp"
       "mangohud steam -silent"
+      "~/.config/hypr/endfield-launcher-fix.sh"
     ];
 
     # nvidia stuff, move to shared
@@ -143,6 +146,71 @@ in {
           exit
       fi
       hyprctl reload
+    '';
+  };
+  home.file.".config/hypr/endfield-launcher-fix.sh" = {
+    executable = true;
+    text = ''
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      socket="''${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/hypr/''${HYPRLAND_INSTANCE_SIGNATURE:?}/.socket2.sock"
+
+      move_visible_launchers() {
+        hyprctl -j clients | jq -r '
+          .[]
+          | select(.class == "steam_app_0" and .title == "GRYPHLINK" and (.at[0] < 0 or .at[1] < 0))
+          | .address
+        ' | while read -r addr; do
+          [ -n "$addr" ] || continue
+          # The launcher re-applies stale geometry a few times after mapping, so
+          # keep forcing it back to the visible area briefly.
+          for _ in $(seq 1 30); do
+            hyprctl dispatch movewindowpixel exact 100 100,address:"$addr" >/dev/null
+            sleep 0.1
+          done
+        done
+      }
+
+      move_visible_launchers
+
+      if ! command -v socat >/dev/null 2>&1; then
+        while true; do
+          move_visible_launchers
+          sleep 1
+        done
+      fi
+
+      socat -U - UNIX-CONNECT:"$socket" | while IFS= read -r _; do
+        move_visible_launchers
+      done
+    '';
+  };
+  home.file.".local/bin/fix-endfield-launcher" = {
+    executable = true;
+    text = ''
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      addr="$(
+        hyprctl -j clients |
+          jq -r '
+            .[]
+            | select(.class == "steam_app_0" and .title == "GRYPHLINK")
+            | .address
+          ' |
+          tail -n 1
+      )"
+
+      if [ -z "$addr" ]; then
+        echo "No GRYPHLINK window found." >&2
+        exit 1
+      fi
+
+      for _ in $(seq 1 30); do
+        hyprctl dispatch movewindowpixel exact 100 100,address:"$addr" >/dev/null
+        sleep 0.1
+      done
     '';
   };
 

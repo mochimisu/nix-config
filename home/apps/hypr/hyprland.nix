@@ -41,7 +41,7 @@
         border_size = "2";
         "col.active_border" = "rgba(ffffffff)";
         "col.inactive_border" = "rgba(00000000)";
-        layout = "dwindle";
+        layout = "scrolling";
         allow_tearing = "true";
       };
 
@@ -94,10 +94,13 @@
         force_zero_scaling = "true";
       };
 
-      dwindle = {
-        # See https://wiki.hyprland.org/Configuring/Dwindle-Layout/ for more
-        pseudotile = "true"; # master switch for pseudotiling. Enabling is bound to mod + P in the keybinds section below
-        preserve_split = "true"; # you probably want this
+      scrolling = {
+        column_width = "0.5";
+        focus_fit_method = 1;
+        follow_focus = "true";
+        wrap_focus = "true";
+        wrap_swapcol = "true";
+        direction = "right";
       };
 
       cliphist = {
