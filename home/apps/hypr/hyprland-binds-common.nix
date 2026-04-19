@@ -31,9 +31,8 @@
       "$mod, S, togglespecialworkspace, magic"
       "$mod SHIFT, S, movetoworkspace, special:magic"
 
-      # Wheel controls for scrolling layout
-      "$mod, mouse_down, layoutmsg, move +col"
-      "$mod, mouse_up, layoutmsg, move -col"
+      "$mod, mouse_down, workspace, e+1"
+      "$mod, mouse_up, workspace, e-1"
       "SHIFT, mouse_down, movefocus, d"
       "SHIFT, mouse_up, movefocus, u"
       "$mod SHIFT, mouse_down, movewindow, d"

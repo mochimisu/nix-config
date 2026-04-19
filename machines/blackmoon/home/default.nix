@@ -104,8 +104,6 @@ in {
     render = {
       # Enable color-management pipeline required for HDR output.
       cm_enabled = false;
-      # Fullscreen passthrough for direct HDR presentation.
-      cm_fs_passthrough = 0;
       # Auto-enable HDR when the app advertises HDR output.
       cm_auto_hdr = 0;
     };
@@ -228,14 +226,12 @@ in {
         printf "0" > "$state_file"
         hyprctl --batch "\
           keyword render:cm_enabled 0;\
-          keyword render:cm_fs_passthrough 0;\
           keyword render:cm_auto_hdr 0;\
           keyword monitor $SDR_MONITOR"
       else
         printf "1" > "$state_file"
         hyprctl --batch "\
           keyword render:cm_enabled 1;\
-          keyword render:cm_fs_passthrough 0;\
           keyword render:cm_auto_hdr 0;\
           keyword monitor $HDR_MONITOR"
       fi

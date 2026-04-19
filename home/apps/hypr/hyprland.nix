@@ -41,7 +41,7 @@
         border_size = "2";
         "col.active_border" = "rgba(ffffffff)";
         "col.inactive_border" = "rgba(00000000)";
-        layout = "scrolling";
+        layout = "dwindle";
         allow_tearing = "true";
       };
 
@@ -57,6 +57,11 @@
         shadow = {
           enabled = false;
         };
+      };
+
+      dwindle = {
+        preserve_split = true;
+        pseudotile = true;
       };
 
       misc = {
@@ -92,15 +97,6 @@
 
       xwayland = {
         force_zero_scaling = "true";
-      };
-
-      scrolling = {
-        column_width = "0.5";
-        focus_fit_method = 1;
-        follow_focus = "true";
-        wrap_focus = "true";
-        wrap_swapcol = "true";
-        direction = "right";
       };
 
       cliphist = {
