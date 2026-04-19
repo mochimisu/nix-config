@@ -31,9 +31,12 @@
       "$mod, S, togglespecialworkspace, magic"
       "$mod SHIFT, S, movetoworkspace, special:magic"
 
-      # Scroll through existing workspaces with mod + scroll
       "$mod, mouse_down, workspace, e+1"
       "$mod, mouse_up, workspace, e-1"
+      "SHIFT, mouse_down, movefocus, d"
+      "SHIFT, mouse_up, movefocus, u"
+      "$mod SHIFT, mouse_down, movewindow, d"
+      "$mod SHIFT, mouse_up, movewindow, u"
 
       # fullscreen toggle
       "$mod, return, fullscreen"

@@ -1,6 +1,8 @@
 {
+  config,
   pkgs,
   inputs,
+  lib,
   ...
 }: let
   codexBase = inputs.codex-cli-nix.packages.${pkgs.stdenv.hostPlatform.system}.default;
@@ -25,6 +27,11 @@
     ln -s ${pythonEnv}/bin/python3 "$out/bin/python3"
     ln -s ${pythonEnv}/bin/python3 "$out/bin/python"
   '';
+  wikiskillDir = "/home/brandon/stuff/wikiskill";
+  enableWikiskillServices = builtins.elem config.networking.hostName [
+    "gaia"
+    "blackmoon"
+  ];
 in {
   # Nix
   nix = {
@@ -133,6 +140,60 @@ in {
     '';
     settings = {
       PermitRootLogin = "no";
+    };
+  };
+
+  systemd.services = lib.mkIf enableWikiskillServices {
+    wikiskill-dev = {
+      description = "wikiskill wiki:dev";
+      wantedBy = ["multi-user.target"];
+      after = ["network-online.target"];
+      wants = ["network-online.target"];
+      path = with pkgs; [
+        bash
+        nodejs
+        git
+        coreutils
+      ];
+      serviceConfig = {
+        Type = "simple";
+        User = "brandon";
+        Group = "users";
+        WorkingDirectory = wikiskillDir;
+        ExecStart = "${pkgs.nodejs}/bin/npm run wiki:dev";
+        Restart = "always";
+        RestartSec = 5;
+        Environment = [
+          "HOME=/home/brandon"
+        ];
+        ConditionPathIsDirectory = wikiskillDir;
+      };
+    };
+
+    wikiskill-daily-daemon = {
+      description = "wikiskill wiki:daily-daemon";
+      wantedBy = ["multi-user.target"];
+      after = ["network-online.target"];
+      wants = ["network-online.target"];
+      path = with pkgs; [
+        bash
+        nodejs
+        git
+        coreutils
+      ];
+      serviceConfig = {
+        Type = "simple";
+        User = "brandon";
+        Group = "users";
+        WorkingDirectory = wikiskillDir;
+        ExecStart = "${pkgs.nodejs}/bin/npm run wiki:daily-daemon";
+        Restart = "always";
+        RestartSec = 5;
+        Environment = [
+          "HOME=/home/brandon"
+        ];
+        ConditionPathIsDirectory = wikiskillDir;
+      };
     };
   };
 

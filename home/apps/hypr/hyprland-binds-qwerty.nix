@@ -12,7 +12,7 @@
       "$mod, r, pseudo, # dwindle"
       "$mod, f, layoutmsg, togglesplit"
 
-      # Move focus with mainMod + arrow keys
+      # Move focus with mainMod + movement keys
       "$mod, a, movefocus, l"
       "$mod, d, movefocus, r"
       "$mod, w, movefocus, u"
