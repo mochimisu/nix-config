@@ -73,7 +73,7 @@
       code_env = "MATTER_CODE_COUCH_LIGHT";
       network_only = false;
       match = {
-        unique_id_env = "MATTER_UID_COUCH_LIGHT";
+        unique_id = "6F870335EE62B994";
       };
     }
 
@@ -334,6 +334,16 @@
       network_only = false;
       match = {
         unique_id_env = "MATTER_UID_MBR_DOOR";
+      };
+    }
+
+    {
+      name = "MBR Bathroom Door";
+      room = "MBR Bathroom";
+      code_env = "MATTER_CODE_MBR_BATHROOM_DOOR";
+      network_only = false;
+      match = {
+        unique_id = "12D2178EA809EC9C";
       };
     }
 

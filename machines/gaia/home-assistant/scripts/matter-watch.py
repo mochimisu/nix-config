@@ -273,6 +273,97 @@ def _load_keepalive_metrics(path: str) -> dict[str, dict]:
     return nodes if isinstance(nodes, dict) else {}
 
 
+def _keepalive_health(entry: dict | None) -> tuple[str, str, float | None]:
+    if not isinstance(entry, dict):
+        return "healthy", "", None
+    state = str(entry.get("health_state") or "healthy")
+    reason = str(entry.get("health_reason") or "")
+    since = entry.get("degraded_since_epoch")
+    if isinstance(since, (int, float)):
+        return state, reason, float(since)
+    return state, reason, None
+
+
+def _health_badge(entry: dict | None, color: bool) -> str:
+    state, _, _ = _keepalive_health(entry)
+    if state == "persistent":
+        return f"{RED}persist{RESET}" if color else "persist"
+    if state == "degraded":
+        return f"{YELLOW}warn{RESET}" if color else "warn"
+    return ""
+
+
+def _label_color(available: bool, entry: dict | None, color: bool) -> tuple[str, str]:
+    if not color:
+        return "", ""
+    state, _, _ = _keepalive_health(entry)
+    if not available:
+        return RED, RESET
+    if state == "persistent":
+        return ORANGE, RESET
+    if state == "degraded":
+        return YELLOW, RESET
+    return GREEN, RESET
+
+
+def _format_duration(sec: float) -> str:
+    total = max(0, int(round(sec)))
+    minutes, seconds = divmod(total, 60)
+    hours, minutes = divmod(minutes, 60)
+    if hours > 0:
+        return f"{hours}h{minutes:02d}m"
+    if minutes > 0:
+        return f"{minutes}m{seconds:02d}s"
+    return f"{seconds}s"
+
+
+def _degraded_summary_lines(
+    nodes: list[dict],
+    keepalive_metrics: dict[str, dict],
+    rooms: dict[str, str],
+    rooms_by_label: dict[str, str],
+) -> list[str]:
+    now_epoch = datetime.now().timestamp()
+    degraded: list[tuple[int, str]] = []
+    for node in nodes:
+        node_id = node.get("node_id")
+        if not isinstance(node_id, int):
+            continue
+        entry = keepalive_metrics.get(str(node_id))
+        state, reason, since = _keepalive_health(entry)
+        if state not in {"degraded", "persistent"}:
+            continue
+
+        attrs = node.get("attributes") or {}
+        label = str(attrs.get("0/40/5") or f"node {node_id}")
+        room = _room_for_attrs(attrs, rooms, rooms_by_label)
+        _, rssi = _thread_link_metrics(attrs)
+        battery = _battery_text(attrs)
+        age_text = ""
+        if since is not None:
+            age_text = _format_duration(now_epoch - since)
+        parts = [state, room]
+        if reason:
+            parts.append(reason)
+        if age_text:
+            parts.append(age_text)
+        if rssi:
+            parts.append(f"rssi {rssi}")
+        if battery:
+            parts.append(f"bat {battery}")
+        degraded.append((0 if state == "persistent" else 1, f"{label} [{', '.join(parts)}]"))
+
+    if not degraded:
+        return ["Degraded: none"]
+
+    degraded.sort(key=lambda item: (item[0], item[1].lower()))
+    shown = [text for _, text in degraded[:5]]
+    lines = ["Degraded: " + "; ".join(shown)]
+    if len(degraded) > 5:
+        lines.append(f"Degraded+: {len(degraded) - 5} more nodes")
+    return lines
+
+
 def _device_status(vendor: str, product: str, label: str, attrs: dict, color: bool) -> str:
     vendor_l = (vendor or "").lower()
     product_l = (product or "").lower()
@@ -626,6 +717,7 @@ def _zbt2_row(color: bool) -> tuple[str, dict] | None:
         "rssi": "",
         "label": label_colored,
         "last_ack": "---",
+        "health": "",
         "battery": "",
         "device": "Nabu Casa ZBT-2 (OTBR host radio)",
     }
@@ -688,6 +780,7 @@ def _table_text(
         facade_line,
         f"Matter last started: {_service_last_started('podman-matter-server.service')}",
         f"OTBR last started:   {_service_last_started('podman-otbr.service')}",
+        *_degraded_summary_lines(nodes, keepalive_metrics, rooms, rooms_by_label),
         f"Polling every {interval:.1f}s. Press Ctrl+C to stop.",
         "-" * min(width, 160),
     ]
@@ -720,11 +813,11 @@ def _table_text(
 
     header = (
         f"{'Node':<6}  {'Status':<14}  "
-        f"{'RSSI':<5}  {'Label':<24}  {'LastAck':<8}  {'Battery':<7}  Device"
+        f"{'RSSI':<5}  {'Label':<24}  {'LastAck':<8}  {'Health':<7}  {'Battery':<7}  Device"
     )
     header_sep = (
         f"{'----':<6}  {'------':<14}  "
-        f"{'----':<5}  {'-----':<24}  {'-------':<8}  {'-------':<7}  ------"
+        f"{'----':<5}  {'-----':<24}  {'-------':<8}  {'------':<7}  {'-------':<7}  ------"
     )
 
     for room in room_order:
@@ -742,13 +835,13 @@ def _table_text(
             ack_source_id = node_id if isinstance(node_id, int) else -1
             ack_raw, ack_age = _last_ack_info(ack_source_id, attrs, keepalive_metrics)
             ack_text = _color_last_ack(ack_raw, ack_age, color)
+            health_entry = keepalive_metrics.get(str(node_id))
+            health_text = _health_badge(health_entry, color)
             battery_text = _battery_text(attrs)
             status = _device_status(vendor, product, label, attrs, color)
             label_text = label[:24]
-            if color:
-                label_colored = f"{GREEN}{label_text}{RESET}" if available else f"{RED}{label_text}{RESET}"
-            else:
-                label_colored = label_text
+            label_prefix, label_suffix = _label_color(available, health_entry, color)
+            label_colored = f"{label_prefix}{label_text}{label_suffix}" if label_prefix else label_text
             device = f"{vendor} {product}".strip()
             row_lines.append(
                 f"{_pad(str(node_id), 6)}  "
@@ -756,6 +849,7 @@ def _table_text(
                 f"{_pad(rssi_text, 5)}  "
                 f"{_pad(label_colored, 24)}  "
                 f"{_pad(ack_text, 8)}  "
+                f"{_pad(health_text, 7)}  "
                 f"{_pad(battery_text, 7)}  "
                 f"{device}"
             )
@@ -767,6 +861,7 @@ def _table_text(
                 f"{_pad(row['rssi'], 5)}  "
                 f"{_pad(row['label'], 24)}  "
                 f"{_pad(row['last_ack'], 8)}  "
+                f"{_pad(row['health'], 7)}  "
                 f"{_pad(row['battery'], 7)}  "
                 f"{row['device']}"
             )

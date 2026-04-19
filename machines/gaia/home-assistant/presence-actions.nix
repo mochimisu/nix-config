@@ -94,9 +94,9 @@
         (nodeKeyForName "MBR Bathroom Toilet Presence")
         (nodeKeyForName "MBR Bathroom Main Presence")
         (nodeKeyForName "MBR Shower Presence")
-        (nodeKeyForName "Mbr bathroom Door")
+        (nodeKeyForName "MBR Bathroom Door")
       ];
-      pulse_source_keys = [ (nodeKeyForName "Mbr bathroom Door") ];
+      pulse_source_keys = [ (nodeKeyForName "MBR Bathroom Door") ];
       pulse_source_duration_sec = 15;
       pulse_source_active_when = false;
       target_key = nodeKeyForName "MBR Bathroom Main";
