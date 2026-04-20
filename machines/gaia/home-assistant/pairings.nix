@@ -6,6 +6,7 @@
 }: let
   # Declarative desired pairings. Keep setup codes in encrypted sops secret env file
   # using the environment variable named in `code_env`.
+  guestBedroomBlindsRemoteMac = "a6:86:cb:d2:f3:37";
   matterDesiredPairings = [
     {
       name = "Office Blinds";
@@ -284,6 +285,36 @@
       network_only = false;
       match = {
         mac = "3e:de:81:b4:b3:8c";
+      };
+    }
+
+    {
+      name = "Guest Bedroom Window Blinds";
+      room = "Guest Bedroom";
+      code_env = "MATTER_CODE_GUEST_BEDROOM_WINDOW_BLINDS";
+      network_only = false;
+      match = {
+        mac_env = "MATTER_MAC_GUEST_BEDROOM_WINDOW_BLINDS";
+      };
+    }
+
+    {
+      name = "Guest Bedroom Door Blinds";
+      room = "Guest Bedroom";
+      code_env = "MATTER_CODE_GUEST_BEDROOM_DOOR_BLINDS";
+      network_only = false;
+      match = {
+        mac_env = "MATTER_MAC_GUEST_BEDROOM_DOOR_BLINDS";
+      };
+    }
+
+    {
+      name = "Guest Bedroom BILRESA Remote";
+      room = "Guest Bedroom";
+      code_env = "MATTER_CODE_GUEST_BEDROOM_BLINDS_REMOTE";
+      network_only = false;
+      match = {
+        mac = guestBedroomBlindsRemoteMac;
       };
     }
 

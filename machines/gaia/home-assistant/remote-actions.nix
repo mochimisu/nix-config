@@ -5,6 +5,9 @@
   blindsEndpoint = 1;
   officeRemoteMac = "da:21:d9:f7:cc:5d";
   nurseryRemoteMac = "3e:de:81:b4:b3:8c";
+  guestBedroomRemoteMac = "a6:86:cb:d2:f3:37";
+  guestBedroomWindowBlindsMac = "88:13:bf:aa:5c:13";
+  guestBedroomDoorBlindsMac = "88:13:bf:aa:48:2b";
   keepaliveIntervalSec = 30;
 
   pythonEnv = pkgs.python3.withPackages (ps: [
@@ -31,6 +34,10 @@
       # Nursery binding.
       export MATTER_NURSERY_REMOTE_MAC='${nurseryRemoteMac}'
       export MATTER_NURSERY_BLINDS_MAC=''${MATTER_NURSERY_BLINDS_MAC:-''${MATTER_MAC_NURSERY_BLINDS:-}}
+      # Guest bedroom binding.
+      export MATTER_GUEST_BEDROOM_REMOTE_MAC='${guestBedroomRemoteMac}'
+      export MATTER_GUEST_BEDROOM_WINDOW_BLINDS_MAC='${guestBedroomWindowBlindsMac}'
+      export MATTER_GUEST_BEDROOM_DOOR_BLINDS_MAC='${guestBedroomDoorBlindsMac}'
       export MATTER_REMOTE_ACTION_DEDUPE_WINDOW_SEC=''${MATTER_REMOTE_ACTION_DEDUPE_WINDOW_SEC:-0.8}
       exec ${pythonEnv}/bin/python3 ${matterRemoteActionsScript} "$@"
     '';
@@ -107,7 +114,7 @@ in {
   };
 
   systemd.services.matter-remote-actions = {
-    description = "Matter.js remote actions for office and nursery blinds";
+    description = "Matter.js remote actions for office, nursery, and guest bedroom blinds";
     wantedBy = [
       "multi-user.target"
     ];

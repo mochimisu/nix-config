@@ -23,9 +23,9 @@ ACTION_DEDUPE_WINDOW_SEC = float(os.getenv("MATTER_REMOTE_ACTION_DEDUPE_WINDOW_S
 class Binding:
     name: str
     remote_mac: str
-    blinds_mac: str
+    blinds_macs: list[str]
     remote_node_id: int | None = None
-    blinds_node_id: int | None = None
+    blinds_node_ids: list[int] | None = None
     current_direction: str = "idle"
 
 
@@ -39,6 +39,9 @@ def _binding_specs() -> list[Binding]:
     office_blinds_mac = _env("MATTER_OFFICE_BLINDS_MAC") or _env("MATTER_BLINDS_MAC")
     nursery_remote_mac = _env("MATTER_NURSERY_REMOTE_MAC")
     nursery_blinds_mac = _env("MATTER_NURSERY_BLINDS_MAC")
+    guest_bedroom_remote_mac = _env("MATTER_GUEST_BEDROOM_REMOTE_MAC")
+    guest_bedroom_window_blinds_mac = _env("MATTER_GUEST_BEDROOM_WINDOW_BLINDS_MAC")
+    guest_bedroom_door_blinds_mac = _env("MATTER_GUEST_BEDROOM_DOOR_BLINDS_MAC")
 
     bindings: list[Binding] = []
     if office_remote_mac and office_blinds_mac:
@@ -46,7 +49,8 @@ def _binding_specs() -> list[Binding]:
             Binding(
                 name="Office",
                 remote_mac=office_remote_mac,
-                blinds_mac=office_blinds_mac,
+                blinds_macs=[office_blinds_mac],
+                blinds_node_ids=[],
             )
         )
     if nursery_remote_mac and nursery_blinds_mac:
@@ -54,7 +58,24 @@ def _binding_specs() -> list[Binding]:
             Binding(
                 name="Nursery",
                 remote_mac=nursery_remote_mac,
-                blinds_mac=nursery_blinds_mac,
+                blinds_macs=[nursery_blinds_mac],
+                blinds_node_ids=[],
+            )
+        )
+    if (
+        guest_bedroom_remote_mac
+        and guest_bedroom_window_blinds_mac
+        and guest_bedroom_door_blinds_mac
+    ):
+        bindings.append(
+            Binding(
+                name="Guest Bedroom",
+                remote_mac=guest_bedroom_remote_mac,
+                blinds_macs=[
+                    guest_bedroom_window_blinds_mac,
+                    guest_bedroom_door_blinds_mac,
+                ],
+                blinds_node_ids=[],
             )
         )
     return bindings
@@ -122,7 +143,10 @@ async def _run() -> int:
     if not bindings:
         print(
             "no bindings configured; set MATTER_REMOTE_MAC/MATTER_BLINDS_MAC "
-            "and/or MATTER_NURSERY_REMOTE_MAC/MATTER_NURSERY_BLINDS_MAC",
+            "and/or MATTER_NURSERY_REMOTE_MAC/MATTER_NURSERY_BLINDS_MAC "
+            "and/or MATTER_GUEST_BEDROOM_REMOTE_MAC with both "
+            "MATTER_GUEST_BEDROOM_WINDOW_BLINDS_MAC and "
+            "MATTER_GUEST_BEDROOM_DOOR_BLINDS_MAC",
             file=sys.stderr,
         )
         return 1
@@ -137,6 +161,7 @@ async def _run() -> int:
             return 1
 
         nodes = start.get("result") or []
+        node_id_by_mac: dict[str, int] = {}
 
         for node in nodes:
             node_id = node.get("node_id")
@@ -147,11 +172,14 @@ async def _run() -> int:
             if not mac:
                 continue
             mac_lower = mac.lower()
+            node_id_by_mac[mac_lower] = node_id
             for binding in bindings:
                 if mac_lower == binding.remote_mac.lower():
                     binding.remote_node_id = node_id
-                if mac_lower == binding.blinds_mac.lower():
-                    binding.blinds_node_id = node_id
+                if any(mac_lower == blinds_mac.lower() for blinds_mac in binding.blinds_macs):
+                    if binding.blinds_node_ids is None:
+                        binding.blinds_node_ids = []
+                    binding.blinds_node_ids.append(node_id)
 
         if REMOTE_NODE_ID > 0 and bindings:
             bindings[0].remote_node_id = REMOTE_NODE_ID
@@ -159,7 +187,9 @@ async def _run() -> int:
         missing = [
             binding
             for binding in bindings
-            if binding.remote_node_id is None or binding.blinds_node_id is None
+            if binding.remote_node_id is None
+            or binding.blinds_node_ids is None
+            or len(binding.blinds_node_ids) != len(binding.blinds_macs)
         ]
         if missing:
             for binding in missing:
@@ -168,15 +198,16 @@ async def _run() -> int:
                         f"{binding.name}: remote node not found by mac {binding.remote_mac}",
                         file=sys.stderr,
                     )
-                if binding.blinds_node_id is None:
-                    print(
-                        f"{binding.name}: blinds node not found by mac {binding.blinds_mac}",
-                        file=sys.stderr,
-                    )
+                for blinds_mac in binding.blinds_macs:
+                    if blinds_mac.lower() not in node_id_by_mac:
+                        print(
+                            f"{binding.name}: blinds node not found by mac {blinds_mac}",
+                            file=sys.stderr,
+                        )
             return 1
 
         binding_summary = ", ".join(
-            f"{binding.name}: remote={binding.remote_node_id} blinds={binding.blinds_node_id}"
+            f"{binding.name}: remote={binding.remote_node_id} blinds={binding.blinds_node_ids}"
             for binding in bindings
         )
         print(
@@ -232,14 +263,15 @@ async def _run() -> int:
 
             try:
                 if binding.current_direction == desired_direction:
-                    await _device_command(
-                        ws,
-                        node_id=binding.blinds_node_id,
-                        endpoint_id=BLINDS_ENDPOINT,
-                        cluster_id=WINDOW_COVERING_CLUSTER_ID,
-                        command_name="StopMotion",
-                        payload={},
-                    )
+                    for blinds_node_id in binding.blinds_node_ids or []:
+                        await _device_command(
+                            ws,
+                            node_id=blinds_node_id,
+                            endpoint_id=BLINDS_ENDPOINT,
+                            cluster_id=WINDOW_COVERING_CLUSTER_ID,
+                            command_name="StopMotion",
+                            payload={},
+                        )
                     binding.current_direction = "idle"
                     print(
                         f"{binding.name} remote button {endpoint_id} event={event_id}: stop blinds",
@@ -248,14 +280,15 @@ async def _run() -> int:
                 else:
                     command_name = "UpOrOpen" if desired_direction == "up" else "DownOrClose"
                     mode = "reverse" if binding.current_direction in ("up", "down") else "start"
-                    await _device_command(
-                        ws,
-                        node_id=binding.blinds_node_id,
-                        endpoint_id=BLINDS_ENDPOINT,
-                        cluster_id=WINDOW_COVERING_CLUSTER_ID,
-                        command_name=command_name,
-                        payload={},
-                    )
+                    for blinds_node_id in binding.blinds_node_ids or []:
+                        await _device_command(
+                            ws,
+                            node_id=blinds_node_id,
+                            endpoint_id=BLINDS_ENDPOINT,
+                            cluster_id=WINDOW_COVERING_CLUSTER_ID,
+                            command_name=command_name,
+                            payload={},
+                        )
                     binding.current_direction = desired_direction
                     print(
                         f"{binding.name} remote button {endpoint_id} event={event_id}: {mode} {desired_direction}",
