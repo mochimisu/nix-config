@@ -148,6 +148,11 @@ in {
     ];
   };
 
+  boot.kernelModules = [
+    # Recent Proton titles are more stable when ntsync is available.
+    "ntsync"
+  ];
+
   # sddm
   services.xserver.enable = false;
   services.displayManager.sddm =
