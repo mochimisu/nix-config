@@ -17,6 +17,9 @@ WINDOW_COVERING_CLUSTER_ID = 258
 SWITCH_EVENT_INITIAL_PRESS = 1
 SWITCH_EVENT_MULTI_PRESS_COMPLETE = 6
 ACTION_DEDUPE_WINDOW_SEC = float(os.getenv("MATTER_REMOTE_ACTION_DEDUPE_WINDOW_SEC", "0.8"))
+FALLBACK_EVENT_WINDOW_SEC = float(
+    os.getenv("MATTER_REMOTE_FALLBACK_EVENT_WINDOW_SEC", "4.0")
+)
 
 
 @dataclass
@@ -218,6 +221,7 @@ async def _run() -> int:
 
         binding_by_remote_node_id = {binding.remote_node_id: binding for binding in bindings}
         last_action_ts: dict[tuple[int, int], float] = {}
+        last_initial_press_ts: dict[tuple[int, int], float] = {}
 
         while True:
             message = json.loads(await ws.recv())
@@ -237,10 +241,20 @@ async def _run() -> int:
                 continue
 
             if event_id == SWITCH_EVENT_INITIAL_PRESS:
-                pass
+                last_initial_press_ts[(binding.remote_node_id, endpoint_id)] = time.monotonic()
             elif event_id == SWITCH_EVENT_MULTI_PRESS_COMPLETE:
                 press_count = (data.get("data") or {}).get("totalNumberOfPressesCounted")
                 if press_count != 1:
+                    continue
+                initial_press_ts = last_initial_press_ts.get((binding.remote_node_id, endpoint_id))
+                if (
+                    initial_press_ts is not None
+                    and (time.monotonic() - initial_press_ts) < FALLBACK_EVENT_WINDOW_SEC
+                ):
+                    # Many BILRESA remotes emit MultiPressComplete shortly after
+                    # InitialPress for the same physical button press. Treat the
+                    # multi-press event as a fallback only when InitialPress did
+                    # not arrive in time.
                     continue
             else:
                 continue

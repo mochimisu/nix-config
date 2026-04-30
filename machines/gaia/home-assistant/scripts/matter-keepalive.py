@@ -26,6 +26,7 @@ KEEPALIVE_STALE_WARN_SEC = float(
 KEEPALIVE_STALE_CRIT_SEC = float(
     os.getenv("MATTER_KEEPALIVE_STALE_CRIT_SEC", str(max(300, KEEPALIVE_INTERVAL_SEC * 10)))
 )
+KEEPALIVE_SKIP_SLEEPY = os.getenv("MATTER_KEEPALIVE_SKIP_SLEEPY", "1").lower() not in {"0", "false", "no"}
 THREAD_VENDOR_KEYWORDS = (
     "inovelli",
     "meross",
@@ -33,6 +34,12 @@ THREAD_VENDOR_KEYWORDS = (
     "smartwings",
     "aqara",
     "nanoleaf",
+)
+SLEEPY_PRODUCT_KEYWORDS = (
+    "button",
+    "door/window",
+    "presence",
+    "remote",
 )
 
 
@@ -46,6 +53,8 @@ def _b64_to_bytes(value: str) -> bytes | None:
 def _is_thread_candidate(attrs: dict) -> bool:
     vendor = str(attrs.get("0/40/1") or "").strip().lower()
     product = str(attrs.get("0/40/3") or "").strip().lower()
+    if KEEPALIVE_SKIP_SLEEPY and any(keyword in product for keyword in SLEEPY_PRODUCT_KEYWORDS):
+        return False
     if any(keyword in vendor for keyword in THREAD_VENDOR_KEYWORDS):
         return True
     for path in attrs.keys():
@@ -134,20 +143,21 @@ async def _call(ws, message_id: str, command: str, args: dict | None = None) -> 
             return message
 
 
-async def _discover_keepalive_nodes(ws) -> list[tuple[int, dict]]:
+async def _discover_keepalive_nodes(ws) -> list[tuple[int, dict, bool]]:
     start = await _call(ws, "keepalive:start", "start_listening")
     if "error_code" in start:
         details = start.get("details") or "unknown error"
         raise RuntimeError(f"start_listening failed: {details}")
 
-    found: list[tuple[int, dict]] = []
+    found: list[tuple[int, dict, bool]] = []
     for node in start.get("result") or []:
         node_id = node.get("node_id")
         attrs = node.get("attributes") or {}
+        available = bool(node.get("available", False))
         if not isinstance(node_id, int) or node_id <= 0:
             continue
         if _is_thread_candidate(attrs):
-            found.append((node_id, attrs))
+            found.append((node_id, attrs, available))
     return found
 
 
@@ -159,7 +169,7 @@ async def _keepalive_once(ws_url: str) -> None:
         metrics: dict[str, dict] = {}
         now_epoch = time.time()
 
-        for node_id, attrs in sorted(nodes, key=lambda item: item[0]):
+        for node_id, attrs, available in sorted(nodes, key=lambda item: item[0]):
             node_key = str(node_id)
             previous_entry = previous_metrics.get(node_key)
             if not isinstance(previous_entry, dict):
@@ -169,6 +179,54 @@ async def _keepalive_once(ws_url: str) -> None:
             previous_score = int(_entry_number(previous_entry, "degraded_score", 0))
             previous_failures = int(_entry_number(previous_entry, "consecutive_failures", 0))
             previous_slow = int(_entry_number(previous_entry, "consecutive_slow", 0))
+
+            entry = {
+                "label": _node_label(attrs),
+                "vendor": str(attrs.get("0/40/1") or ""),
+                "product": str(attrs.get("0/40/3") or ""),
+                "last_seen_epoch": now_epoch,
+            }
+            if not available:
+                entry["ok"] = False
+                entry["error"] = "node unavailable"
+                entry["consecutive_failures"] = previous_failures + 1
+                entry["consecutive_slow"] = 0
+                entry["degraded_score"] = previous_score + KEEPALIVE_FAILURE_PENALTY
+                if isinstance(previous_last_ack, (int, float)):
+                    entry["last_ack_epoch"] = float(previous_last_ack)
+                metrics[node_key] = entry
+                print(f"keepalive node_id={node_id} unavailable; skipping active read", file=sys.stderr, flush=True)
+                state, reason = _health_state(entry, now_epoch)
+                previous_state = str(previous_entry.get("health_state") or "healthy")
+                entry["health_state"] = state
+                if reason:
+                    entry["health_reason"] = reason
+                else:
+                    entry.pop("health_reason", None)
+
+                previous_since = previous_entry.get("degraded_since_epoch")
+                if state == "healthy":
+                    entry.pop("degraded_since_epoch", None)
+                elif isinstance(previous_since, (int, float)) and previous_state in {"degraded", "persistent"}:
+                    entry["degraded_since_epoch"] = float(previous_since)
+                else:
+                    entry["degraded_since_epoch"] = now_epoch
+
+                previous_reason = str(previous_entry.get("health_reason") or "")
+                if state != previous_state:
+                    suffix = f" ({reason})" if reason else ""
+                    print(
+                        f"keepalive node_id={node_id} label={entry['label']!r} state {previous_state} -> {state}{suffix}",
+                        file=sys.stderr,
+                        flush=True,
+                    )
+                elif state != "healthy" and reason and reason != previous_reason:
+                    print(
+                        f"keepalive node_id={node_id} label={entry['label']!r} state {state}: {reason}",
+                        file=sys.stderr,
+                        flush=True,
+                    )
+                continue
 
             started = time.monotonic()
             response = await _call(
@@ -181,13 +239,7 @@ async def _keepalive_once(ws_url: str) -> None:
                 },
             )
             latency_ms = (time.monotonic() - started) * 1000.0
-            entry = {
-                "label": _node_label(attrs),
-                "vendor": str(attrs.get("0/40/1") or ""),
-                "product": str(attrs.get("0/40/3") or ""),
-                "last_seen_epoch": now_epoch,
-                "latency_ms": latency_ms,
-            }
+            entry["latency_ms"] = latency_ms
             if "error_code" in response:
                 details = response.get("details") or "unknown error"
                 entry["ok"] = False

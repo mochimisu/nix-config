@@ -42,6 +42,7 @@
       on_eligibility_mode = "any";
       dark_when_lux_below = 20.0;
       require_luminance_for_on = true;
+      luminance_aggregation = "min";
       on_active_solar_window = {
         mode = "sunset_to_sunrise";
         latitude_env = "MATTER_SITE_LATITUDE";

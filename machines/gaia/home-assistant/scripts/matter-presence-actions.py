@@ -471,6 +471,31 @@ def _luminance_lux_from_attrs(attrs: dict, candidate_paths: list[str], mode: str
     return None
 
 
+def _rule_luminance_lux(sources: list[dict], rule: dict) -> float | None:
+    values: list[float] = []
+    for source in sources:
+        attrs = source.get("attrs") or {}
+        lux = _luminance_lux_from_attrs(
+            attrs,
+            rule["luminance_attribute_paths"],
+            rule["luminance_mode"],
+        )
+        if isinstance(lux, (int, float)):
+            values.append(float(lux))
+
+    if not values:
+        return None
+
+    aggregation = str(rule.get("luminance_aggregation", "first")).lower()
+    if aggregation == "min":
+        return min(values)
+    if aggregation == "max":
+        return max(values)
+    if aggregation == "avg":
+        return sum(values) / len(values)
+    return values[0]
+
+
 def _normalize_rule(raw: dict, index: int) -> dict | None:
     if not isinstance(raw, dict):
         return None
@@ -553,6 +578,9 @@ def _normalize_rule(raw: dict, index: int) -> dict | None:
     dark_threshold = _as_float(dark_when_lux_below)
     require_luminance_for_on = bool(raw.get("require_luminance_for_on", False))
     luminance_mode = str(raw.get("luminance_mode", "matter_illuminance"))
+    luminance_aggregation = str(raw.get("luminance_aggregation", "first")).lower()
+    if luminance_aggregation not in {"first", "min", "max", "avg"}:
+        luminance_aggregation = "first"
     target_onoff_attribute_path = raw.get("target_onoff_attribute_path")
     if not isinstance(target_onoff_attribute_path, str):
         target_onoff_attribute_path = None
@@ -591,6 +619,7 @@ def _normalize_rule(raw: dict, index: int) -> dict | None:
         "dark_when_lux_below": dark_threshold,
         "require_luminance_for_on": require_luminance_for_on,
         "luminance_mode": luminance_mode,
+        "luminance_aggregation": luminance_aggregation,
         "target_onoff_attribute_path": target_onoff_attribute_path,
         "on_active_windows": on_active_windows,
         "on_eligibility_mode": on_eligibility_mode,
@@ -990,11 +1019,7 @@ async def _evaluate_rules(
         fail_conditions: list[str] = []
 
         if present and rule["dark_when_lux_below"] is not None:
-            lux = _luminance_lux_from_attrs(
-                sources[0]["attrs"],
-                rule["luminance_attribute_paths"],
-                rule["luminance_mode"],
-            )
+            lux = _rule_luminance_lux(sources, rule)
             cond_ok = True
             cond_reason = "lux-ok"
             if lux is None:

@@ -503,13 +503,31 @@ in {
         alert_email="''${MATTER_ALERT_EMAIL:-home@bwang.dev}"
         alert_from="''${MATTER_ALERT_FROM:-home@bwang.dev}"
         ot_state=""
+        otbr_container=""
+
+        restart_matter_clients() {
+          systemctl try-restart \
+            matter-presence-actions.service \
+            matter-remote-actions.service \
+            matter-keepalive.service || true
+        }
+
+        find_otbr_container() {
+          podman ps \
+            --filter ancestor=docker.io/openthread/otbr:latest \
+            --format '{{.Names}}' \
+            | head -n1
+        }
 
         bad_reason=""
-        if ! podman ps --format '{{.Names}}' | grep -qx otbr; then
+        otbr_container="$(find_otbr_container || true)"
+        if [ -z "$otbr_container" ]; then
           bad_reason="otbr container missing"
         fi
 
-        ot_state="$(podman exec otbr ot-ctl state 2>/dev/null | head -n1 | tr -d '\r' || true)"
+        if [ -n "$otbr_container" ]; then
+          ot_state="$(podman exec "$otbr_container" ot-ctl state 2>/dev/null | head -n1 | tr -d '\r' || true)"
+        fi
         if [ -z "$ot_state" ]; then
           if [ -n "$bad_reason" ]; then
             bad_reason="$bad_reason; ot-ctl unreachable"
@@ -584,6 +602,7 @@ in {
         if [ "$bad_checks" -eq 1 ]; then
           echo "matter-thread-watchdog: soft recovery from bad state: $bad_reason"
           systemctl restart podman-otbr.service
+          restart_matter_clients
           systemctl start otbr-ensure-dataset.service matter-apply-node-labels.service matter-apply-ha-names.service
           exit 0
         fi
@@ -639,6 +658,7 @@ in {
           echo "matter-thread-watchdog: USB reset path not found; continuing with OTBR restart"
         fi
         systemctl restart podman-otbr.service
+        restart_matter_clients
         systemctl start otbr-ensure-dataset.service matter-apply-node-labels.service matter-apply-ha-names.service
 
         if [ -n "$alert_email" ]; then

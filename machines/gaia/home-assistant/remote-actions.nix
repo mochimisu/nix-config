@@ -48,6 +48,7 @@
     runtimeInputs = [pythonEnv];
     text = ''
       export MATTER_KEEPALIVE_INTERVAL_SEC='${toString keepaliveIntervalSec}'
+      export MATTER_KEEPALIVE_SKIP_SLEEPY=''${MATTER_KEEPALIVE_SKIP_SLEEPY:-1}
       exec ${pythonEnv}/bin/python3 ${matterKeepaliveScript} "$@"
     '';
   };
@@ -87,7 +88,7 @@ in {
   ];
 
   systemd.services.matter-keepalive = {
-    description = "Matter keepalive for all Thread devices";
+    description = "Matter keepalive for routerlike Thread devices";
     wantedBy = [
       "multi-user.target"
     ];
