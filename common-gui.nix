@@ -70,7 +70,6 @@ in {
     inputs.nixos-xivlauncher-rb.packages.${pkgs.stdenv.hostPlatform.system}.default
     parsec-bin
     itch
-    lutris
     wine
     gamescope
     antimicrox
