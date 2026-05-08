@@ -1,64 +1,70 @@
 {config, pkgs, lib, ...}: let
-  matterStateDir = "/earth/home-assistant/matter-server/.matter_server";
-  matterStateBackupDir = "${matterStateDir}/backups";
-  matterProtonDriveBackupScript = ./scripts/matter-protondrive-backup.sh;
-  matterStateBackupScript = pkgs.writeShellScript "matter-server-backup-state" ''
-    set -euo pipefail
-
-    state_dir="${matterStateDir}"
-    backup_dir="${matterStateBackupDir}"
-    timestamp="$(${pkgs.coreutils}/bin/date +%Y%m%d-%H%M%S)"
-    archive="$backup_dir/matter-state-$timestamp.tar.zst"
-    tmp_archive="$archive.tmp"
-
-    ${pkgs.coreutils}/bin/mkdir -p "$backup_dir"
-
-    tmp_list="$(${pkgs.coreutils}/bin/mktemp)"
-    cleanup() {
-      ${pkgs.coreutils}/bin/rm -f "$tmp_list" "$tmp_archive"
-    }
-    trap cleanup EXIT
-
-    ${pkgs.findutils}/bin/find "$state_dir" -maxdepth 1 -type f \
-      \( -name 'chip.json' -o -name '*.json' -o -name '*.json.backup' \) \
-      ! -name 'tmp*' \
-      ! -name '*.reset-*' \
-      ! -name '*.pre-restore-*' \
-      -printf '%f\n' | ${pkgs.coreutils}/bin/sort > "$tmp_list"
-
-    if ! [ -s "$tmp_list" ]; then
-      echo "matter-server-backup-state: no state files found in $state_dir" >&2
-      exit 0
-    fi
-
-    ${pkgs.gnutar}/bin/tar \
-      --directory "$state_dir" \
-      --use-compress-program=${pkgs.zstd}/bin/zstd \
-      --create \
-      --file "$tmp_archive" \
-      --files-from "$tmp_list"
-
-    ${pkgs.coreutils}/bin/mv "$tmp_archive" "$archive"
-
-    ${pkgs.findutils}/bin/find "$backup_dir" -maxdepth 1 -type f -name 'matter-state-*.tar.zst' \
-      -printf '%T@ %p\n' | ${pkgs.coreutils}/bin/sort -n | ${pkgs.gawk}/bin/awk 'NR<=30 { next } { print $2 }' | while read -r old; do
-      ${pkgs.coreutils}/bin/rm -f "$old"
-    done
-  '';
-
-  matterProtonDriveBackupTool = pkgs.writeShellApplication {
-    name = "matter-protondrive-backup";
+  matterServerUnit = "podman-matter-server.service";
+  matterjsDataDir = "/earth/home-assistant/matterjs-server";
+  matterThreadZbt2Recover = pkgs.writeShellApplication {
+    name = "matter-thread-zbt2-recover";
     runtimeInputs = [
-      pkgs.age
       pkgs.coreutils
-      pkgs.jq
-      pkgs.zstd
+      pkgs.gnugrep
+      pkgs.iproute2
+      pkgs.systemd
     ];
-    text = builtins.readFile matterProtonDriveBackupScript;
+    text = ''
+      set -euo pipefail
+
+      force=0
+      if [ "''${1:-}" = "--force" ]; then
+        force=1
+      fi
+      from_watchdog="''${MATTER_THREAD_RECOVER_FROM_WATCHDOG:-0}"
+      timer_paused=0
+
+      restore_watchdog_timer() {
+        if [ "$timer_paused" -eq 1 ]; then
+          systemctl start matter-thread-watchdog.timer || true
+        fi
+      }
+      trap restore_watchdog_timer EXIT
+
+      m3_route_pattern='^fd[0-9a-f:]+::/64 via fe80::[0-9a-f:]+ dev enp5s0 proto ra'
+      if ! ip -6 route show | grep -E "$m3_route_pattern" >/dev/null; then
+        echo "matter-thread-zbt2-recover: no alternate Thread ULA route via enp5s0; M3 fallback is not visible" >&2
+        echo "matter-thread-zbt2-recover: refusing to bounce ZBT-2 without --force" >&2
+        if [ "$force" -ne 1 ]; then
+          exit 1
+        fi
+      fi
+
+      echo "matter-thread-zbt2-recover: alternate Thread routes before recovery:"
+      ip -6 route show | grep -E "$m3_route_pattern" || true
+
+      echo "matter-thread-zbt2-recover: pausing watchdog and restarting only ZBT-2 OTBR"
+      if [ "$from_watchdog" = "1" ]; then
+        systemctl stop matter-thread-watchdog.timer || true
+      else
+        systemctl stop matter-thread-watchdog.timer matter-thread-watchdog.service || true
+      fi
+      timer_paused=1
+      systemctl restart podman-otbr.service
+
+      echo "matter-thread-zbt2-recover: re-seeding/checking dataset and preferring ZBT-2 as router"
+      systemctl start otbr-ensure-dataset.service
+      systemctl start otbr-prefer-zbt2-router.service
+
+      echo "matter-thread-zbt2-recover: restarting local Matter listeners, not Matter.js server"
+      systemctl try-restart matter-presence-actions.service matter-remote-actions.service matter-keepalive.service || true
+      systemctl start matter-apply-node-labels.service matter-apply-ha-names.service || true
+      systemctl start matter-thread-watchdog.timer
+
+      echo "matter-thread-zbt2-recover: route state after recovery:"
+      ip -6 route show | grep -E '(^fd[0-9a-f:]+::/64 .* (dev enp5s0|dev wpan0))' || true
+      systemctl --no-pager --full status podman-otbr.service | sed -n '1,18p'
+    '';
   };
 in {
   imports = [
     ./devices.nix
+    ./matterjs.nix
     ./remote-actions.nix
     ./presence-actions.nix
     ./pairings.nix
@@ -120,10 +126,6 @@ in {
     "dialout"
   ];
 
-  environment.systemPackages = [
-    matterProtonDriveBackupTool
-  ];
-
   # Avoid serial probing races on the Thread radio (common with ttyACM devices).
   networking.modemmanager.enable = lib.mkForce false;
 
@@ -155,35 +157,32 @@ in {
   ];
 
   # Matter support for Home Assistant Core (no Supervisor add-ons on NixOS).
-  # Home Assistant connects to this via `ws://127.0.0.1:5580/ws`.
+  # Home Assistant connects to the primary Matter backend at `ws://127.0.0.1:5580/ws`.
   virtualisation.podman.enable = true;
   virtualisation.oci-containers = {
     backend = "podman";
     containers.matter-server = {
-      image = "ghcr.io/matter-js/python-matter-server:stable";
+      image = "ghcr.io/matter-js/matterjs-server:${config.gaia.homeAssistant.matterjs.imageTag}";
       autoStart = true;
-      cmd = [
-        "--paa-root-cert-dir"
-        "/data/paa-root-certs"
-        "--enable-test-net-dcl"
-        "--ota-provider-dir"
-        "/data/ota-provider"
-        "--bluetooth-adapter"
-        # Gaia currently exposes only hci1, not hci0.
-        "1"
-        "--primary-interface"
-        "enp5s0"
-      ];
+      environment = {
+        STORAGE_PATH = "/data";
+        PORT = toString config.gaia.homeAssistant.matterjs.port;
+        LISTEN_ADDRESS = "127.0.0.1";
+        LOG_LEVEL = "debug";
+        PRIMARY_INTERFACE = "enp5s0";
+        ENABLE_TEST_NET_DCL = "true";
+        OTA_PROVIDER_DIR = "/data/ota-provider";
+        BLUETOOTH_ADAPTER = "1";
+      };
       volumes = [
-        "/earth/home-assistant/matter-server:/data"
-        "/earth/home-assistant/matter-server/.matter_server:/root/.matter_server"
-        "/earth/home-assistant/matter-server/paa-root-certs:/data/paa-root-certs"
-        "/earth/home-assistant/matter-server/ota-provider:/data/ota-provider"
+        "${matterjsDataDir}:/data"
+        "/earth/home-assistant/matter-server/paa-root-certs:/data/paa-root-certs:ro"
         "/run/dbus:/run/dbus:ro"
       ];
       extraOptions = [
         "--network=host"
         "--security-opt=apparmor=unconfined"
+        "--user=0:0"
       ];
     };
     containers.otbr = {
@@ -240,32 +239,16 @@ in {
     "d /earth/backups/matter 0750 root root - -"
     "d /earth/home-assistant 0750 hass hass - -"
     "d /earth/home-assistant/matter-server 0755 root root - -"
-    "d /earth/home-assistant/matter-server/.matter_server 0755 root root - -"
-    "d /earth/home-assistant/matter-server/.matter_server/backups 0755 root root - -"
     "d /earth/home-assistant/matter-server/paa-root-certs 0755 root root - -"
-    "d /earth/home-assistant/matter-server/ota-provider 0755 root root - -"
+    "d ${matterjsDataDir} 0755 root root - -"
+    "d ${matterjsDataDir}/ota-provider 0755 root root - -"
     "d /earth/home-assistant/otbr 0755 root root - -"
     "d /var/lib/matter-thread-watchdog 0750 root root - -"
   ];
 
-  systemd.services.matter-server-backup-state = {
-    description = "Back up Matter controller state";
-    after = [ "earth.mount" ];
-    requires = [ "earth.mount" ];
-    serviceConfig = {
-      Type = "oneshot";
-      ExecStart = matterStateBackupScript;
-    };
-  };
-
-  systemd.timers.matter-server-backup-state = {
-    wantedBy = [ "timers.target" ];
-    timerConfig = {
-      OnBootSec = "5min";
-      OnUnitActiveSec = "30min";
-      Unit = "matter-server-backup-state.service";
-    };
-  };
+  environment.systemPackages = [
+    matterThreadZbt2Recover
+  ];
 
   # NetworkManager can occasionally reset per-interface RA handling on links where
   # forwarding is enabled. Re-assert accept_ra on the HA infra NIC so alternate
@@ -308,16 +291,25 @@ in {
   };
 
   systemd.services."podman-matter-server" = {
-    after = [ "earth.mount" ];
+    after = [
+      "earth.mount"
+      "network-online.target"
+      "podman-otbr.service"
+      "otbr-ensure-dataset.service"
+      "otbr-prefer-zbt2-router.service"
+    ];
+    wants = [
+      "network-online.target"
+      "podman-otbr.service"
+      "otbr-ensure-dataset.service"
+      "otbr-prefer-zbt2-router.service"
+    ];
     requires = [ "earth.mount" ];
     unitConfig.RequiresMountsFor = [ "/earth" ];
     serviceConfig.TimeoutStopSec = lib.mkForce "2min";
     preStart = ''
-      ${pkgs.coreutils}/bin/mkdir -p /earth/home-assistant/matter-server/.matter_server
-      ${pkgs.coreutils}/bin/mkdir -p /earth/home-assistant/matter-server/.matter_server/backups
       ${pkgs.coreutils}/bin/mkdir -p /earth/home-assistant/matter-server/paa-root-certs
-      ${pkgs.coreutils}/bin/mkdir -p /earth/home-assistant/matter-server/ota-provider
-      ${matterStateBackupScript} || echo "podman-matter-server: warning: state backup failed; continuing startup" >&2
+      ${pkgs.coreutils}/bin/mkdir -p ${matterjsDataDir} ${matterjsDataDir}/ota-provider
     '';
   };
 
@@ -385,7 +377,17 @@ in {
         }
 
         podman_otctl() {
-          podman exec otbr ot-ctl "$@" 2>/dev/null
+          local container
+          container="$(
+            podman ps \
+              --filter ancestor=docker.io/openthread/otbr:latest \
+              --format '{{.Names}}' \
+              | head -n1
+          )"
+          if [ -z "$container" ]; then
+            return 1
+          fi
+          podman exec "$container" ot-ctl "$@" 2>/dev/null
         }
 
         with_retry() {
@@ -479,6 +481,104 @@ in {
     };
   };
 
+  # Prefer Gaia's ZBT-2 OTBR as an active Thread router. Thread parent and
+  # leader selection remains autonomous, but keeping the ZBT-2 router-eligible
+  # and quickly promoted avoids it sitting as a child behind the Aqara M3.
+  systemd.services.otbr-prefer-zbt2-router = let
+    otbrPreferZbt2Router = pkgs.writeShellApplication {
+      name = "otbr-prefer-zbt2-router";
+      runtimeInputs = [
+        pkgs.coreutils
+        pkgs.podman
+      ];
+      text = ''
+        set -u
+
+        podman_otctl() {
+          local container
+          container="$(
+            podman ps \
+              --filter ancestor=docker.io/openthread/otbr:latest \
+              --format '{{.Names}}' \
+              | head -n1
+          )"
+          if [ -z "$container" ]; then
+            return 1
+          fi
+          podman exec "$container" ot-ctl "$@" 2>/dev/null
+        }
+
+        with_retry() {
+          local attempts max_attempts
+          max_attempts=''${OTBR_CTL_MAX_ATTEMPTS:-30}
+          attempts=0
+          while [ "$attempts" -lt "$max_attempts" ]; do
+            if "$@"; then
+              return 0
+            fi
+            attempts=$((attempts + 1))
+            sleep 1
+          done
+          return 1
+        }
+
+        if ! with_retry podman_otctl state >/dev/null; then
+          echo "otbr-prefer-zbt2-router: ot-ctl not reachable; will retry later"
+          exit 0
+        fi
+
+        # These commands are best-effort across OTBR image versions. They are
+        # harmless when unsupported and useful when the CLI exposes them.
+        podman_otctl routereligible enable >/dev/null || true
+        podman_otctl routerupgradethreshold 32 >/dev/null || true
+        podman_otctl routerselectionjitter 1 >/dev/null || true
+
+        state="$(podman_otctl state | head -n1 | tr -d '\r' || true)"
+        if [ "$state" = "child" ]; then
+          podman_otctl state router >/dev/null || true
+        fi
+
+        # Gaia has seen repeated TREL ack timeouts against the Aqara M3 even
+        # with excellent 15.4 RSSI. Prefer the direct Thread radio path when
+        # this OpenThread build supports toggling TREL from ot-ctl.
+        if [ "''${OTBR_DISABLE_TREL:-1}" = "1" ]; then
+          podman_otctl trel disable >/dev/null || true
+        fi
+
+        final_state="$(podman_otctl state | head -n1 | tr -d '\r' || true)"
+        echo "otbr-prefer-zbt2-router: state=$final_state"
+      '';
+    };
+  in {
+    description = "Prefer Gaia ZBT-2 as an active Thread router";
+    after = [
+      "podman-otbr.service"
+      "otbr-ensure-dataset.service"
+      "network-online.target"
+    ];
+    wants = [
+      "podman-otbr.service"
+      "network-online.target"
+    ];
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = "${otbrPreferZbt2Router}/bin/otbr-prefer-zbt2-router";
+      KillMode = "none";
+      TimeoutStopSec = "5s";
+    };
+  };
+
+  systemd.timers.otbr-prefer-zbt2-router = {
+    wantedBy = [
+      "timers.target"
+    ];
+    timerConfig = {
+      OnBootSec = "90s";
+      OnUnitInactiveSec = "5min";
+      Unit = "otbr-prefer-zbt2-router.service";
+    };
+  };
+
   # Detects Thread/RCP bad states and self-heals OTBR + Matter server.
   systemd.services.matter-thread-watchdog = let
     threadWatchdog = pkgs.writeShellApplication {
@@ -487,8 +587,10 @@ in {
         pkgs.coreutils
         pkgs.gawk
         pkgs.gnugrep
+        pkgs.hostname
         pkgs.podman
         pkgs.systemd
+        matterThreadZbt2Recover
       ];
       text = ''
         set -u
@@ -499,7 +601,10 @@ in {
         mkdir -p "$state_dir"
 
         offline_threshold="''${THREAD_WATCHDOG_OFFLINE_THRESHOLD:-5}"
-        cooldown_sec="''${THREAD_WATCHDOG_RESTART_COOLDOWN_SEC:-180}"
+        recovery_after_checks="''${THREAD_WATCHDOG_RECOVERY_AFTER_CHECKS:-10}"
+        hard_recovery_after_checks="''${THREAD_WATCHDOG_HARD_RECOVERY_AFTER_CHECKS:-30}"
+        cooldown_sec="''${THREAD_WATCHDOG_RESTART_COOLDOWN_SEC:-3600}"
+        settle_sec="''${THREAD_WATCHDOG_OTBR_SETTLE_SEC:-900}"
         alert_email="''${MATTER_ALERT_EMAIL:-home@bwang.dev}"
         alert_from="''${MATTER_ALERT_FROM:-home@bwang.dev}"
         ot_state=""
@@ -510,6 +615,15 @@ in {
             matter-presence-actions.service \
             matter-remote-actions.service \
             matter-keepalive.service || true
+        }
+
+        recover_zbt2() {
+          force_arg="''${1:-}"
+          if [ -n "$force_arg" ]; then
+            MATTER_THREAD_RECOVER_FROM_WATCHDOG=1 matter-thread-zbt2-recover "$force_arg"
+          else
+            MATTER_THREAD_RECOVER_FROM_WATCHDOG=1 matter-thread-zbt2-recover
+          fi
         }
 
         find_otbr_container() {
@@ -543,7 +657,7 @@ in {
         fi
 
         # Catch known RCP transport failures even when the service still looks active.
-        if journalctl -u podman-otbr.service --since "5 min ago" --no-pager 2>/dev/null | grep -q "RadioSpinelNoResponse"; then
+        if journalctl -u podman-otbr.service --since "30 sec ago" --no-pager 2>/dev/null | grep -q "RadioSpinelNoResponse"; then
           if [ -n "$bad_reason" ]; then
             bad_reason="$bad_reason; rcp-timeout"
           else
@@ -565,7 +679,9 @@ in {
             if [ -n "$bad_reason" ]; then
               bad_reason="$bad_reason; offline_thread_nodes=$offline_thread_nodes"
             else
-              bad_reason="offline_thread_nodes=$offline_thread_nodes"
+              echo "matter-thread-watchdog: Matter nodes degraded (offline_thread_nodes=$offline_thread_nodes) but OTBR state is $ot_state; not restarting Thread"
+              rm -f "$bad_checks_file"
+              exit 0
             fi
           fi
         fi
@@ -589,21 +705,49 @@ in {
           last_restart="$(cat "$last_restart_file" 2>/dev/null || echo 0)"
         fi
         elapsed="$((now_epoch - last_restart))"
+        otbr_age_sec=""
+        active_usec="$(systemctl show -P ActiveEnterTimestampMonotonic podman-otbr.service 2>/dev/null || echo 0)"
+        uptime_usec="$(awk '{ printf "%d", $1 * 1000000 }' /proc/uptime 2>/dev/null || echo 0)"
+        if [ -n "$active_usec" ] && [ "$active_usec" -gt 0 ] && [ "$uptime_usec" -gt "$active_usec" ]; then
+          otbr_age_sec="$(( (uptime_usec - active_usec) / 1000000 ))"
+        fi
         force_recover=0
         # Only bypass cooldown when RCP timeout is happening right now *and*
-        # ot-ctl is currently unreachable.
-        if printf '%s' "$bad_reason" | grep -q "rcp-timeout" && printf '%s' "$bad_reason" | grep -q "ot-ctl unreachable"; then
+        # ot-ctl is currently unreachable for several checks in a row. This
+        # avoids cycling the radio while OTBR/Matter are still recovering from
+        # a recent restart and rebuilding operational addresses.
+        if [ "$bad_checks" -ge "$recovery_after_checks" ] && printf '%s' "$bad_reason" | grep -q "rcp-timeout" && printf '%s' "$bad_reason" | grep -q "ot-ctl unreachable"; then
           force_recover=1
         fi
 
         # Two-stage recovery:
-        # 1st bad check -> OTBR restart only (lets alternate BR path carry traffic).
-        # 2nd+ bad check -> hard recovery (USB cycle + OTBR restart), cooldown-gated.
-        if [ "$bad_checks" -eq 1 ]; then
-          echo "matter-thread-watchdog: soft recovery from bad state: $bad_reason"
-          systemctl restart podman-otbr.service
-          restart_matter_clients
-          systemctl start otbr-ensure-dataset.service matter-apply-node-labels.service matter-apply-ha-names.service
+        # Initial bad checks -> observe only. Matter.js and OTBR can take a few
+        # minutes to settle after a border-router restart or OMR prefix change.
+        # Recovery check -> OTBR restart only.
+        # Later checks -> hard recovery (USB cycle + OTBR restart), cooldown-gated.
+        if [ "$bad_checks" -lt "$recovery_after_checks" ]; then
+          echo "matter-thread-watchdog: bad state observed ($bad_reason), waiting for confirmation ($bad_checks/$recovery_after_checks)"
+          exit 0
+        fi
+
+        if [ -n "$otbr_age_sec" ] && [ "$otbr_age_sec" -lt "$settle_sec" ]; then
+          echo "matter-thread-watchdog: bad state observed ($bad_reason), but OTBR restarted ''${otbr_age_sec}s ago; allowing settle window ''${settle_sec}s"
+          exit 0
+        fi
+
+        if [ "$bad_checks" -eq "$recovery_after_checks" ]; then
+          echo "matter-thread-watchdog: targeted ZBT-2 recovery from bad state: $bad_reason"
+          echo "$now_epoch" > "$last_restart_file"
+          if ! recover_zbt2; then
+            echo "matter-thread-watchdog: targeted ZBT-2 recovery refused without fallback route; forcing because bad state was confirmed"
+            recover_zbt2 --force
+          fi
+          rm -f "$bad_checks_file"
+          exit 0
+        fi
+
+        if [ "$bad_checks" -lt "$hard_recovery_after_checks" ] && [ "$force_recover" -ne 1 ]; then
+          echo "matter-thread-watchdog: bad state persists ($bad_reason) but hard recovery waits for $hard_recovery_after_checks checks; currently $bad_checks"
           exit 0
         fi
 
@@ -657,9 +801,8 @@ in {
         if [ "$usb_reset_done" -ne 1 ]; then
           echo "matter-thread-watchdog: USB reset path not found; continuing with OTBR restart"
         fi
-        systemctl restart podman-otbr.service
-        restart_matter_clients
-        systemctl start otbr-ensure-dataset.service matter-apply-node-labels.service matter-apply-ha-names.service
+        recover_zbt2 --force
+        rm -f "$bad_checks_file"
 
         if [ -n "$alert_email" ]; then
           subject="[gaia] Matter/Thread watchdog recovery triggered"
@@ -690,12 +833,12 @@ Action: hard recovery (cycled Thread USB when possible, restarted podman-otbr); 
     wantedBy = [ "multi-user.target" ];
     after = [
       "podman-otbr.service"
-      "podman-matter-server.service"
+      matterServerUnit
       "network-online.target"
     ];
     wants = [
       "podman-otbr.service"
-      "podman-matter-server.service"
+      matterServerUnit
       "network-online.target"
     ];
     serviceConfig = {

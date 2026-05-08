@@ -11,6 +11,7 @@ import websockets
 WS_URL_DEFAULT = "ws://127.0.0.1:5580/ws"
 KEEPALIVE_INTERVAL_SEC = int(os.getenv("MATTER_KEEPALIVE_INTERVAL_SEC", "30"))
 KEEPALIVE_LATENCY_FILE = os.getenv("MATTER_KEEPALIVE_LATENCY_FILE", "/run/matter-keepalive-latency.json")
+KEEPALIVE_READ_TIMEOUT_SEC = float(os.getenv("MATTER_KEEPALIVE_READ_TIMEOUT_SEC", "8"))
 KEEPALIVE_SLOW_LATENCY_MS = float(os.getenv("MATTER_KEEPALIVE_SLOW_LATENCY_MS", "1500"))
 KEEPALIVE_FAILURE_PENALTY = int(os.getenv("MATTER_KEEPALIVE_FAILURE_PENALTY", "2"))
 KEEPALIVE_SLOW_PENALTY = int(os.getenv("MATTER_KEEPALIVE_SLOW_PENALTY", "1"))
@@ -27,6 +28,34 @@ KEEPALIVE_STALE_CRIT_SEC = float(
     os.getenv("MATTER_KEEPALIVE_STALE_CRIT_SEC", str(max(300, KEEPALIVE_INTERVAL_SEC * 10)))
 )
 KEEPALIVE_SKIP_SLEEPY = os.getenv("MATTER_KEEPALIVE_SKIP_SLEEPY", "1").lower() not in {"0", "false", "no"}
+KEEPALIVE_FORCE_NODE_IDS = {
+    int(value)
+    for value in os.getenv("MATTER_KEEPALIVE_FORCE_NODE_IDS", "").replace(",", " ").split()
+    if value.isdigit()
+}
+KEEPALIVE_FORCE_LABELS = {
+    value.strip().lower()
+    for value in os.getenv("MATTER_KEEPALIVE_FORCE_LABELS", "").split(",")
+    if value.strip()
+}
+KEEPALIVE_FORCE_PRODUCT_KEYWORDS = {
+    value.strip().lower()
+    for value in os.getenv("MATTER_KEEPALIVE_FORCE_PRODUCT_KEYWORDS", "").split(",")
+    if value.strip()
+}
+KEEPALIVE_ATTRIBUTE_PATHS = [
+    value.strip()
+    for value in os.getenv("MATTER_KEEPALIVE_ATTRIBUTE_PATHS", "0/40/5").split(",")
+    if value.strip()
+]
+KEEPALIVE_FORCE_ATTRIBUTE_PATHS = [
+    value.strip()
+    for value in os.getenv(
+        "MATTER_KEEPALIVE_FORCE_ATTRIBUTE_PATHS",
+        "1/1030/0,0/40/5",
+    ).split(",")
+    if value.strip()
+]
 THREAD_VENDOR_KEYWORDS = (
     "inovelli",
     "meross",
@@ -50,9 +79,21 @@ def _b64_to_bytes(value: str) -> bytes | None:
         return None
 
 
-def _is_thread_candidate(attrs: dict) -> bool:
+def _is_forced_keepalive_node(node_id: int, attrs: dict) -> bool:
+    if node_id in KEEPALIVE_FORCE_NODE_IDS:
+        return True
+    label = _node_label(attrs).strip().lower()
+    if label and label in KEEPALIVE_FORCE_LABELS:
+        return True
+    product = str(attrs.get("0/40/3") or "").strip().lower()
+    return bool(product and any(keyword in product for keyword in KEEPALIVE_FORCE_PRODUCT_KEYWORDS))
+
+
+def _is_thread_candidate(node_id: int, attrs: dict) -> bool:
     vendor = str(attrs.get("0/40/1") or "").strip().lower()
     product = str(attrs.get("0/40/3") or "").strip().lower()
+    if _is_forced_keepalive_node(node_id, attrs):
+        return True
     if KEEPALIVE_SKIP_SLEEPY and any(keyword in product for keyword in SLEEPY_PRODUCT_KEYWORDS):
         return False
     if any(keyword in vendor for keyword in THREAD_VENDOR_KEYWORDS):
@@ -143,6 +184,33 @@ async def _call(ws, message_id: str, command: str, args: dict | None = None) -> 
             return message
 
 
+def _keepalive_attribute_paths(node_id: int, attrs: dict) -> list[str]:
+    paths = (
+        KEEPALIVE_FORCE_ATTRIBUTE_PATHS
+        if _is_forced_keepalive_node(node_id, attrs)
+        else KEEPALIVE_ATTRIBUTE_PATHS
+    )
+    # Prefer paths that the cached interview says exist, but leave BasicInformation
+    # as a fallback because older interviews can miss dynamic cluster attributes.
+    present = [path for path in paths if path in attrs or path == "0/40/5"]
+    return present or ["0/40/5"]
+
+
+async def _read_keepalive_attribute(ws, node_id: int, attribute_path: str) -> dict:
+    return await asyncio.wait_for(
+        _call(
+            ws,
+            f"keepalive:{node_id}:{attribute_path}",
+            "read_attribute",
+            {
+                "node_id": node_id,
+                "attribute_path": attribute_path,
+            },
+        ),
+        timeout=KEEPALIVE_READ_TIMEOUT_SEC,
+    )
+
+
 async def _discover_keepalive_nodes(ws) -> list[tuple[int, dict, bool]]:
     start = await _call(ws, "keepalive:start", "start_listening")
     if "error_code" in start:
@@ -156,7 +224,7 @@ async def _discover_keepalive_nodes(ws) -> list[tuple[int, dict, bool]]:
         available = bool(node.get("available", False))
         if not isinstance(node_id, int) or node_id <= 0:
             continue
-        if _is_thread_candidate(attrs):
+        if _is_thread_candidate(node_id, attrs):
             found.append((node_id, attrs, available))
     return found
 
@@ -186,60 +254,23 @@ async def _keepalive_once(ws_url: str) -> None:
                 "product": str(attrs.get("0/40/3") or ""),
                 "last_seen_epoch": now_epoch,
             }
-            if not available:
-                entry["ok"] = False
-                entry["error"] = "node unavailable"
-                entry["consecutive_failures"] = previous_failures + 1
-                entry["consecutive_slow"] = 0
-                entry["degraded_score"] = previous_score + KEEPALIVE_FAILURE_PENALTY
-                if isinstance(previous_last_ack, (int, float)):
-                    entry["last_ack_epoch"] = float(previous_last_ack)
-                metrics[node_key] = entry
-                print(f"keepalive node_id={node_id} unavailable; skipping active read", file=sys.stderr, flush=True)
-                state, reason = _health_state(entry, now_epoch)
-                previous_state = str(previous_entry.get("health_state") or "healthy")
-                entry["health_state"] = state
-                if reason:
-                    entry["health_reason"] = reason
-                else:
-                    entry.pop("health_reason", None)
-
-                previous_since = previous_entry.get("degraded_since_epoch")
-                if state == "healthy":
-                    entry.pop("degraded_since_epoch", None)
-                elif isinstance(previous_since, (int, float)) and previous_state in {"degraded", "persistent"}:
-                    entry["degraded_since_epoch"] = float(previous_since)
-                else:
-                    entry["degraded_since_epoch"] = now_epoch
-
-                previous_reason = str(previous_entry.get("health_reason") or "")
-                if state != previous_state:
-                    suffix = f" ({reason})" if reason else ""
-                    print(
-                        f"keepalive node_id={node_id} label={entry['label']!r} state {previous_state} -> {state}{suffix}",
-                        file=sys.stderr,
-                        flush=True,
-                    )
-                elif state != "healthy" and reason and reason != previous_reason:
-                    print(
-                        f"keepalive node_id={node_id} label={entry['label']!r} state {state}: {reason}",
-                        file=sys.stderr,
-                        flush=True,
-                    )
-                continue
-
+            attribute_paths = _keepalive_attribute_paths(node_id, attrs)
+            entry["attribute_paths"] = attribute_paths
             started = time.monotonic()
-            response = await _call(
-                ws,
-                f"keepalive:{node_id}",
-                "read_attribute",
-                {
-                    "node_id": node_id,
-                    "attribute_path": "0/40/5",
-                },
-            )
+            responses = []
+            for attribute_path in attribute_paths:
+                try:
+                    response = await _read_keepalive_attribute(ws, node_id, attribute_path)
+                except TimeoutError:
+                    response = {
+                        "error_code": "timeout",
+                        "details": f"{attribute_path} read timed out after {KEEPALIVE_READ_TIMEOUT_SEC:g}s",
+                    }
+                responses.append(response)
+            response = next((item for item in responses if "error_code" not in item), responses[-1])
             latency_ms = (time.monotonic() - started) * 1000.0
             entry["latency_ms"] = latency_ms
+            entry["reported_available"] = available
             if "error_code" in response:
                 details = response.get("details") or "unknown error"
                 entry["ok"] = False

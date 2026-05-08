@@ -12,10 +12,21 @@
   matterScriptsDir = ./scripts;
   matterPresenceActionsScript = "${matterScriptsDir}/matter-presence-actions.py";
   matterSolarApiScript = "${matterScriptsDir}/matter-solar-api.py";
+  matterServerUnit = "podman-matter-server.service";
+  matterWsPort = "5580";
+  matterWsUrl = "ws://127.0.0.1:${matterWsPort}/ws";
 
   # Presence rules should follow the Matter NodeLabel because labels are restored
   # onto the node after re-pairing, while unique IDs can churn.
   nodeKeyForName = name: "label:${name}";
+  # Matter LevelControl transitionTime is in tenths of a second.
+  defaultPresenceLightFadeInTransitionTime = 15;
+  fadeOnPayload = level: {
+    inherit level;
+    transitionTime = defaultPresenceLightFadeInTransitionTime;
+    optionsMask = 0;
+    optionsOverride = 0;
+  };
 
   # Rule-driven automation. Add more objects to this list to extend behavior.
   presenceRules = [
@@ -24,23 +35,25 @@
       source_keys = [
         (nodeKeyForName "Office Presence")
         (nodeKeyForName "Office Presence - Far")
-        "unique_id_env:MATTER_UID_OFFICE_DOOR"
+        (nodeKeyForName "Office Door")
       ];
-      pulse_source_keys = [ "unique_id_env:MATTER_UID_OFFICE_DOOR" ];
+      pulse_source_keys = [ (nodeKeyForName "Office Door") ];
       pulse_source_duration_sec = 15;
       pulse_source_active_when = false;
       target_key = nodeKeyForName "Office Light";
       target_endpoint = 1;
+      on_cluster_id = 8;
       cluster_id = 6;
-      on_command = "On";
+      on_command = "MoveToLevelWithOnOff";
       off_command = "Off";
+      on_payload = fadeOnPayload 254;
       payload = {};
       # Turn on when either:
       # 1) room is dark by sensor luminance, OR
       # 2) current time is between sunset and next sunrise.
       # (all still gated by presence=true)
       on_eligibility_mode = "any";
-      dark_when_lux_below = 20.0;
+      dark_when_lux_below = 120.0;
       require_luminance_for_on = true;
       luminance_aggregation = "min";
       on_active_solar_window = {
@@ -68,16 +81,18 @@
       source_keys = [
         (nodeKeyForName "Office Presence")
         (nodeKeyForName "Office Presence - Far")
-        "unique_id_env:MATTER_UID_OFFICE_DOOR"
+        (nodeKeyForName "Office Door")
       ];
-      pulse_source_keys = [ "unique_id_env:MATTER_UID_OFFICE_DOOR" ];
+      pulse_source_keys = [ (nodeKeyForName "Office Door") ];
       pulse_source_duration_sec = 15;
       pulse_source_active_when = false;
       target_key = nodeKeyForName "Office Floor Lamp";
       target_endpoint = 1;
+      on_cluster_id = 8;
       cluster_id = 6;
-      on_command = "On";
+      on_command = "MoveToLevelWithOnOff";
       off_command = "Off";
+      on_payload = fadeOnPayload 254;
       payload = {};
       presence_attribute_paths = [
         "1/1030/0"
@@ -102,9 +117,11 @@
       pulse_source_active_when = false;
       target_key = nodeKeyForName "MBR Bathroom Main";
       target_endpoint = 1;
+      on_cluster_id = 8;
       cluster_id = 6;
-      on_command = "On";
+      on_command = "MoveToLevelWithOnOff";
       off_command = "Off";
+      on_payload = fadeOnPayload 254;
       payload = {};
       # Unless 10:00pm-7:30am.
       on_active_windows = [{ start = "07:30"; end = "22:00"; }];
@@ -127,9 +144,11 @@
       ];
       target_key = nodeKeyForName "MBR Bathroom Mirror";
       target_endpoint = 1;
+      on_cluster_id = 8;
       cluster_id = 6;
-      on_command = "On";
+      on_command = "MoveToLevelWithOnOff";
       off_command = "Off";
+      on_payload = fadeOnPayload 254;
       payload = {};
       # 7:00am-11:00am only.
       on_active_windows = [{ start = "07:00"; end = "11:00"; }];
@@ -146,9 +165,11 @@
       ];
       target_key = nodeKeyForName "MBR Bathroom Warm";
       target_endpoint = 1;
+      on_cluster_id = 8;
       cluster_id = 6;
-      on_command = "On";
+      on_command = "MoveToLevelWithOnOff";
       off_command = "Off";
+      on_payload = fadeOnPayload 64;
       payload = {};
       # 10:00pm-7:30am only.
       on_active_windows = [{ start = "22:00"; end = "07:30"; }];
@@ -164,12 +185,7 @@
       cluster_id = 6;
       on_command = "MoveToLevelWithOnOff";
       off_command = "Off";
-      on_payload = {
-        level = 254;
-        transitionTime = 0;
-        optionsMask = 0;
-        optionsOverride = 0;
-      };
+      on_payload = fadeOnPayload 254;
       payload = {};
       on_active_windows = [{ start = "07:30"; end = "22:00"; }];
       target_onoff_attribute_path = "1/6/0";
@@ -184,12 +200,7 @@
       cluster_id = 6;
       on_command = "MoveToLevelWithOnOff";
       off_command = "Off";
-      on_payload = {
-        level = 64;
-        transitionTime = 0;
-        optionsMask = 0;
-        optionsOverride = 0;
-      };
+      on_payload = fadeOnPayload 64;
       payload = {};
       on_active_windows = [{ start = "22:00"; end = "07:30"; }];
       target_onoff_attribute_path = "1/6/0";
@@ -214,9 +225,11 @@
       source_keys = [ (nodeKeyForName "MBR Shower Presence") ];
       target_key = nodeKeyForName "MBR Shower";
       target_endpoint = 1;
+      on_cluster_id = 8;
       cluster_id = 6;
-      on_command = "On";
+      on_command = "MoveToLevelWithOnOff";
       off_command = "Off";
+      on_payload = fadeOnPayload 254;
       payload = {};
       target_onoff_attribute_path = "1/6/0";
     }
@@ -225,16 +238,18 @@
       name = "mbr-presence2-bed-light";
       source_keys = [
         (nodeKeyForName "MBR Presence 2")
-        "unique_id_env:MATTER_UID_MBR_DOOR"
+        (nodeKeyForName "MBR Door")
       ];
-      pulse_source_keys = [ "unique_id_env:MATTER_UID_MBR_DOOR" ];
+      pulse_source_keys = [ (nodeKeyForName "MBR Door") ];
       pulse_source_duration_sec = 15;
       pulse_source_active_when = false;
       target_key = nodeKeyForName "MBR Bed Light";
       target_endpoint = 1;
+      on_cluster_id = 8;
       cluster_id = 6;
-      on_command = "On";
+      on_command = "MoveToLevelWithOnOff";
       off_command = "Off";
+      on_payload = fadeOnPayload 254;
       payload = {};
       presence_attribute_paths = [
         "1/1030/0"
@@ -250,9 +265,11 @@
       source_keys = [ (nodeKeyForName "Pantry Presence") ];
       target_key = nodeKeyForName "Pantry Light";
       target_endpoint = 1;
+      on_cluster_id = 8;
       cluster_id = 6;
-      on_command = "On";
+      on_command = "MoveToLevelWithOnOff";
       off_command = "Off";
+      on_payload = fadeOnPayload 254;
       payload = {};
       target_onoff_attribute_path = "1/6/0";
     }
@@ -262,25 +279,30 @@
       source_keys = [ (nodeKeyForName "Upstairs Bathroom Presence") ];
       target_key = nodeKeyForName "Upstairs Bathroom Light";
       target_endpoint = 1;
+      on_cluster_id = 8;
       cluster_id = 6;
-      on_command = "On";
+      on_command = "MoveToLevelWithOnOff";
       off_command = "Off";
+      on_payload = fadeOnPayload 254;
       payload = {};
       target_onoff_attribute_path = "1/6/0";
     }
 
     {
       name = "network-closet-door-light";
-      source_keys = [ "unique_id_env:MATTER_UID_NETWORK_CLOSET_DOOR" ];
+      source_keys = [ (nodeKeyForName "Network Closet Door") ];
       target_key = "unique_id_env:MATTER_UID_NETWORK_CLOSET_LIGHT";
       target_endpoint = 1;
+      on_cluster_id = 8;
       cluster_id = 6;
-      on_command = "On";
+      on_command = "MoveToLevelWithOnOff";
       off_command = "Off";
+      on_payload = fadeOnPayload 254;
       payload = {};
       # IKEA MYGGBETT exposes BooleanState where true=closed, false=open.
       presence_attribute_paths = [ "1/69/0" ];
       source_active_when = false;
+      manual_override_enabled = false;
       target_onoff_attribute_path = "1/6/0";
     }
   ];
@@ -317,13 +339,13 @@ in {
       "multi-user.target"
     ];
     after = [
-      "podman-matter-server.service"
+      matterServerUnit
       "podman-otbr.service"
       "otbr-ensure-dataset.service"
       "network-online.target"
     ];
     wants = [
-      "podman-matter-server.service"
+      matterServerUnit
       "podman-otbr.service"
       "otbr-ensure-dataset.service"
       "network-online.target"
@@ -334,9 +356,11 @@ in {
       RestartSec = "5s";
       EnvironmentFile = config.sops.secrets."matter-env".path;
       Environment = [
-        "MATTER_PRESENCE_POLL_INTERVAL_SEC=0.5"
+        "MATTER_WS_URL=${matterWsUrl}"
+        "MATTER_PRESENCE_POLL_INTERVAL_SEC=0.1"
+        "MATTER_PRESENCE_ACTIVE_POLL_INTERVAL_SEC=0"
       ];
-      ExecStartPre = "${pkgs.bash}/bin/bash -c 'for i in {1..60}; do (echo > /dev/tcp/127.0.0.1/5580) >/dev/null 2>&1 && exit 0; sleep 1; done; echo matter-server ws not ready >&2; exit 1'";
+      ExecStartPre = "${pkgs.bash}/bin/bash -c 'for i in {1..60}; do (echo > /dev/tcp/127.0.0.1/${matterWsPort}) >/dev/null 2>&1 && exit 0; sleep 1; done; echo matter-server ws not ready >&2; exit 1'";
       ExecStart = "${matterPresenceActionsTool}/bin/matter-presence-actions";
     };
   };

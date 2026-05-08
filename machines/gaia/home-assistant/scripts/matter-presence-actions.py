@@ -29,6 +29,7 @@ SWITCH_SINGLE_PRESS_COUNT = 1
 SWITCH_UP_ENDPOINT_IDS = {1, 3}
 SWITCH_DOWN_ENDPOINT_IDS = {2, 4}
 DEFAULT_MANUAL_OVERRIDE_TIMEOUT_SEC = 30.0 * 60.0
+MANUAL_INDICATOR_RETRY_SEC = float(os.getenv("MATTER_MANUAL_INDICATOR_RETRY_SEC", "300"))
 
 
 def _b64_to_bytes(value: str) -> bytes | None:
@@ -114,17 +115,28 @@ def _presence_from_attrs(
     *,
     allow_any_fallback: bool = True,
 ) -> bool | None:
+    found = False
     for path in candidate_paths:
         if path in attrs:
-            return _as_present(attrs.get(path))
+            found = True
+            if _as_present(attrs.get(path)):
+                return True
+
+    if found:
+        return False
 
     if not allow_any_fallback:
         return None
 
     # Fallback for sensors that expose Occupancy at a non-standard endpoint.
+    found = False
     for path, value in attrs.items():
         if isinstance(path, str) and path.endswith("/1030/0"):
-            return _as_present(value)
+            found = True
+            if _as_present(value):
+                return True
+    if found:
+        return False
     return None
 
 
@@ -594,6 +606,9 @@ def _normalize_rule(raw: dict, index: int) -> dict | None:
         manual_override_timeout_sec = _as_float(raw.get("manual_override_sec"))
     if manual_override_timeout_sec is None or manual_override_timeout_sec <= 0:
         manual_override_timeout_sec = DEFAULT_MANUAL_OVERRIDE_TIMEOUT_SEC
+    manual_override_enabled = raw.get("manual_override_enabled", True)
+    if not isinstance(manual_override_enabled, bool):
+        manual_override_enabled = True
     source_active_when = raw.get("source_active_when", True)
     if not isinstance(source_active_when, bool):
         source_active_when = True
@@ -624,6 +639,7 @@ def _normalize_rule(raw: dict, index: int) -> dict | None:
         "on_active_windows": on_active_windows,
         "on_eligibility_mode": on_eligibility_mode,
         "on_active_solar_window": on_active_solar_window,
+        "manual_override_enabled": manual_override_enabled,
         "manual_override_timeout_sec": manual_override_timeout_sec,
         "source_active_when": source_active_when,
         "pulse_source_keys": normalized_pulse_source_keys,
@@ -639,11 +655,23 @@ def _normalize_rule(raw: dict, index: int) -> dict | None:
     }
 
 
-async def _call(ws, message_id: str, command: str, args: dict | None = None) -> dict:
+async def _call(
+    ws,
+    message_id: str,
+    command: str,
+    args: dict | None = None,
+    *,
+    timeout_sec: float | None = None,
+) -> dict:
     payload = {"message_id": message_id, "command": command, "args": args or {}}
     await ws.send(json.dumps(payload))
     while True:
-        message = json.loads(await ws.recv())
+        raw = (
+            await asyncio.wait_for(ws.recv(), timeout=timeout_sec)
+            if timeout_sec is not None
+            else await ws.recv()
+        )
+        message = json.loads(raw)
         if message.get("event"):
             continue
         if message.get("message_id") == message_id:
@@ -715,6 +743,20 @@ def _watched_node_ids(rules: list[dict], by_key: dict[str, dict]) -> set[int]:
     return watched
 
 
+def _active_poll_paths(rules: list[dict], by_key: dict[str, dict]) -> list[tuple[int, str]]:
+    paths: set[tuple[int, str]] = set()
+    for rule in rules:
+        for key in rule["source_keys"]:
+            source = by_key.get(key)
+            if not source or not isinstance(source.get("node_id"), int):
+                continue
+            attrs = source.get("attrs") or {}
+            for path in rule["presence_attribute_paths"]:
+                if path in attrs:
+                    paths.add((int(source["node_id"]), path))
+    return sorted(paths)
+
+
 async def _read_snapshot(ws) -> dict[str, dict]:
     start = await _call(ws, "presence-start", "start_listening")
     if "error_code" in start:
@@ -733,6 +775,68 @@ async def _refresh_snapshot(ws) -> dict[str, dict]:
     return _build_by_key(nodes)
 
 
+async def _poll_presence_sources(
+    ws_url: str,
+    *,
+    rules: list[dict],
+    timeout_sec: float,
+) -> dict[str, dict] | None:
+    async with websockets.connect(ws_url, max_size=None) as poll_ws:
+        await poll_ws.recv()  # server_info
+        response = await _call(
+            poll_ws,
+            "presence-active-poll",
+            "get_nodes",
+            timeout_sec=timeout_sec,
+        )
+    if "error_code" in response:
+        details = response.get("details") or "unknown error"
+        raise RuntimeError(f"get_nodes failed: {details}")
+    nodes = response.get("result")
+    if not isinstance(nodes, list):
+        return None
+    return _build_by_key(nodes)
+
+
+def _merge_active_poll_presence(
+    current_by_key: dict[str, dict],
+    poll_by_key: dict[str, dict],
+    rules: list[dict],
+    suppressed_until_by_path: dict[tuple[int, str], float],
+) -> bool:
+    now = asyncio.get_running_loop().time()
+    changed = False
+    for rule in rules:
+        for key in rule["source_keys"]:
+            current = current_by_key.get(key)
+            polled = poll_by_key.get(key)
+            if current is None or polled is None:
+                continue
+            current_attrs = current.get("attrs")
+            polled_attrs = polled.get("attrs")
+            if not isinstance(current_attrs, dict) or not isinstance(polled_attrs, dict):
+                continue
+            node_id = current.get("node_id")
+            if not isinstance(node_id, int):
+                continue
+            for path in rule["presence_attribute_paths"]:
+                if path not in polled_attrs:
+                    continue
+                value = _as_bool(polled_attrs.get(path))
+                # Matter.js snapshots are fast enough to recover missed short
+                # presence assertions, but can lag clears. Use active polling as
+                # an On fallback only; real attribute updates still own Off.
+                suppressed_until = suppressed_until_by_path.get((node_id, path), 0.0)
+                if (
+                    value is True
+                    and current_attrs.get(path) is not True
+                    and now >= suppressed_until
+                ):
+                    current_attrs[path] = True
+                    changed = True
+    return changed
+
+
 async def _evaluate_rules(
     ws,
     rules: list[dict],
@@ -749,9 +853,16 @@ async def _evaluate_rules(
                 "last_on_eligible": None,
                 "last_light_state": None,
                 "manual_indicator_synced": False,
-                "manual_indicator_enabled": None,
+                # Assume indicator-off at startup. Writing Off to every target
+                # during startup can block event processing for tens of seconds
+                # on Matter.js when one target is slow or temporarily unreachable.
+                "manual_indicator_enabled": False,
+                "manual_indicator_retry_after_epoch": 0.0,
                 "manual_override_value": None,
                 "manual_override_expires_epoch": 0.0,
+                "last_no_source_state": False,
+                "last_sources_missing": False,
+                "last_target_missing": False,
                 "last_auto_command_epoch": 0.0,
                 "last_presence_change_epoch": 0.0,
                 "present_since_epoch": None,
@@ -764,19 +875,25 @@ async def _evaluate_rules(
         sources = [entry for _, entry in source_entries if entry is not None]
         target = by_key.get(rule["target_key"])
         if not sources:
-            print(
-                f"presence rule {rule['name']}: source not found ({', '.join(rule['source_keys'])})",
-                file=sys.stderr,
-                flush=True,
-            )
+            if not state.get("last_sources_missing", False):
+                print(
+                    f"presence rule {rule['name']}: source not found ({', '.join(rule['source_keys'])})",
+                    file=sys.stderr,
+                    flush=True,
+                )
+                state["last_sources_missing"] = True
             continue
+        state["last_sources_missing"] = False
         if target is None:
-            print(
-                f"presence rule {rule['name']}: target not found ({rule['target_key']})",
-                file=sys.stderr,
-                flush=True,
-            )
+            if not state.get("last_target_missing", False):
+                print(
+                    f"presence rule {rule['name']}: target not found ({rule['target_key']})",
+                    file=sys.stderr,
+                    flush=True,
+                )
+                state["last_target_missing"] = True
             continue
+        state["last_target_missing"] = False
         if not target.get("available", False):
             continue
 
@@ -796,6 +913,8 @@ async def _evaluate_rules(
         presence_values: list[bool] = []
         for key, source in source_entries:
             if source is None:
+                continue
+            if not source.get("available", False):
                 continue
             source_active_when = bool(rule.get("source_active_when", True))
             if key in pulse_source_keys:
@@ -833,15 +952,19 @@ async def _evaluate_rules(
             if source_presence is not None:
                 presence_values.append(source_presence)
         if not presence_values:
-            print(
-                f"presence rule {rule['name']}: no source state attribute found on any source",
-                file=sys.stderr,
-                flush=True,
-            )
+            if not state.get("last_no_source_state", False):
+                print(
+                    f"presence rule {rule['name']}: no source state attribute found on any source",
+                    file=sys.stderr,
+                    flush=True,
+                )
+                state["last_no_source_state"] = True
             continue
+        state["last_no_source_state"] = False
         remote_present = any(presence_values)
 
-        indicator_supported = _supports_manual_indicator(target["attrs"])
+        manual_override_enabled = bool(rule.get("manual_override_enabled", True))
+        indicator_supported = manual_override_enabled and _supports_manual_indicator(target["attrs"])
         override_value = state.get("manual_override_value")
         override_expires_epoch = state.get("manual_override_expires_epoch")
         override_active = (
@@ -898,6 +1021,8 @@ async def _evaluate_rules(
         # Do not run this fallback during node_event handling, because an
         # explicit paddle event should always win (including clear-on-repeat).
         if (
+            manual_override_enabled
+            and
             trigger != "node_event"
             and
             isinstance(previous_light_state, bool)
@@ -926,21 +1051,28 @@ async def _evaluate_rules(
         if indicator_supported:
             desired_indicator_enabled = bool(override_active)
             if state.get("manual_indicator_enabled") != desired_indicator_enabled:
-                try:
-                    await _set_manual_indicator(
-                        ws,
-                        node_id=target["node_id"],
-                        enabled=desired_indicator_enabled,
-                    )
-                    state["manual_indicator_synced"] = True
-                    state["manual_indicator_enabled"] = desired_indicator_enabled
-                except Exception as err:
-                    print(
-                        f"presence rule {rule['name']}: failed to set manual indicator "
-                        f"{'On' if desired_indicator_enabled else 'Off'}: {err}",
-                        file=sys.stderr,
-                        flush=True,
-                    )
+                retry_after_epoch = state.get("manual_indicator_retry_after_epoch")
+                retry_allowed = not isinstance(retry_after_epoch, (int, float)) or now >= float(
+                    retry_after_epoch
+                )
+                if retry_allowed:
+                    try:
+                        await _set_manual_indicator(
+                            ws,
+                            node_id=target["node_id"],
+                            enabled=desired_indicator_enabled,
+                        )
+                        state["manual_indicator_synced"] = True
+                        state["manual_indicator_enabled"] = desired_indicator_enabled
+                        state["manual_indicator_retry_after_epoch"] = 0.0
+                    except Exception as err:
+                        state["manual_indicator_retry_after_epoch"] = now + MANUAL_INDICATOR_RETRY_SEC
+                        print(
+                            f"presence rule {rule['name']}: failed to set manual indicator "
+                            f"{'On' if desired_indicator_enabled else 'Off'}: {err}",
+                            file=sys.stderr,
+                            flush=True,
+                        )
         else:
             state["manual_indicator_synced"] = True
             state["manual_indicator_enabled"] = False
@@ -1081,6 +1213,8 @@ async def _evaluate_rules(
         should_issue_on = bool(on_eligible) and (
             presence_changed or (previous_on_eligible is not True)
         )
+        if bool(on_eligible) and light_state is False:
+            should_issue_on = True
         should_issue_off = False
 
         if not present:
@@ -1140,7 +1274,12 @@ async def _evaluate_rules(
             else rule["payload"]
         )
         desired_onoff = _command_desired_onoff(command_name)
-        if desired_onoff is not None and light_state is not None and light_state == desired_onoff:
+        if (
+            desired_onoff is not None
+            and light_state is not None
+            and light_state == desired_onoff
+            and not should_issue_on
+        ):
             print(
                 f"presence rule {rule['name']}: present={present} -> "
                 f"skip {command_name} (target already {'On' if light_state else 'Off'}) "
@@ -1188,6 +1327,14 @@ async def _run() -> int:
     # time-window and override-expiry logic.
     poll_interval_sec = float(os.getenv("MATTER_PRESENCE_POLL_INTERVAL_SEC", "1.0"))
     refresh_interval_sec = float(os.getenv("MATTER_PRESENCE_REFRESH_INTERVAL_SEC", "10.0"))
+    active_poll_interval_sec = max(
+        0.0,
+        float(os.getenv("MATTER_PRESENCE_ACTIVE_POLL_INTERVAL_SEC", "0")),
+    )
+    active_poll_timeout_sec = max(
+        0.25,
+        float(os.getenv("MATTER_PRESENCE_ACTIVE_POLL_TIMEOUT_SEC", "3")),
+    )
     raw_rules = os.getenv("MATTER_PRESENCE_RULES_JSON", "[]")
 
     try:
@@ -1209,10 +1356,12 @@ async def _run() -> int:
         return 1
 
     print(
-        f"matter-presence-actions: rules={len(rules)} event_driven=true tick={poll_interval_sec}s",
+        f"matter-presence-actions: rules={len(rules)} event_driven=true "
+        f"tick={poll_interval_sec}s active_poll={active_poll_interval_sec}s",
         flush=True,
     )
     rule_state: dict[str, dict] = {}
+    active_poll_suppressed_until_by_path: dict[tuple[int, str], float] = {}
 
     while True:
         try:
@@ -1223,12 +1372,67 @@ async def _run() -> int:
                 await _evaluate_rules(ws, rules, rule_state, by_key, "startup")
                 watched = _watched_node_ids(rules, by_key)
 
-                tick = max(0.25, poll_interval_sec)
+                tick = max(0.05, poll_interval_sec)
                 refresh_interval = max(1.0, refresh_interval_sec)
                 next_refresh_epoch = asyncio.get_running_loop().time() + refresh_interval
+                next_active_poll_epoch = (
+                    asyncio.get_running_loop().time() + active_poll_interval_sec
+                    if active_poll_interval_sec > 0.0
+                    else math.inf
+                )
+                active_poll_task = None
                 while True:
+                    now = asyncio.get_running_loop().time()
+                    if active_poll_task is not None and active_poll_task.done():
+                        try:
+                            active_poll_by_key = active_poll_task.result()
+                            if active_poll_by_key is not None:
+                                if _merge_active_poll_presence(
+                                    by_key,
+                                    active_poll_by_key,
+                                    rules,
+                                    active_poll_suppressed_until_by_path,
+                                ):
+                                    await _evaluate_rules(
+                                        ws,
+                                        rules,
+                                        rule_state,
+                                        by_key,
+                                        "active_poll",
+                                    )
+                        except Exception as err:
+                            print(
+                                f"presence active poll failed: {err}",
+                                file=sys.stderr,
+                                flush=True,
+                            )
+                        active_poll_task = None
+
+                    if (
+                        active_poll_interval_sec > 0.0
+                        and active_poll_task is None
+                        and now >= next_active_poll_epoch
+                    ):
+                        active_poll_task = asyncio.create_task(
+                            _poll_presence_sources(
+                                ws_url,
+                                rules=rules,
+                                timeout_sec=active_poll_timeout_sec,
+                            )
+                        )
+                        next_active_poll_epoch = now + active_poll_interval_sec
+
                     try:
-                        raw = await asyncio.wait_for(ws.recv(), timeout=tick)
+                        raw = await asyncio.wait_for(
+                            ws.recv(),
+                            timeout=min(
+                                tick,
+                                max(
+                                    0.05,
+                                    next_active_poll_epoch - asyncio.get_running_loop().time(),
+                                ),
+                            ),
+                        )
                     except asyncio.TimeoutError:
                         now = asyncio.get_running_loop().time()
                         if now >= next_refresh_epoch:
@@ -1252,22 +1456,33 @@ async def _run() -> int:
                         ):
                             node_id = data[0]
                             if node_id in watched:
-                                    entry = by_node_id.get(node_id)
-                                    if entry is not None:
-                                        entry["attrs"][data[1]] = data[2]
-                                    await _evaluate_rules(
-                                        ws,
-                                        rules,
-                                        rule_state,
-                                        by_key,
-                                        "attribute_updated",
-                                        event_data={
-                                            "type": "attribute_updated",
-                                            "node_id": node_id,
-                                            "attribute_path": data[1],
-                                            "value": data[2],
-                                        },
+                                entry = by_node_id.get(node_id)
+                                if entry is not None:
+                                    entry["attrs"][data[1]] = data[2]
+                                if _as_bool(data[2]) is False:
+                                    active_poll_suppressed_until_by_path[
+                                        (node_id, data[1])
+                                    ] = asyncio.get_running_loop().time() + 5.0
+                                if data[1] == "0/40/5":
+                                    by_key = await _refresh_snapshot(ws)
+                                    by_node_id = _index_by_node_id(by_key)
+                                    watched = _watched_node_ids(rules, by_key)
+                                    next_refresh_epoch = (
+                                        asyncio.get_running_loop().time() + refresh_interval
                                     )
+                                await _evaluate_rules(
+                                    ws,
+                                    rules,
+                                    rule_state,
+                                    by_key,
+                                    "attribute_updated",
+                                    event_data={
+                                        "type": "attribute_updated",
+                                        "node_id": node_id,
+                                        "attribute_path": data[1],
+                                        "value": data[2],
+                                    },
+                                )
                         continue
 
                     if event_name != "node_event":

@@ -1,4 +1,4 @@
-{config, pkgs, matterNodeLabels ? {}, ...}: let
+{config, pkgs, lib, matterNodeLabels ? {}, ...}: let
   # Prefer setting the Matter device's own NodeLabel (0/40/5) so names survive
   # HA state wipes and re-pairing. Entity_id-based HA customizations are fragile.
 
@@ -11,6 +11,9 @@
   # You can discover candidate keys with `matter-node-labels --list`.
 
   matterNodeLabelsJson = builtins.toJSON matterNodeLabels;
+  matterServerUnit = "podman-matter-server.service";
+  matterWsPort = "5580";
+  matterWsUrl = "ws://127.0.0.1:${matterWsPort}/ws";
 
   pythonEnv = pkgs.python3.withPackages (ps: [
     ps.websockets
@@ -350,7 +353,7 @@
             print("matter-ha-namer: no matching labeled Matter nodes found")
             return 0
 
-        async with websockets.connect(args.ha_ws_url) as ha_ws:
+        async with websockets.connect(args.ha_ws_url, max_size=None) as ha_ws:
             first = json.loads(await ha_ws.recv())
             if first.get("type") != "auth_required":
                 print(f"matter-ha-namer: unexpected HA websocket greeting: {first}", file=sys.stderr)
@@ -412,6 +415,377 @@
         raise SystemExit(asyncio.run(main()))
   '';
 
+  matterHaCleanup = pkgs.writeText "matter-ha-matter-cleanup.py" ''
+    import argparse
+    import asyncio
+    import base64
+    import json
+    import os
+    import re
+    import sys
+
+    import websockets
+
+    MATTER_WS_URL_DEFAULT = "ws://127.0.0.1:5580/ws"
+    HA_WS_URL_DEFAULT = "ws://127.0.0.1:8123/api/websocket"
+    MATTER_NODE_RE = re.compile(r"-([0-9A-Fa-f]{16})-MatterNodeDevice")
+    NUMBERED_NAME_RE = re.compile(r"^(?P<base>.+) \([0-9]+\)$")
+    ROLE_SUFFIX_RE = re.compile(r" \((Load Control|RGB Indicator)\)$")
+    DEAD_STATES = {"unavailable", "unknown"}
+
+    def _b64_to_bytes(s: str) -> bytes | None:
+        try:
+            return base64.b64decode(s + "===")
+        except Exception:
+            return None
+
+    def _mac_from_node(attrs: dict) -> str | None:
+        for entry in (attrs.get("0/51/0") or []):
+            hw = entry.get("4")
+            if isinstance(hw, str) and hw:
+                b = _b64_to_bytes(hw)
+                if b and len(b) >= 6:
+                    return ":".join(f"{x:02x}" for x in b[:6])
+        return None
+
+    async def _matter_call(ws, message_id: str, command: str, args: dict | None = None) -> dict:
+        payload = {"message_id": message_id, "command": command, "args": args or {}}
+        await ws.send(json.dumps(payload))
+        while True:
+            msg = json.loads(await ws.recv())
+            if msg.get("message_id") == message_id:
+                return msg
+
+    async def _ha_call(ws, req_id: int, msg_type: str, **kwargs) -> dict:
+        payload = {"id": req_id, "type": msg_type, **kwargs}
+        await ws.send(json.dumps(payload))
+        while True:
+            msg = json.loads(await ws.recv())
+            if msg.get("id") == req_id:
+                return msg
+
+    def _matter_identifier_values(device: dict) -> list[str]:
+        out = []
+        for item in device.get("identifiers") or []:
+            if isinstance(item, (list, tuple)) and len(item) >= 2 and item[0] == "matter":
+                out.append(str(item[1]))
+        return out
+
+    def _device_node_ids(device: dict) -> set[int]:
+        out = set()
+        for value in _matter_identifier_values(device):
+            for match in MATTER_NODE_RE.finditer(value):
+                out.add(int(match.group(1), 16))
+        return out
+
+    def _has_matter_identity(device: dict) -> bool:
+        return bool(_matter_identifier_values(device))
+
+    def _device_matches_node(device: dict, node: dict) -> bool:
+        node_id = node.get("node_id")
+        attrs = node.get("attributes") or {}
+        if isinstance(node_id, int) and node_id in _device_node_ids(device):
+            return True
+
+        identifiers = _matter_identifier_values(device)
+        serial = attrs.get("0/40/15")
+        if isinstance(serial, str) and serial and f"serial_{serial}" in identifiers:
+            return True
+
+        mac = _mac_from_node(attrs)
+        if mac:
+            for conn in device.get("connections") or []:
+                if isinstance(conn, (list, tuple)) and len(conn) >= 2:
+                    if str(conn[0]).lower() == "mac" and str(conn[1]).lower() == mac.lower():
+                        return True
+        return False
+
+    def _state_map(states: list[dict]) -> dict[str, dict]:
+        return {
+            str(state.get("entity_id")): state
+            for state in states
+            if state.get("entity_id")
+        }
+
+    def _state_value(states: dict[str, dict], entity_id: str) -> str:
+        state = states.get(entity_id) or {}
+        return str(state.get("state", "unknown"))
+
+    def _entity_domain(entity_id: str) -> str:
+        return entity_id.split(".", 1)[0] if "." in entity_id else ""
+
+    def _entity_name(entity: dict, states: dict[str, dict]) -> str:
+        entity_id = entity.get("entity_id") or ""
+        state = states.get(entity_id) or {}
+        attrs = state.get("attributes") or {}
+        for value in (
+            attrs.get("friendly_name"),
+            entity.get("name"),
+            entity.get("original_name"),
+        ):
+            if isinstance(value, str) and value:
+                return value
+        return entity_id
+
+    def _device_class(entity: dict, states: dict[str, dict]) -> str:
+        entity_id = entity.get("entity_id") or ""
+        state = states.get(entity_id) or {}
+        attrs = state.get("attributes") or {}
+        value = attrs.get("device_class") or entity.get("device_class") or ""
+        return str(value)
+
+    def _unit(entity: dict, states: dict[str, dict]) -> str:
+        entity_id = entity.get("entity_id") or ""
+        state = states.get(entity_id) or {}
+        attrs = state.get("attributes") or {}
+        value = attrs.get("unit_of_measurement") or ""
+        return str(value)
+
+    def _same_measurement(a: dict, b: dict, states: dict[str, dict]) -> bool:
+        a_class = _device_class(a, states)
+        b_class = _device_class(b, states)
+        if a_class and b_class and a_class != b_class:
+            return False
+        a_unit = _unit(a, states)
+        b_unit = _unit(b, states)
+        if a_unit and b_unit and a_unit != b_unit:
+            return False
+        return True
+
+    def _duplicate_entity_reason(candidate: dict, live_entities: list[dict], states: dict[str, dict]) -> str | None:
+        entity_id = candidate.get("entity_id") or ""
+        if not entity_id or _state_value(states, entity_id) not in DEAD_STATES:
+            return None
+
+        domain = _entity_domain(entity_id)
+        name = _entity_name(candidate, states)
+        numbered = NUMBERED_NAME_RE.match(name)
+        base_name = numbered.group("base") if numbered else None
+
+        for live in live_entities:
+            live_id = live.get("entity_id") or ""
+            if not live_id or live_id == entity_id:
+                continue
+            if _entity_domain(live_id) != domain:
+                continue
+            if _state_value(states, live_id) in DEAD_STATES:
+                continue
+            if not _same_measurement(candidate, live, states):
+                continue
+
+            live_name = _entity_name(live, states)
+            if live_name == name:
+                return "same-name live Matter entity exists"
+
+            if base_name:
+                live_base = ROLE_SUFFIX_RE.sub("", live_name)
+                if live_base == base_name:
+                    return "numbered stale Matter entity has live role entity"
+
+        return None
+
+    def _entity_debug_line(entity: dict, states: dict[str, dict]) -> str:
+        entity_id = entity.get("entity_id") or ""
+        state = states.get(entity_id) or {}
+        attrs = state.get("attributes") or {}
+        fields = {
+            "entity_id": entity_id,
+            "state": _state_value(states, entity_id),
+            "name": _entity_name(entity, states),
+            "original_name": entity.get("original_name") or "",
+            "unique_id": entity.get("unique_id") or "",
+            "disabled_by": entity.get("disabled_by") or "",
+            "hidden_by": entity.get("hidden_by") or "",
+            "domain": _entity_domain(entity_id),
+            "device_class": _device_class(entity, states),
+            "unit": _unit(entity, states),
+            "friendly_name": attrs.get("friendly_name") or "",
+        }
+        return " ".join(f"{key}={json.dumps(value, sort_keys=True)}" for key, value in fields.items())
+
+    def _stale_reason(device: dict, entities: list[dict], states: dict[str, dict], nodes: list[dict]) -> str | None:
+        if not _has_matter_identity(device):
+            return None
+
+        explicit_node_ids = _device_node_ids(device)
+        live_node_ids = {node.get("node_id") for node in nodes if isinstance(node.get("node_id"), int)}
+        if explicit_node_ids and explicit_node_ids.isdisjoint(live_node_ids):
+            return "matter node id is not commissioned"
+
+        if any(_device_matches_node(device, node) for node in nodes):
+            return None
+
+        # For serial-only or MAC-only HA Matter devices, require that HA has no
+        # currently usable entities before treating the unmatched device as stale.
+        if not entities:
+            return "matter identity has no matching commissioned node and no entities"
+
+        entity_states = [_state_value(states, entity.get("entity_id", "")) for entity in entities]
+        if all(state in DEAD_STATES for state in entity_states):
+            return "matter identity has no matching commissioned node and all entities are unavailable"
+        return None
+
+    async def main() -> int:
+        ap = argparse.ArgumentParser()
+        ap.add_argument("--matter-ws-url", default=os.getenv("MATTER_WS_URL", MATTER_WS_URL_DEFAULT))
+        ap.add_argument("--ha-ws-url", default=os.getenv("HA_WS_URL", HA_WS_URL_DEFAULT))
+        ap.add_argument("--ha-token", default=os.getenv("MATTER_HA_TOKEN", ""))
+        ap.add_argument("--dry-run", action="store_true")
+        ap.add_argument("--inspect", default="", help="Print Matter HA registry devices/entities whose names contain this text.")
+        args = ap.parse_args()
+
+        if not args.ha_token:
+            print("matter-ha-matter-cleanup: MATTER_HA_TOKEN not set; skipping")
+            return 0
+
+        async with websockets.connect(args.matter_ws_url, max_size=None) as matter_ws:
+            await matter_ws.recv()
+            nodes_resp = await _matter_call(matter_ws, "cleanup-list-nodes", "start_listening")
+            if "error_code" in nodes_resp:
+                print(f"matter start_listening failed: {nodes_resp}", file=sys.stderr)
+                return 2
+            nodes = nodes_resp.get("result") or []
+
+        async with websockets.connect(args.ha_ws_url, max_size=None) as ha_ws:
+            first = json.loads(await ha_ws.recv())
+            if first.get("type") != "auth_required":
+                print(f"unexpected HA websocket greeting: {first}", file=sys.stderr)
+                return 2
+            await ha_ws.send(json.dumps({"type": "auth", "access_token": args.ha_token}))
+            auth = json.loads(await ha_ws.recv())
+            if auth.get("type") != "auth_ok":
+                print("HA auth failed", file=sys.stderr)
+                return 2
+
+            devices_resp = await _ha_call(ha_ws, 1, "config/device_registry/list")
+            entities_resp = await _ha_call(ha_ws, 2, "config/entity_registry/list")
+            states_resp = await _ha_call(ha_ws, 3, "get_states")
+            if not devices_resp.get("success") or not entities_resp.get("success") or not states_resp.get("success"):
+                print("failed to read HA registries/states", file=sys.stderr)
+                return 2
+
+            devices = devices_resp.get("result") or []
+            entities = entities_resp.get("result") or []
+            states = _state_map(states_resp.get("result") or [])
+
+            entities_by_device: dict[str, list[dict]] = {}
+            for entity in entities:
+                device_id = entity.get("device_id")
+                if isinstance(device_id, str) and device_id:
+                    entities_by_device.setdefault(device_id, []).append(entity)
+
+            if args.inspect:
+                needle = args.inspect.lower()
+                for device in devices:
+                    if not _has_matter_identity(device):
+                        continue
+                    device_entities = entities_by_device.get(device.get("id"), [])
+                    names = [
+                        str(device.get("name_by_user") or ""),
+                        str(device.get("name") or ""),
+                        str(device.get("original_name") or ""),
+                    ] + [_entity_name(entity, states) for entity in device_entities]
+                    if not any(needle in name.lower() for name in names):
+                        continue
+                    print(
+                        "inspect device="
+                        f"{device.get('id')} name={json.dumps(device.get('name_by_user') or device.get('name') or "")} "
+                        f"original_name={json.dumps(device.get('original_name') or "")} "
+                        f"identifiers={json.dumps(_matter_identifier_values(device), sort_keys=True)}"
+                    )
+                    for entity in sorted(device_entities, key=lambda item: item.get("entity_id") or ""):
+                        print(f"  inspect entity {_entity_debug_line(entity, states)}")
+                return 0
+
+            stale = []
+            for device in devices:
+                reason = _stale_reason(device, entities_by_device.get(device.get("id"), []), states, nodes)
+                if reason:
+                    stale.append((device, reason))
+
+            if not stale:
+                print("matter-ha-matter-cleanup: no stale Matter HA devices found")
+
+            removed_entities = 0
+            removed_devices = 0
+            req_id = 100
+            for device, reason in stale:
+                device_id = device.get("id")
+                name = device.get("name_by_user") or device.get("name") or device_id
+                device_entities = entities_by_device.get(device_id, [])
+                print(f"{'would remove' if args.dry_run else 'remove'} device={device_id} name={name!r}: {reason}")
+
+                for entity in device_entities:
+                    entity_id = entity.get("entity_id")
+                    if not entity_id:
+                        continue
+                    print(f"  {'would remove' if args.dry_run else 'remove'} entity={entity_id}")
+                    if args.dry_run:
+                        removed_entities += 1
+                        continue
+                    req_id += 1
+                    resp = await _ha_call(ha_ws, req_id, "config/entity_registry/remove", entity_id=entity_id)
+                    if resp.get("success"):
+                        removed_entities += 1
+                    else:
+                        print(f"  failed entity={entity_id}: {resp.get('error')}", file=sys.stderr)
+
+                if args.dry_run:
+                    removed_devices += 1
+                    continue
+                req_id += 1
+                resp = await _ha_call(ha_ws, req_id, "config/device_registry/remove", device_id=device_id)
+                if resp.get("success"):
+                    removed_devices += 1
+                else:
+                    print(f"  failed device={device_id}: {resp.get('error')}", file=sys.stderr)
+
+            live_entities = [
+                entity
+                for entity in entities
+                if _state_value(states, entity.get("entity_id", "")) not in DEAD_STATES
+            ]
+            stale_device_ids = {device.get("id") for device, _ in stale}
+            matter_device_ids = {
+                device.get("id")
+                for device in devices
+                if _has_matter_identity(device) and device.get("id") not in stale_device_ids
+            }
+
+            duplicate_entities = []
+            for entity in entities:
+                device_id = entity.get("device_id")
+                if device_id not in matter_device_ids:
+                    continue
+                reason = _duplicate_entity_reason(entity, live_entities, states)
+                if reason:
+                    duplicate_entities.append((entity, reason))
+
+            for entity, reason in duplicate_entities:
+                entity_id = entity.get("entity_id")
+                if not entity_id:
+                    continue
+                print(f"{'would remove' if args.dry_run else 'remove'} duplicate entity={entity_id}: {reason}")
+                if args.dry_run:
+                    removed_entities += 1
+                    continue
+                req_id += 1
+                resp = await _ha_call(ha_ws, req_id, "config/entity_registry/remove", entity_id=entity_id)
+                if resp.get("success"):
+                    removed_entities += 1
+                else:
+                    print(f"failed duplicate entity={entity_id}: {resp.get('error')}", file=sys.stderr)
+
+            if not stale and not duplicate_entities:
+                print("matter-ha-matter-cleanup: no stale Matter HA devices or duplicate entities found")
+
+            print(f"matter-ha-matter-cleanup: devices={removed_devices} entities={removed_entities} dry_run={args.dry_run}")
+        return 0
+
+    if __name__ == "__main__":
+        raise SystemExit(asyncio.run(main()))
+  '';
+
   matterNodeLabelsTool = pkgs.writeShellApplication {
     name = "matter-node-labels";
     runtimeInputs = [ pythonEnv ];
@@ -429,26 +803,38 @@
       exec ${pythonEnv}/bin/python3 ${matterHaNamer} "$@"
     '';
   };
+
+  matterHaCleanupTool = pkgs.writeShellApplication {
+    name = "matter-ha-matter-cleanup";
+    runtimeInputs = [ pythonEnv ];
+    text = ''
+      exec ${pythonEnv}/bin/python3 ${matterHaCleanup} "$@"
+    '';
+  };
 in {
   environment.systemPackages = [
     matterNodeLabelsTool
     matterHaNamerTool
+    matterHaCleanupTool
   ];
 
   systemd.services.matter-apply-node-labels = {
     description = "Apply Matter NodeLabel overrides (Nix-defined)";
     after = [
-      "podman-matter-server.service"
+      matterServerUnit
       "network-online.target"
     ];
     wants = [
-      "podman-matter-server.service"
+      matterServerUnit
       "network-online.target"
     ];
     serviceConfig = {
       Type = "oneshot";
       EnvironmentFile = config.sops.secrets."matter-env".path;
-      ExecStartPre = "${pkgs.bash}/bin/bash -c 'for i in {1..60}; do (echo > /dev/tcp/127.0.0.1/5580) >/dev/null 2>&1 && exit 0; sleep 1; done; echo matter-server ws not ready >&2; exit 1'";
+      Environment = [
+        "MATTER_WS_URL=${matterWsUrl}"
+      ];
+      ExecStartPre = "${pkgs.bash}/bin/bash -c 'for i in {1..60}; do (echo > /dev/tcp/127.0.0.1/${matterWsPort}) >/dev/null 2>&1 && exit 0; sleep 1; done; echo matter-server ws not ready >&2; exit 1'";
       ExecStart = "${matterNodeLabelsTool}/bin/matter-node-labels";
     };
   };
@@ -469,18 +855,21 @@ in {
     description = "Apply Home Assistant device names from Matter labels";
     after = [
       "home-assistant.service"
-      "podman-matter-server.service"
+      matterServerUnit
       "network-online.target"
     ];
     wants = [
       "home-assistant.service"
-      "podman-matter-server.service"
+      matterServerUnit
       "network-online.target"
     ];
     serviceConfig = {
       Type = "oneshot";
       EnvironmentFile = config.sops.secrets."matter-env".path;
-      ExecStartPre = "${pkgs.bash}/bin/bash -c 'for i in {1..60}; do (echo > /dev/tcp/127.0.0.1/8123) >/dev/null 2>&1 && (echo > /dev/tcp/127.0.0.1/5580) >/dev/null 2>&1 && exit 0; sleep 1; done; echo HA or matter ws not ready >&2; exit 1'";
+      Environment = [
+        "MATTER_WS_URL=${matterWsUrl}"
+      ];
+      ExecStartPre = "${pkgs.bash}/bin/bash -c 'for i in {1..60}; do (echo > /dev/tcp/127.0.0.1/8123) >/dev/null 2>&1 && (echo > /dev/tcp/127.0.0.1/${matterWsPort}) >/dev/null 2>&1 && exit 0; sleep 1; done; echo HA or matter ws not ready >&2; exit 1'";
       ExecStart = "${matterHaNamerTool}/bin/matter-ha-namer";
     };
   };
@@ -493,6 +882,29 @@ in {
       OnBootSec = "4min";
       OnUnitInactiveSec = "1h";
       Unit = "matter-apply-ha-names.service";
+    };
+  };
+
+  systemd.services.matter-ha-matter-cleanup = {
+    description = "Remove stale Home Assistant Matter devices";
+    after = [
+      "home-assistant.service"
+      matterServerUnit
+      "network-online.target"
+    ];
+    wants = [
+      "home-assistant.service"
+      matterServerUnit
+      "network-online.target"
+    ];
+    serviceConfig = {
+      Type = "oneshot";
+      EnvironmentFile = config.sops.secrets."matter-env".path;
+      Environment = [
+        "MATTER_WS_URL=${matterWsUrl}"
+      ];
+      ExecStartPre = "${pkgs.bash}/bin/bash -c 'for i in {1..60}; do (echo > /dev/tcp/127.0.0.1/8123) >/dev/null 2>&1 && (echo > /dev/tcp/127.0.0.1/${matterWsPort}) >/dev/null 2>&1 && exit 0; sleep 1; done; echo HA or matter ws not ready >&2; exit 1'";
+      ExecStart = "${matterHaCleanupTool}/bin/matter-ha-matter-cleanup";
     };
   };
 }

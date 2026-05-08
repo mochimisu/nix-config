@@ -15,6 +15,7 @@ BLINDS_ENDPOINT = int(os.getenv("MATTER_BLINDS_ENDPOINT", "1"))
 SWITCH_CLUSTER_ID = 59
 WINDOW_COVERING_CLUSTER_ID = 258
 SWITCH_EVENT_INITIAL_PRESS = 1
+SWITCH_EVENT_MULTI_PRESS_ONGOING = 5
 SWITCH_EVENT_MULTI_PRESS_COMPLETE = 6
 ACTION_DEDUPE_WINDOW_SEC = float(os.getenv("MATTER_REMOTE_ACTION_DEDUPE_WINDOW_SEC", "0.8"))
 FALLBACK_EVENT_WINDOW_SEC = float(
@@ -45,6 +46,10 @@ def _binding_specs() -> list[Binding]:
     guest_bedroom_remote_mac = _env("MATTER_GUEST_BEDROOM_REMOTE_MAC")
     guest_bedroom_window_blinds_mac = _env("MATTER_GUEST_BEDROOM_WINDOW_BLINDS_MAC")
     guest_bedroom_door_blinds_mac = _env("MATTER_GUEST_BEDROOM_DOOR_BLINDS_MAC")
+    mbr_remote_mac = _env("MATTER_MBR_REMOTE_MAC")
+    mbr_remote_2_mac = _env("MATTER_MBR_REMOTE_2_MAC")
+    mbr_door_blinds_left_mac = _env("MATTER_MBR_DOOR_BLINDS_LEFT_MAC")
+    mbr_door_blinds_right_mac = _env("MATTER_MBR_DOOR_BLINDS_RIGHT_MAC")
 
     bindings: list[Binding] = []
     if office_remote_mac and office_blinds_mac:
@@ -77,6 +82,30 @@ def _binding_specs() -> list[Binding]:
                 blinds_macs=[
                     guest_bedroom_window_blinds_mac,
                     guest_bedroom_door_blinds_mac,
+                ],
+                blinds_node_ids=[],
+            )
+        )
+    if mbr_remote_mac and mbr_door_blinds_left_mac and mbr_door_blinds_right_mac:
+        bindings.append(
+            Binding(
+                name="MBR",
+                remote_mac=mbr_remote_mac,
+                blinds_macs=[
+                    mbr_door_blinds_left_mac,
+                    mbr_door_blinds_right_mac,
+                ],
+                blinds_node_ids=[],
+            )
+        )
+    if mbr_remote_2_mac and mbr_door_blinds_left_mac and mbr_door_blinds_right_mac:
+        bindings.append(
+            Binding(
+                name="MBR 2",
+                remote_mac=mbr_remote_2_mac,
+                blinds_macs=[
+                    mbr_door_blinds_left_mac,
+                    mbr_door_blinds_right_mac,
                 ],
                 blinds_node_ids=[],
             )
@@ -215,13 +244,14 @@ async def _run() -> int:
         )
         print(
             "listening for bindings: "
-            f"{binding_summary}, trigger=initial_press fallback=multi_press_complete",
+            f"{binding_summary}, trigger=initial_press fallback=multi_press_ongoing/multi_press_complete",
             flush=True,
         )
 
         binding_by_remote_node_id = {binding.remote_node_id: binding for binding in bindings}
         last_action_ts: dict[tuple[int, int], float] = {}
         last_initial_press_ts: dict[tuple[int, int], float] = {}
+        group_direction: dict[tuple[int, ...], str] = {}
 
         while True:
             message = json.loads(await ws.recv())
@@ -242,9 +272,19 @@ async def _run() -> int:
 
             if event_id == SWITCH_EVENT_INITIAL_PRESS:
                 last_initial_press_ts[(binding.remote_node_id, endpoint_id)] = time.monotonic()
+            elif event_id == SWITCH_EVENT_MULTI_PRESS_ONGOING:
+                press_count = (data.get("data") or {}).get("currentNumberOfPressesCounted")
+                if not isinstance(press_count, int) or press_count < 1:
+                    continue
+                initial_press_ts = last_initial_press_ts.get((binding.remote_node_id, endpoint_id))
+                if (
+                    initial_press_ts is not None
+                    and (time.monotonic() - initial_press_ts) < FALLBACK_EVENT_WINDOW_SEC
+                ):
+                    continue
             elif event_id == SWITCH_EVENT_MULTI_PRESS_COMPLETE:
                 press_count = (data.get("data") or {}).get("totalNumberOfPressesCounted")
-                if press_count != 1:
+                if not isinstance(press_count, int) or press_count < 1:
                     continue
                 initial_press_ts = last_initial_press_ts.get((binding.remote_node_id, endpoint_id))
                 if (
@@ -276,7 +316,9 @@ async def _run() -> int:
             last_action_ts[action_key] = now
 
             try:
-                if binding.current_direction == desired_direction:
+                group_key = tuple(sorted(binding.blinds_node_ids or []))
+                current_direction = group_direction.get(group_key, "idle")
+                if current_direction == desired_direction:
                     for blinds_node_id in binding.blinds_node_ids or []:
                         await _device_command(
                             ws,
@@ -286,14 +328,14 @@ async def _run() -> int:
                             command_name="StopMotion",
                             payload={},
                         )
-                    binding.current_direction = "idle"
+                    group_direction[group_key] = "idle"
                     print(
                         f"{binding.name} remote button {endpoint_id} event={event_id}: stop blinds",
                         flush=True,
                     )
                 else:
                     command_name = "UpOrOpen" if desired_direction == "up" else "DownOrClose"
-                    mode = "reverse" if binding.current_direction in ("up", "down") else "start"
+                    mode = "reverse" if current_direction in ("up", "down") else "start"
                     for blinds_node_id in binding.blinds_node_ids or []:
                         await _device_command(
                             ws,
@@ -303,7 +345,7 @@ async def _run() -> int:
                             command_name=command_name,
                             payload={},
                         )
-                    binding.current_direction = desired_direction
+                    group_direction[group_key] = desired_direction
                     print(
                         f"{binding.name} remote button {endpoint_id} event={event_id}: {mode} {desired_direction}",
                         flush=True,

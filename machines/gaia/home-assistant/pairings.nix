@@ -7,6 +7,12 @@
   # Declarative desired pairings. Keep setup codes in encrypted sops secret env file
   # using the environment variable named in `code_env`.
   guestBedroomBlindsRemoteMac = "a6:86:cb:d2:f3:37";
+  guestBedroomWindowBlindsMac = "88:13:bf:aa:5c:13";
+  guestBedroomDoorBlindsMac = "88:13:bf:aa:48:2b";
+  mbrDoorBlindsRemoteMac = "fa:f8:03:5a:fc:f5";
+  mbrDoorBlindsRemote2Mac = "d6:46:db:18:f0:d1";
+  mbrDoorBlindsLeftMac = "70:4b:ca:2e:69:3f";
+  mbrDoorBlindsRightMac = "70:4b:ca:2f:9b:83";
   matterDesiredPairings = [
     {
       name = "Office Blinds";
@@ -294,7 +300,7 @@
       code_env = "MATTER_CODE_GUEST_BEDROOM_WINDOW_BLINDS";
       network_only = false;
       match = {
-        mac_env = "MATTER_MAC_GUEST_BEDROOM_WINDOW_BLINDS";
+        mac = guestBedroomWindowBlindsMac;
       };
     }
 
@@ -304,7 +310,7 @@
       code_env = "MATTER_CODE_GUEST_BEDROOM_DOOR_BLINDS";
       network_only = false;
       match = {
-        mac_env = "MATTER_MAC_GUEST_BEDROOM_DOOR_BLINDS";
+        mac = guestBedroomDoorBlindsMac;
       };
     }
 
@@ -315,6 +321,46 @@
       network_only = false;
       match = {
         mac = guestBedroomBlindsRemoteMac;
+      };
+    }
+
+    {
+      name = "MBR Door Blinds Left";
+      room = "MBR";
+      code_env = "MATTER_CODE_MBR_DOOR_BLINDS_LEFT";
+      network_only = false;
+      match = {
+        mac = mbrDoorBlindsLeftMac;
+      };
+    }
+
+    {
+      name = "MBR Door Blinds Right";
+      room = "MBR";
+      code_env = "MATTER_CODE_MBR_DOOR_BLINDS_RIGHT";
+      network_only = false;
+      match = {
+        mac = mbrDoorBlindsRightMac;
+      };
+    }
+
+    {
+      name = "MBR Blinds Remote";
+      room = "MBR";
+      code_env = "MATTER_CODE_MBR_BLINDS_REMOTE";
+      network_only = false;
+      match = {
+        mac = mbrDoorBlindsRemoteMac;
+      };
+    }
+
+    {
+      name = "MBR Blinds Remote 2";
+      room = "MBR";
+      code_env = "MATTER_CODE_MBR_BLINDS_REMOTE_2";
+      network_only = false;
+      match = {
+        mac = mbrDoorBlindsRemote2Mac;
       };
     }
 
@@ -415,6 +461,16 @@
       network_only = false;
       match = {
         mac_env = "MATTER_MAC_AQARA_HUB_M3";
+      };
+    }
+
+    {
+      name = "Nursery Night Light";
+      room = "Nursery";
+      code_env = "MATTER_CODE_NURSERY_NIGHT_LIGHT";
+      network_only = false;
+      match = {
+        unique_id = "7D0DC80E23CEA6D9";
       };
     }
 
