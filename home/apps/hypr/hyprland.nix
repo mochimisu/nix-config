@@ -3,6 +3,7 @@
     settings = {
       "$mod" = "SUPER";
       "$terminal" = "kitty";
+      "$fileManager" = "thunar";
       # "$menu" = "rofi-toggle -show drun";
       # "$menuAll" = "rofi-toggle";
 
