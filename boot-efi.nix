@@ -1,6 +1,4 @@
-{ config, lib, pkgs, ... }:
-
-{
+_: {
   # GRUB to use os-prober
   boot.loader = {
     efi = {
@@ -9,7 +7,7 @@
     };
     grub = {
       efiSupport = true;
-      devices = [ "nodev" ];
+      devices = ["nodev"];
       enable = true;
       useOSProber = true;
       configurationLimit = 25;

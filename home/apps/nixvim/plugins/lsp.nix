@@ -1,8 +1,4 @@
-{
-  lib,
-  pkgs,
-  ...
-}: {
+{pkgs, ...}: {
   programs.nixvim = {
     ##############################################################################
     # 1 ─ Enable Nixvim’s built-in LSP layer

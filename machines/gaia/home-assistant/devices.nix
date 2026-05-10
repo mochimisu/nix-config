@@ -1,7 +1,11 @@
-{config, pkgs, lib, matterNodeLabels ? {}, ...}: let
+{
+  config,
+  pkgs,
+  matterNodeLabels ? {},
+  ...
+}: let
   # Prefer setting the Matter device's own NodeLabel (0/40/5) so names survive
   # HA state wipes and re-pairing. Entity_id-based HA customizations are fragile.
-
   # Disambiguation strategy for multiple devices:
   # - Prefer BasicInfo UniqueID (0/40/18) when present: `unique_id:<value>`
   # - Else SerialNumber (0/40/15): `serial:<value>`
@@ -9,7 +13,6 @@
   #
   # Source of truth is in pairings.nix via _module.args.matterNodeLabels.
   # You can discover candidate keys with `matter-node-labels --list`.
-
   matterNodeLabelsJson = builtins.toJSON matterNodeLabels;
   matterServerUnit = "podman-matter-server.service";
   matterWsPort = "5580";
@@ -788,7 +791,7 @@
 
   matterNodeLabelsTool = pkgs.writeShellApplication {
     name = "matter-node-labels";
-    runtimeInputs = [ pythonEnv ];
+    runtimeInputs = [pythonEnv];
     text = ''
       export MATTER_NODE_LABELS_JSON='${matterNodeLabelsJson}'
       exec ${pythonEnv}/bin/python3 ${matterLabeler} "$@"
@@ -797,7 +800,7 @@
 
   matterHaNamerTool = pkgs.writeShellApplication {
     name = "matter-ha-namer";
-    runtimeInputs = [ pythonEnv ];
+    runtimeInputs = [pythonEnv];
     text = ''
       export MATTER_NODE_LABELS_JSON='${matterNodeLabelsJson}'
       exec ${pythonEnv}/bin/python3 ${matterHaNamer} "$@"
@@ -806,7 +809,7 @@
 
   matterHaCleanupTool = pkgs.writeShellApplication {
     name = "matter-ha-matter-cleanup";
-    runtimeInputs = [ pythonEnv ];
+    runtimeInputs = [pythonEnv];
     text = ''
       exec ${pythonEnv}/bin/python3 ${matterHaCleanup} "$@"
     '';

@@ -96,6 +96,10 @@ in {
 
   programs = {
     git.enable = true;
+    nh = {
+      enable = true;
+      flake = "/home/brandon/stuff/nix-config";
+    };
     zsh.enable = true;
   };
 

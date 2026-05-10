@@ -1,11 +1,14 @@
 # Work around legacy CMake minimums in upstream packages until nixpkgs updates them.
-final: prev: let
+_: prev: let
   ensureCmake35 = pkg:
     pkg.overrideAttrs (old: {
-      postPatch = (old.postPatch or "") + "\n" + ''
-        perl -0pi -e 's/cmake_minimum_required\s*\(\s*VERSION\s+[0-9.]+\s*\)\s*\n?//i' CMakeLists.txt
-        perl -0pi -e 's/(project\s*\([^\n]+\))/cmake_minimum_required(VERSION 3.5)\n$1/i' CMakeLists.txt
-      '';
+      postPatch =
+        (old.postPatch or "")
+        + "\n"
+        + ''
+          perl -0pi -e 's/cmake_minimum_required\s*\(\s*VERSION\s+[0-9.]+\s*\)\s*\n?//i' CMakeLists.txt
+          perl -0pi -e 's/(project\s*\([^\n]+\))/cmake_minimum_required(VERSION 3.5)\n$1/i' CMakeLists.txt
+        '';
       cmakeFlags = (old.cmakeFlags or []) ++ ["-DCMAKE_POLICY_VERSION_MINIMUM=3.5"];
       nativeBuildInputs = (old.nativeBuildInputs or []) ++ [prev.perl];
     });

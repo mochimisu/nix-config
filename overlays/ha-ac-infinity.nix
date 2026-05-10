@@ -1,4 +1,4 @@
-self: super: {
+_: super: {
   home-assistant-custom-components =
     super.home-assistant-custom-components
     // {
@@ -14,7 +14,7 @@ self: super: {
           hash = "sha256-aF7LtxJ5ZzmdGS2NoS6hdZPzD+zb9Ee9jnrAiKHv7NI=";
         };
 
-        dependencies = [ ];
+        dependencies = [];
 
         meta = with super.lib; {
           description = "AC Infinity integration for Home Assistant";

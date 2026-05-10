@@ -1,4 +1,4 @@
-self: super: let
+_: super: let
   haPythonPackages = super.home-assistant.python.pkgs;
 in {
   home-assistant-custom-components =

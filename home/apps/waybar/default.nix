@@ -4,7 +4,7 @@
   config,
   ...
 }: let
-  waybarCava = pkgs.waybar.overrideAttrs (oldAttrs: {
+  waybarCava = pkgs.waybar.overrideAttrs (_: {
     # Currently broken
     # mesonFlags = (oldAttrs.mesonFlags or []) ++ [ "-Dcava=enabled" ];
     # buildInputs = (oldAttrs.buildInputs or []) ++ [pkgs.libcava];

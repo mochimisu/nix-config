@@ -57,8 +57,8 @@ in {
   programs.direnv.enable = true;
 
   home.shellAliases = {
-    "nix-rs" = "sudo nixos-rebuild switch --flake ${configsDir}";
-    "nix-rsf" = "sudo nixos-rebuild switch --flake ${configsDir} --fast";
+    "nix-rs" = "nh os switch ${configsDir}";
+    "nix-rsf" = "nh os switch ${configsDir} -- --fast";
     "nix-up" = "cd ${configsDir} && nix flake update && cd -";
     "nixpkgs" = "nix search nixpkgs";
     "nixdir" = "cd ${configsDir}";

@@ -4,7 +4,6 @@
   };
   imports = [
     ./hyprland.nix
-    ./hyprland-lua.nix
     ./hyprpaper.nix
     # ./hyprlock.nix
     # ./hypridle.nix

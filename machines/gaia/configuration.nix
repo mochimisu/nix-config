@@ -1,10 +1,6 @@
 {
-  config,
   lib,
   pkgs,
-  specialArgs,
-  variables,
-  inputs,
   ...
 }: let
   mountDocs = pkgs.writeShellScriptBin "mountdocs" ''
@@ -75,7 +71,6 @@
     ${pkgs.systemd}/bin/systemctl start "win11-$name-define.service"
     ${pkgs.libvirt}/bin/virsh -c "$uri" start "$name"
   '';
-
 in {
   imports = [
     ./blackvue-sync.nix

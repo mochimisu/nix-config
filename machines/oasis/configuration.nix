@@ -2,9 +2,6 @@
   config,
   lib,
   pkgs,
-  specialArgs,
-  variables,
-  inputs,
   ...
 }: {
   networking.hostName = "oasis";
@@ -135,7 +132,6 @@
   services = {
     asusd = {
       enable = true;
-      enableUserService = true;
     };
     pipewire = {
       audio.enable = true;
@@ -179,9 +175,6 @@
       Restart = "on-failure";
     };
   };
-
-
-
 
   # orientation sensor
   hardware.sensor.iio.enable = true;

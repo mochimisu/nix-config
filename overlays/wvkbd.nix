@@ -1,9 +1,11 @@
 # overlays/wvkbd-add-super.nix
-self: super: {
+_: super: {
   wvkbd = super.wvkbd.overrideAttrs (old: {
-    patches = (old.patches or []) ++ [
-      ./wvkbd-nodrag.patch
-    ];
+    patches =
+      (old.patches or [])
+      ++ [
+        ./wvkbd-nodrag.patch
+      ];
     postPatch =
       (old.postPatch or "")
       + ''

@@ -1,6 +1,4 @@
-{ config, lib, pkgs, specialArgs, variables, inputs, ... }:
-
-{
+{pkgs, ...}: {
   networking.hostName = "glasscastle";
   environment.systemPackages = with pkgs; [
     framework-tool
@@ -12,7 +10,7 @@
   ];
 
   systemd.services.fprintd = {
-    wantedBy = [ "multi-user.target" ];
+    wantedBy = ["multi-user.target"];
     serviceConfig.Type = "simple";
   };
 

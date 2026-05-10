@@ -1,5 +1,4 @@
-{ pkgs, inputs, ... }:
-{
+{pkgs, ...}: {
   system.primaryUser = "brandonw";
   imports = [
     ./aerospace.nix

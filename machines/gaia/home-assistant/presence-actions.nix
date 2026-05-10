@@ -1,8 +1,6 @@
 {
   config,
   pkgs,
-  lib,
-  matterNodeLabels ? {},
   ...
 }: let
   pythonEnv = pkgs.python3.withPackages (ps: [
@@ -37,7 +35,7 @@
         (nodeKeyForName "Office Presence - Far")
         (nodeKeyForName "Office Door")
       ];
-      pulse_source_keys = [ (nodeKeyForName "Office Door") ];
+      pulse_source_keys = [(nodeKeyForName "Office Door")];
       pulse_source_duration_sec = 15;
       pulse_source_active_when = false;
       target_key = nodeKeyForName "Office Light";
@@ -83,7 +81,7 @@
         (nodeKeyForName "Office Presence - Far")
         (nodeKeyForName "Office Door")
       ];
-      pulse_source_keys = [ (nodeKeyForName "Office Door") ];
+      pulse_source_keys = [(nodeKeyForName "Office Door")];
       pulse_source_duration_sec = 15;
       pulse_source_active_when = false;
       target_key = nodeKeyForName "Office Floor Lamp";
@@ -112,7 +110,7 @@
         (nodeKeyForName "MBR Shower Presence")
         (nodeKeyForName "MBR Bathroom Door")
       ];
-      pulse_source_keys = [ (nodeKeyForName "MBR Bathroom Door") ];
+      pulse_source_keys = [(nodeKeyForName "MBR Bathroom Door")];
       pulse_source_duration_sec = 15;
       pulse_source_active_when = false;
       target_key = nodeKeyForName "MBR Bathroom Main";
@@ -124,7 +122,12 @@
       on_payload = fadeOnPayload 254;
       payload = {};
       # Unless 10:00pm-7:30am.
-      on_active_windows = [{ start = "07:30"; end = "22:00"; }];
+      on_active_windows = [
+        {
+          start = "07:30";
+          end = "22:00";
+        }
+      ];
       presence_attribute_paths = [
         "1/1030/0"
         "2/1030/0"
@@ -151,7 +154,12 @@
       on_payload = fadeOnPayload 254;
       payload = {};
       # 7:00am-11:00am only.
-      on_active_windows = [{ start = "07:00"; end = "11:00"; }];
+      on_active_windows = [
+        {
+          start = "07:00";
+          end = "11:00";
+        }
+      ];
       target_onoff_attribute_path = "1/6/0";
     }
 
@@ -172,13 +180,18 @@
       on_payload = fadeOnPayload 64;
       payload = {};
       # 10:00pm-7:30am only.
-      on_active_windows = [{ start = "22:00"; end = "07:30"; }];
+      on_active_windows = [
+        {
+          start = "22:00";
+          end = "07:30";
+        }
+      ];
       target_onoff_attribute_path = "1/6/0";
     }
 
     {
       name = "mbr-bathroom-toilet-light-day";
-      source_keys = [ (nodeKeyForName "MBR Bathroom Toilet Presence") ];
+      source_keys = [(nodeKeyForName "MBR Bathroom Toilet Presence")];
       target_key = nodeKeyForName "MBR Bathroom Toilet Light";
       target_endpoint = 1;
       on_cluster_id = 8;
@@ -187,13 +200,18 @@
       off_command = "Off";
       on_payload = fadeOnPayload 254;
       payload = {};
-      on_active_windows = [{ start = "07:30"; end = "22:00"; }];
+      on_active_windows = [
+        {
+          start = "07:30";
+          end = "22:00";
+        }
+      ];
       target_onoff_attribute_path = "1/6/0";
     }
 
     {
       name = "mbr-bathroom-toilet-light-warm";
-      source_keys = [ (nodeKeyForName "MBR Bathroom Toilet Presence") ];
+      source_keys = [(nodeKeyForName "MBR Bathroom Toilet Presence")];
       target_key = nodeKeyForName "MBR Bathroom Toilet Light";
       target_endpoint = 1;
       on_cluster_id = 8;
@@ -202,13 +220,18 @@
       off_command = "Off";
       on_payload = fadeOnPayload 64;
       payload = {};
-      on_active_windows = [{ start = "22:00"; end = "07:30"; }];
+      on_active_windows = [
+        {
+          start = "22:00";
+          end = "07:30";
+        }
+      ];
       target_onoff_attribute_path = "1/6/0";
     }
 
     {
       name = "mbr-bathroom-toilet-fan";
-      source_keys = [ (nodeKeyForName "MBR Bathroom Toilet Presence") ];
+      source_keys = [(nodeKeyForName "MBR Bathroom Toilet Presence")];
       target_key = nodeKeyForName "MBR Bathroom Toilet Fan";
       target_endpoint = 1;
       cluster_id = 6;
@@ -222,7 +245,7 @@
 
     {
       name = "mbr-shower-presence-light";
-      source_keys = [ (nodeKeyForName "MBR Shower Presence") ];
+      source_keys = [(nodeKeyForName "MBR Shower Presence")];
       target_key = nodeKeyForName "MBR Shower";
       target_endpoint = 1;
       on_cluster_id = 8;
@@ -240,7 +263,7 @@
         (nodeKeyForName "MBR Presence 2")
         (nodeKeyForName "MBR Door")
       ];
-      pulse_source_keys = [ (nodeKeyForName "MBR Door") ];
+      pulse_source_keys = [(nodeKeyForName "MBR Door")];
       pulse_source_duration_sec = 15;
       pulse_source_active_when = false;
       target_key = nodeKeyForName "MBR Bed Light";
@@ -262,7 +285,7 @@
 
     {
       name = "pantry-presence-light";
-      source_keys = [ (nodeKeyForName "Pantry Presence") ];
+      source_keys = [(nodeKeyForName "Pantry Presence")];
       target_key = nodeKeyForName "Pantry Light";
       target_endpoint = 1;
       on_cluster_id = 8;
@@ -276,7 +299,7 @@
 
     {
       name = "upstairs-bathroom-presence-light";
-      source_keys = [ (nodeKeyForName "Upstairs Bathroom Presence") ];
+      source_keys = [(nodeKeyForName "Upstairs Bathroom Presence")];
       target_key = nodeKeyForName "Upstairs Bathroom Light";
       target_endpoint = 1;
       on_cluster_id = 8;
@@ -290,7 +313,7 @@
 
     {
       name = "network-closet-door-light";
-      source_keys = [ (nodeKeyForName "Network Closet Door") ];
+      source_keys = [(nodeKeyForName "Network Closet Door")];
       target_key = "unique_id_env:MATTER_UID_NETWORK_CLOSET_LIGHT";
       target_endpoint = 1;
       on_cluster_id = 8;
@@ -300,7 +323,7 @@
       on_payload = fadeOnPayload 254;
       payload = {};
       # IKEA MYGGBETT exposes BooleanState where true=closed, false=open.
-      presence_attribute_paths = [ "1/69/0" ];
+      presence_attribute_paths = ["1/69/0"];
       source_active_when = false;
       manual_override_enabled = false;
       target_onoff_attribute_path = "1/6/0";
@@ -367,9 +390,9 @@ in {
 
   systemd.services.matter-solar-api = {
     description = "Local solar geometry API for Matter tools";
-    wantedBy = [ "multi-user.target" ];
-    after = [ "network-online.target" ];
-    wants = [ "network-online.target" ];
+    wantedBy = ["multi-user.target"];
+    after = ["network-online.target"];
+    wants = ["network-online.target"];
     serviceConfig = {
       Type = "simple";
       Restart = "always";

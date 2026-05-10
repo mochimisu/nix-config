@@ -1,5 +1,8 @@
-{ config, lib, ... }:
 {
+  config,
+  lib,
+  ...
+}: {
   options.variables = lib.mkOption {
     type = lib.types.attrs;
     default = {
@@ -14,9 +17,6 @@
         sshForeground = "";
       };
       hyprpaper-config = "";
-      hyprlandLua = {
-        enable = false;
-      };
     };
   };
   config._module.args.variables = config.variables;

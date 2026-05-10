@@ -1,5 +1,4 @@
 {
-  inputs,
   config,
   pkgs,
   lib,
@@ -183,10 +182,10 @@
 
   hardware.sane = {
     enable = true;
-    extraBackends = [ pkgs.brscan4 ];
+    extraBackends = [pkgs.brscan4];
   };
 
-  users.users.brandon.extraGroups = lib.mkAfter [ "scanner" ];
+  users.users.brandon.extraGroups = lib.mkAfter ["scanner"];
 
   systemd.tmpfiles.rules = [
     "L+ /opt/brother/scanner/brscan4 - - - - ${pkgs.brscan4}/opt/brother/scanner/brscan4"

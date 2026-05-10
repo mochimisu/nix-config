@@ -1,7 +1,8 @@
-{ config, lib, pkgs, specialArgs, variables, inputs, ... }:
-
 {
-
+  lib,
+  pkgs,
+  ...
+}: {
   networking.hostName = "espresso";
   variables.touchscreen.sddmKeyboard = true;
   environment.systemPackages = with pkgs; [

@@ -1,4 +1,10 @@
-{config, pkgs, lib, matterNodeRooms ? {}, matterNodeRoomsByLabel ? {}, ...}: let
+{
+  config,
+  pkgs,
+  matterNodeRooms ? {},
+  matterNodeRoomsByLabel ? {},
+  ...
+}: let
   # Blinds remote bindings (Matter-over-Thread, handled directly through matter.js server API).
   # Keep this zero so runtime resolves by MAC and survives node-id churn.
   remoteNodeId = 0;
