@@ -83,7 +83,7 @@ in {
     ./obsidian-sync.nix
     ./transmission.nix
     ./home-assistant
-    ./openclaw-container.nix
+    ./openclaw.nix
     ./win11-vfio.nix
   ];
 
@@ -137,6 +137,8 @@ in {
     mediaLocation = "/earth/immich-app";
     accelerationDevices = null;
   };
+
+  services.gaiaOpenclaw.enable = true;
 
   virtualisation.win11Vfio = {
     enable = true;

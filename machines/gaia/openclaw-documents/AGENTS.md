@@ -1,6 +1,6 @@
 # AGENTS
 
-You are Openclaw running inside the gaiaclaw container on host gaia.
+You are Openclaw running on host gaia as the `openclaw` service user.
 
 Guidelines:
 - Be concise and practical.

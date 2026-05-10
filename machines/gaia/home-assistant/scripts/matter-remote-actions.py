@@ -216,27 +216,29 @@ async def _run() -> int:
         if REMOTE_NODE_ID > 0 and bindings:
             bindings[0].remote_node_id = REMOTE_NODE_ID
 
-        missing = [
-            binding
-            for binding in bindings
-            if binding.remote_node_id is None
-            or binding.blinds_node_ids is None
-            or len(binding.blinds_node_ids) != len(binding.blinds_macs)
-        ]
-        if missing:
-            for binding in missing:
-                if binding.remote_node_id is None:
+        active_bindings: list[Binding] = []
+        for binding in bindings:
+            binding_missing = False
+            if binding.remote_node_id is None:
+                binding_missing = True
+                print(
+                    f"{binding.name}: disabled; remote node not found by mac {binding.remote_mac}",
+                    file=sys.stderr,
+                )
+            for blinds_mac in binding.blinds_macs:
+                if blinds_mac.lower() not in node_id_by_mac:
+                    binding_missing = True
                     print(
-                        f"{binding.name}: remote node not found by mac {binding.remote_mac}",
+                        f"{binding.name}: disabled; blinds node not found by mac {blinds_mac}",
                         file=sys.stderr,
                     )
-                for blinds_mac in binding.blinds_macs:
-                    if blinds_mac.lower() not in node_id_by_mac:
-                        print(
-                            f"{binding.name}: blinds node not found by mac {blinds_mac}",
-                            file=sys.stderr,
-                        )
+            if not binding_missing:
+                active_bindings.append(binding)
+
+        if not active_bindings:
+            print("no complete remote action bindings available", file=sys.stderr)
             return 1
+        bindings = active_bindings
 
         binding_summary = ", ".join(
             f"{binding.name}: remote={binding.remote_node_id} blinds={binding.blinds_node_ids}"

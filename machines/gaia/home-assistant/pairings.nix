@@ -9,7 +9,7 @@
   guestBedroomBlindsRemoteMac = "a6:86:cb:d2:f3:37";
   guestBedroomWindowBlindsMac = "88:13:bf:aa:5c:13";
   guestBedroomDoorBlindsMac = "88:13:bf:aa:48:2b";
-  mbrDoorBlindsRemoteMac = "fa:f8:03:5a:fc:f5";
+  mbrDoorBlindsRemoteMac = "7e:3a:3e:9d:0a:81";
   mbrDoorBlindsRemote2Mac = "d6:46:db:18:f0:d1";
   mbrDoorBlindsLeftMac = "70:4b:ca:2e:69:3f";
   mbrDoorBlindsRightMac = "70:4b:ca:2f:9b:83";
@@ -30,7 +30,7 @@
       code_env = "MATTER_CODE_OFFICE_BLINDS_REMOTE";
       network_only = false;
       match = {
-        mac = "da:21:d9:f7:cc:5d";
+        mac = "c2:eb:0a:46:60:31";
       };
     }
 
