@@ -11,7 +11,7 @@
   ];
 
   networking.hostName = "blackmoon";
-  boot.kernelPackages = lib.mkForce pkgs.linuxPackages_xanmod_latest;
+  boot.kernelPackages = lib.mkForce pkgs.linuxPackages_xanmod;
   environment.systemPackages =
     (with pkgs; [
       bolt

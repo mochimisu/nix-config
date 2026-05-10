@@ -14,6 +14,9 @@
         sshForeground = "";
       };
       hyprpaper-config = "";
+      hyprlandLua = {
+        enable = false;
+      };
     };
   };
   config._module.args.variables = config.variables;
