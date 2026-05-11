@@ -16,7 +16,9 @@
   openclawEnv = "${openclawHome}/openclaw.env";
   openclawLog = "${openclawState}/openclaw-gateway.log";
   openclawWorkspace = "/home/${brandonUser}/stuff/openclaw";
+  openclawManagedWorkspace = "${openclawState}/workspace";
   codexHome = "${openclawRuntimeHome}/.codex";
+  codexOpenclawHome = "${openclawState}/agents/main/agent/codex-home";
   openclawGateway = pkgs.openclaw-gateway;
 
   codexBase = inputs.codex-cli-nix.packages.${pkgs.stdenv.hostPlatform.system}.default;
@@ -33,6 +35,11 @@
       fi
     '';
   };
+  codexAppServer = pkgs.writeShellScriptBin "codex-openclaw-app-server" ''
+    export HOME='${openclawRuntimeHome}'
+    export CODEX_HOME='${codexHome}'
+    exec '${codexCli}/bin/codex' "$@"
+  '';
 
   openclawGatewayStart = pkgs.writeShellScript "openclaw-gateway-start" ''
     set -euo pipefail
@@ -49,10 +56,17 @@
     ${pkgs.coreutils}/bin/chmod 0770 '${openclawHome}'
     ${pkgs.coreutils}/bin/chmod 0770 '${openclawState}'
     ${pkgs.coreutils}/bin/install -d -m 0700 -o '${openclawRuntimeUser}' -g users '${codexHome}'
+    ${pkgs.coreutils}/bin/install -d -m 0770 -o '${openclawRuntimeUser}' -g users '${codexOpenclawHome}'
     ${pkgs.findutils}/bin/find '${openclawState}' -xdev -type d -exec ${pkgs.coreutils}/bin/chgrp users {} +
     ${pkgs.findutils}/bin/find '${openclawState}' -xdev -type f -exec ${pkgs.coreutils}/bin/chgrp users {} +
     ${pkgs.findutils}/bin/find '${openclawState}' -xdev -type d -exec ${pkgs.coreutils}/bin/chmod 0770 {} +
     ${pkgs.findutils}/bin/find '${openclawState}' -xdev -type f -exec ${pkgs.coreutils}/bin/chmod 0660 {} +
+    if [ -f '${codexHome}/auth.json' ]; then
+      ${pkgs.coreutils}/bin/ln -sfnT '${codexHome}/auth.json' '${codexOpenclawHome}/auth.json'
+    fi
+    if [ -f '${codexHome}/config.toml' ]; then
+      ${pkgs.coreutils}/bin/ln -sfnT '${codexHome}/config.toml' '${codexOpenclawHome}/config.toml'
+    fi
 
     if [ ! -f '${openclawEnv}' ]; then
       umask 027
@@ -142,7 +156,7 @@ in {
           launchd.enable = false;
           systemd.enable = false;
           stateDir = openclawState;
-          workspaceDir = openclawWorkspace;
+          workspaceDir = openclawManagedWorkspace;
           configPath = openclawConfig;
           logPath = openclawLog;
           config = {
@@ -171,14 +185,21 @@ in {
 
             agents = {
               defaults = {
+                agentRuntime = {
+                  id = "codex";
+                };
                 model = {
                   primary = "codex/gpt-5.5";
                 };
+                workspace = openclawWorkspace;
               };
               list = [
                 {
                   id = "main";
                   default = true;
+                  agentRuntime = {
+                    id = "codex";
+                  };
                   model = "codex/gpt-5.5";
                 }
               ];
@@ -193,7 +214,7 @@ in {
                 };
                 appServer = {
                   transport = "stdio";
-                  command = "${codexCli}/bin/codex";
+                  command = "${codexAppServer}/bin/codex-openclaw-app-server";
                   args = [
                     "app-server"
                     "--listen"
@@ -212,6 +233,16 @@ in {
               dm.enabled = true;
               dmPolicy = "allowlist";
               allowFrom = ["88427327289040896"];
+              ackReaction = "👀";
+              ackReactionScope = "group-all";
+              streaming = {
+                mode = "partial";
+                chunkMode = "length";
+                preview = {
+                  toolProgress = true;
+                  commandText = "status";
+                };
+              };
               guilds."319950594687107093" = {
                 users = ["88427327289040896"];
                 requireMention = false;

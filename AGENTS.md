@@ -22,7 +22,6 @@
 - Gaia runs Openclaw directly on the host from `machines/gaia/openclaw.nix` as the `openclaw` service user with state in `/var/lib/openclaw`; it no longer uses the old `gaiaclaw` NixOS container.
 - Gaia Matter declarative pairing reconcile lives at `machines/gaia/home-assistant/pairings.nix` and reads setup codes from `/etc/secret/matter-reconcile.env`.
 - Gaia Matter custom OTA drop directory is `/earth/home-assistant/matterjs-server/ota-provider` (files are imported by matter-server and removed after successful import).
-- Gaia stale Home Assistant Matter registry cleanup lives in `machines/gaia/home-assistant/devices.nix` as the `matter-ha-matter-cleanup` tool and `matter-ha-matter-cleanup.service`; it cross-references HA Matter registry identities against the live Matter node list before deleting.
 - For new Matter devices on Gaia, define the device in `machines/gaia/home-assistant/pairings.nix` and keep sensitive/unique identifiers (setup codes, MACs, unique IDs, serials) in sops (`machines/gaia/secrets/matter-env.env`) referenced via `*_env` keys.
 - Gaia's IKEA `MYGGBETT door/window sensor` exposes door state as Matter `BooleanState` at `1/69/0`, with `true=closed` and `false=open`; invert it in `matter-presence-actions` style rules when using door-open semantics.
 - Gaia BlackVue sync lives in `machines/gaia/blackvue-sync.nix` and pulls from dashcam `192.168.1.208` into `/earth/blackvue` on a 15-minute systemd timer with daily grouping, `90d` retention, `90%` max disk use, and `1h` failed-download retry.
