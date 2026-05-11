@@ -74,10 +74,12 @@
 in {
   imports = [
     ./blackvue-sync.nix
+    ./blackvue-viewer.nix
     ./sops.nix
     ./obsidian-sync.nix
     ./transmission.nix
     ./home-assistant
+    ./homepage.nix
     ./openclaw.nix
     ./win11-vfio.nix
   ];

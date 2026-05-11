@@ -1,0 +1,182 @@
+diff --git a/extensions/codex/src/app-server/event-projector.test.ts b/extensions/codex/src/app-server/event-projector.test.ts
+index 1462c5f..22925bb 100644
+--- a/extensions/codex/src/app-server/event-projector.test.ts
++++ b/extensions/codex/src/app-server/event-projector.test.ts
+@@ -201,7 +201,8 @@ describe("CodexAppServerEventProjector", () => {
+     const result = projector.buildResult(buildEmptyToolTelemetry());
+ 
+     expect(onAssistantMessageStart).toHaveBeenCalledTimes(1);
+-    expect(onPartialReply).not.toHaveBeenCalled();
++    expect(onPartialReply).toHaveBeenNthCalledWith(1, { text: "hel" });
++    expect(onPartialReply).toHaveBeenNthCalledWith(2, { text: "hello" });
+     expect(result.assistantTexts).toEqual(["hello"]);
+     expect(result.messagesSnapshot.map((message) => message.role)).toEqual(["user", "assistant"]);
+     expect(result.lastAssistant?.content).toEqual([{ type: "text", text: "hello" }]);
+@@ -421,12 +422,34 @@ describe("CodexAppServerEventProjector", () => {
+     const { onAssistantMessageStart, onPartialReply, projector } =
+       await createProjectorWithAssistantHooks();
+ 
++    await projector.handleNotification(
++      forCurrentTurn("item/started", {
++        item: {
++          type: "agentMessage",
++          id: "msg-commentary",
++          text: "",
++          phase: "commentary",
++          memoryCitation: null,
++        },
++      }),
++    );
+     await projector.handleNotification(
+       agentMessageDelta(
+         "checking thread context; then post a tight progress reply here.",
+         "msg-commentary",
+       ),
+     );
++    await projector.handleNotification(
++      forCurrentTurn("item/started", {
++        item: {
++          type: "agentMessage",
++          id: "msg-final",
++          text: "",
++          phase: "final_answer",
++          memoryCitation: null,
++        },
++      }),
++    );
+     await projector.handleNotification(
+       agentMessageDelta(
+         "release fixes first. please drop affected PRs, failing checks, and blockers here.",
+@@ -439,11 +462,13 @@ describe("CodexAppServerEventProjector", () => {
+           type: "agentMessage",
+           id: "msg-commentary",
+           text: "checking thread context; then post a tight progress reply here.",
++          phase: "commentary",
+         },
+         {
+           type: "agentMessage",
+           id: "msg-final",
+           text: "release fixes first. please drop affected PRs, failing checks, and blockers here.",
++          phase: "final_answer",
+         },
+       ]),
+     );
+@@ -451,7 +476,10 @@ describe("CodexAppServerEventProjector", () => {
+     const result = projector.buildResult(buildEmptyToolTelemetry());
+ 
+     expect(onAssistantMessageStart).toHaveBeenCalledTimes(1);
+-    expect(onPartialReply).not.toHaveBeenCalled();
++    expect(onPartialReply).toHaveBeenCalledTimes(1);
++    expect(onPartialReply).toHaveBeenCalledWith({
++      text: "release fixes first. please drop affected PRs, failing checks, and blockers here.",
++    });
+     expect(result.assistantTexts).toEqual([
+       "release fixes first. please drop affected PRs, failing checks, and blockers here.",
+     ]);
+diff --git a/extensions/codex/src/app-server/event-projector.ts b/extensions/codex/src/app-server/event-projector.ts
+index e21efe5..c002e9f 100644
+--- a/extensions/codex/src/app-server/event-projector.ts
++++ b/extensions/codex/src/app-server/event-projector.ts
+@@ -86,6 +86,7 @@ export class CodexAppServerEventProjector {
+   private readonly assistantItemOrder: string[] = [];
+   private readonly reasoningTextByItem = new Map<string, string>();
+   private readonly planTextByItem = new Map<string, string>();
++  private readonly assistantPhaseByItem = new Map<string, "commentary" | "final_answer">();
+   private readonly activeItemIds = new Set<string>();
+   private readonly completedItemIds = new Set<string>();
+   private readonly activeCompactionItemIds = new Set<string>();
+@@ -320,9 +321,9 @@ export class CodexAppServerEventProjector {
+     this.rememberAssistantItem(itemId);
+     const text = `${this.assistantTextByItem.get(itemId) ?? ""}${delta}`;
+     this.assistantTextByItem.set(itemId, text);
+-    // Codex app-server can emit multiple agentMessage items per turn, including
+-    // intermediate coordination/progress prose. Keep those deltas internal until
+-    // turn completion chooses the last assistant item as the user-visible reply.
++    if (this.shouldStreamAssistantItem(itemId)) {
++      await this.params.onPartialReply?.({ text });
++    }
+   }
+ 
+   private async handleReasoningDelta(params: JsonObject): Promise<void> {
+@@ -373,6 +374,9 @@ export class CodexAppServerEventProjector {
+     if (itemId) {
+       this.activeItemIds.add(itemId);
+     }
++    if (item?.type === "agentMessage") {
++      this.rememberAssistantPhase(item);
++    }
+     if (item?.type === "contextCompaction" && itemId) {
+       this.activeCompactionItemIds.add(itemId);
+       await runAgentHarnessBeforeCompactionHook({
+@@ -416,9 +420,12 @@ export class CodexAppServerEventProjector {
+       this.activeItemIds.delete(itemId);
+       this.completedItemIds.add(itemId);
+     }
+-    if (item?.type === "agentMessage" && typeof item.text === "string" && item.text) {
+-      this.rememberAssistantItem(item.id);
+-      this.assistantTextByItem.set(item.id, item.text);
++    if (item?.type === "agentMessage") {
++      this.rememberAssistantPhase(item);
++      if (typeof item.text === "string" && item.text) {
++        this.rememberAssistantItem(item.id);
++        this.assistantTextByItem.set(item.id, item.text);
++      }
+     }
+     if (item?.type === "plan" && typeof item.text === "string" && item.text) {
+       this.planTextByItem.set(item.id, item.text);
+@@ -549,9 +556,12 @@ export class CodexAppServerEventProjector {
+       this.promptErrorSource = "prompt";
+     }
+     for (const item of turn.items ?? []) {
+-      if (item.type === "agentMessage" && typeof item.text === "string" && item.text) {
+-        this.rememberAssistantItem(item.id);
+-        this.assistantTextByItem.set(item.id, item.text);
++      if (item.type === "agentMessage") {
++        this.rememberAssistantPhase(item);
++        if (typeof item.text === "string" && item.text) {
++          this.rememberAssistantItem(item.id);
++          this.assistantTextByItem.set(item.id, item.text);
++        }
+       }
+       if (item.type === "plan" && typeof item.text === "string" && item.text) {
+         this.planTextByItem.set(item.id, item.text);
+@@ -866,6 +876,21 @@ export class CodexAppServerEventProjector {
+     this.assistantItemOrder.push(itemId);
+   }
+ 
++  private rememberAssistantPhase(item: CodexThreadItem): void {
++    if (item.type !== "agentMessage" || !item.phase) {
++      return;
++    }
++    this.assistantPhaseByItem.set(item.id, item.phase);
++  }
++
++  private shouldStreamAssistantItem(itemId: string): boolean {
++    // Codex can emit explicit commentary agent messages before the final answer.
++    // Do not surface those as partial Discord drafts; when the phase is missing,
++    // keep legacy compatibility and stream the active item as the best available
++    // approximation of the final visible reply.
++    return this.assistantPhaseByItem.get(itemId) !== "commentary";
++  }
++
+   private async readMirroredSessionMessages(): Promise<AgentMessage[]> {
+     return (await readCodexMirroredSessionHistoryMessages(this.params.sessionFile)) ?? [];
+   }
+diff --git a/extensions/discord/src/monitor/message-handler.draft-preview.ts b/extensions/discord/src/monitor/message-handler.draft-preview.ts
+index 6244f31..2eb1568 100644
+--- a/extensions/discord/src/monitor/message-handler.draft-preview.ts
++++ b/extensions/discord/src/monitor/message-handler.draft-preview.ts
+@@ -55,8 +55,11 @@ export function createDiscordDraftPreviewController(params: {
+         channelId: params.deliverChannelId,
+         maxChars: draftMaxChars,
+         replyToMessageId: () => params.replyReference.peek(),
+-        minInitialChars: discordStreamMode === "progress" ? 0 : 30,
+-        throttleMs: 1200,
++        // Gaia wants Discord replies to feel live. The upstream defaults debounce
++        // the first preview until 30 chars and then throttle edits at 1.2s, which
++        // is usually longer than short Codex app-server turns take to finish.
++        minInitialChars: 0,
++        throttleMs: 250,
+         log: params.log,
+         warn: params.log,
+       })

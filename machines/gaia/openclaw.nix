@@ -86,6 +86,15 @@ in {
   config = lib.mkIf cfg.enable {
     nixpkgs.overlays = [
       inputs.nix-openclaw.overlays.default
+      (final: prev: {
+        openclaw-gateway = prev.openclaw-gateway.overrideAttrs (old: {
+          patches =
+            (old.patches or [])
+            ++ [
+              ./openclaw-patches/codex-app-server-partial-replies.patch
+            ];
+        });
+      })
     ];
 
     networking.firewall.allowedTCPPorts = [18789];
@@ -204,6 +213,8 @@ in {
                 }
               ];
             };
+
+            messages.groupChat.visibleReplies = "automatic";
 
             plugins.entries.codex = {
               enabled = true;

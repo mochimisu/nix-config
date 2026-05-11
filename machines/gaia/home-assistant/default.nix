@@ -194,6 +194,11 @@ in {
         OTBR_FIREWALL = "0";
         INFRA_IF_NAME = "enp5s0";
         NAT64 = "0";
+        # Keep OTBR's native web UI loopback-only and off port 80 so Gaia's
+        # nginx homepage can own HTTP normally. homepage.nix proxies it back
+        # out for LAN/tailnet users on :8088.
+        OT_WEB_LISTEN_ADDR = "127.0.0.1";
+        OT_WEB_LISTEN_PORT = "8080";
       };
       cmd = [
         "--radio-url"
