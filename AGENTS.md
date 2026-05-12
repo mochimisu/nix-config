@@ -19,6 +19,7 @@
 - Store secrets (tokens, passwords, API keys) in `.AGENTS.LOCAL.md` only and keep it out of git.
 
 ### Host notes
+- Wikiskill system services in `common.nix` should run the Node entrypoints directly, not `npm run`, so systemd signals the process with the shutdown handler; the daily daemon is expected to stop promptly on SIGTERM.
 - Gaia runs Openclaw directly on the host from `machines/gaia/openclaw.nix` as the `openclaw` service user with state in `/var/lib/openclaw`; it no longer uses the old `gaiaclaw` NixOS container.
 - Gaia Matter declarative pairing reconcile lives at `machines/gaia/home-assistant/pairings.nix` and reads setup codes from `/etc/secret/matter-reconcile.env`.
 - Gaia Matter custom OTA drop directory is `/earth/home-assistant/matterjs-server/ota-provider` (files are imported by matter-server and removed after successful import).

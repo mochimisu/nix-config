@@ -38,7 +38,29 @@
       inherit pttStateFile;
     })}/bin/qs-ptt-watch";
 
-  startupCommand = "${pkgs.quickshell}/bin/qs -n -d -c sidebar";
+  namedSidebarScreens = builtins.filter (screen: builtins.match "[0-9]+" screen == null) sidebarScreens;
+  requiredScreensJson = builtins.toJSON namedSidebarScreens;
+  hyprctlBin = "${config.wayland.windowManager.hyprland.package}/bin/hyprctl";
+  startupScript = pkgs.writeShellScript "quickshell-sidebar-start" ''
+    set -eu
+
+    required='${requiredScreensJson}'
+    i=0
+    while [ "$i" -lt 100 ]; do
+      monitors="$(${hyprctlBin} -j monitors 2>/dev/null || echo '[]')"
+      if printf '%s\n' "$monitors" | ${pkgs.jq}/bin/jq -e --argjson required "$required" '
+        ($required | length) == 0 or
+        ([.[].name] as $names | all($required[]; . as $requiredName | $names | index($requiredName)))
+      ' >/dev/null; then
+        break
+      fi
+      i=$((i + 1))
+      sleep 0.1
+    done
+
+    exec ${pkgs.quickshell}/bin/qs -n -d -c sidebar
+  '';
+  startupCommand = "${startupScript}";
 in {
   home = lib.mkIf isLinuxGui {
     packages = with pkgs; [
@@ -64,7 +86,7 @@ in {
   };
 
   wayland.windowManager.hyprland = lib.mkIf isLinuxGui {
-    settings."exec-once" = [
+    settings."exec-once" = lib.mkAfter [
       startupCommand
     ];
   };

@@ -524,6 +524,7 @@ ShellRoot {
 
                             Column {
                                 anchors.centerIn: parent
+                                width: parent.width
                                 spacing: -1
 
                                 Item {
@@ -550,6 +551,7 @@ ShellRoot {
                                 }
 
                                 Text {
+                                    width: parent.width
                                     text: String(root.volumePercent) + "%"
                                     color: root.fgColor
                                     font.family: root.baseFont
