@@ -52,7 +52,7 @@
       systemctl start otbr-prefer-zbt2-router.service
 
       echo "matter-thread-zbt2-recover: restarting local Matter listeners, not Matter.js server"
-      systemctl try-restart matter-presence-actions.service matter-remote-actions.service matter-keepalive.service || true
+      systemctl try-restart matter-keepalive.service || true
       systemctl start matter-apply-node-labels.service matter-apply-ha-names.service || true
       systemctl start matter-thread-watchdog.timer
 
@@ -617,8 +617,6 @@ in {
 
         restart_matter_clients() {
           systemctl try-restart \
-            matter-presence-actions.service \
-            matter-remote-actions.service \
             matter-keepalive.service || true
         }
 

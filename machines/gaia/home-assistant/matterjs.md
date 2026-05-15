@@ -22,7 +22,7 @@ Matter.js depends on the ZBT-2 Thread border router being ready. The normal Matt
 If Thread devices look unavailable while Wi-Fi Matter devices work, restart in this order:
 
 ```sh
-sudo systemctl stop home-assistant.service matter-presence-actions.service matter-remote-actions.service matter-keepalive.service podman-matter-server.service
+sudo systemctl stop home-assistant.service matter-keepalive.service podman-matter-server.service
 sudo systemctl restart podman-otbr.service
 sudo systemctl start otbr-ensure-dataset.service otbr-prefer-zbt2-router.service
 sudo podman exec otbr ot-ctl state
@@ -30,7 +30,7 @@ sudo systemctl start podman-matter-server.service matterjs-set-thread-dataset.se
 sleep 90
 matter-health
 timeout 15 matter-watch
-sudo systemctl start home-assistant.service matter-presence-actions.service matter-remote-actions.service matter-keepalive.service
+sudo systemctl start home-assistant.service matter-keepalive.service
 ```
 
 `ot-ctl state` should be `router` or `leader`, not `child`.
