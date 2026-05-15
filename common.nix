@@ -164,7 +164,7 @@ in {
         User = "brandon";
         Group = "users";
         WorkingDirectory = wikiskillDir;
-        ExecStart = "${pkgs.nodejs}/bin/npm run wiki:dev";
+        ExecStart = "${pkgs.nodejs}/bin/node ${wikiskillDir}/wiki/build.mjs --dev";
         Restart = "always";
         RestartSec = 5;
         Environment = [
@@ -190,9 +190,11 @@ in {
         User = "brandon";
         Group = "users";
         WorkingDirectory = wikiskillDir;
-        ExecStart = "${pkgs.nodejs}/bin/npm run wiki:daily-daemon";
+        ExecStart = "${pkgs.nodejs}/bin/node ${wikiskillDir}/scripts/wiki-daily-daemon.mjs";
         Restart = "always";
         RestartSec = 5;
+        SuccessExitStatus = [130 143];
+        TimeoutStopSec = "30s";
         Environment = [
           "HOME=/home/brandon"
         ];
