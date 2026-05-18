@@ -533,6 +533,7 @@
           .accent.home { background: var(--orange); }
           .accent.media { background: var(--purple); }
           .accent.agent { background: var(--cyan); }
+          .accent.automation { background: var(--green); }
           .accent.sync { background: var(--green); }
           .accent.transfer { background: var(--yellow-deep); }
           .accent.video { background: var(--cyan); }
@@ -648,6 +649,9 @@
                 <div class="cards">
                   <a class="service-card" href="http://${hostName}:8123/">
                     <span class="stock">Port 8123</span><span class="art"><span class="plate yellow"><svg viewBox="0 0 24 24"><path d="M4 11 12 4l8 7"/><path d="M6 10v9h12v-9"/><path d="M10 19v-5h4v5"/></svg></span></span><span class="accent home"></span><span class="service-name">Home Assistant</span>
+                  </a>
+                  <a class="service-card" href="http://${hostName}:3010/">
+                    <span class="stock">Port 3010</span><span class="art"><span class="plate"><svg viewBox="0 0 24 24"><path d="M5 12h4"/><path d="M15 12h4"/><path d="M12 5v4"/><path d="M12 15v4"/><circle cx="12" cy="12" r="3"/><path d="M7.5 7.5 9.8 9.8"/><path d="m14.2 14.2 2.3 2.3"/><path d="m16.5 7.5-2.3 2.3"/><path d="m9.8 14.2-2.3 2.3"/></svg></span></span><span class="accent automation"></span><span class="service-name">Matter Layer</span>
                   </a>
                   <a class="service-card" href="https://${hostName}:18789/">
                     <span class="stock">Port 18789</span><span class="art"><span class="plate"><svg viewBox="0 0 24 24"><rect x="5" y="7" width="14" height="10"/><path d="M9 7V4h6v3"/><path d="M9 12h.1M15 12h.1"/><path d="M10 16h4"/></svg></span></span><span class="accent agent"></span><span class="service-name">OpenClaw</span>

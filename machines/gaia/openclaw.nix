@@ -88,11 +88,21 @@ in {
       inputs.nix-openclaw.overlays.default
       (final: prev: {
         openclaw-gateway = prev.openclaw-gateway.overrideAttrs (old: {
+          pnpmDeps = old.pnpmDeps.overrideAttrs (_: {
+            outputHash = "sha256-bZX4HFggxpEjirXTRXj6XMC87C6wO1WTP2n4Bx3nBz4=";
+          });
           patches =
             (old.patches or [])
             ++ [
               ./openclaw-patches/codex-app-server-partial-replies.patch
             ];
+        });
+        openclaw = prev.openclaw.overrideAttrs (old: {
+          env =
+            (old.env or {})
+            // {
+              OPENCLAW_GATEWAY_BIN = "${final.openclaw-gateway}/bin/openclaw";
+            };
         });
       })
     ];

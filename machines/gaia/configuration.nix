@@ -1,4 +1,5 @@
 {
+  inputs,
   lib,
   pkgs,
   ...
@@ -79,6 +80,8 @@ in {
     ./obsidian-sync.nix
     ./transmission.nix
     ./home-assistant
+    inputs.matter-layer.nixosModules.default
+    ./matter-layer
     ./homepage.nix
     ./openclaw.nix
     ./win11-vfio.nix

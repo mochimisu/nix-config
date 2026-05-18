@@ -28,10 +28,12 @@
     ln -s ${pythonEnv}/bin/python3 "$out/bin/python"
   '';
   wikiskillDir = "/home/brandon/stuff/wikiskill";
+  isGaia = config.networking.hostName == "gaia";
   enableWikiskillServices = builtins.elem config.networking.hostName [
     "gaia"
     "blackmoon"
   ];
+  gaiaNixCachePublicKey = lib.strings.trim (builtins.readFile ./machines/gaia/nix-cache-pub-key.pem);
 in {
   # Nix
   nix = {
@@ -40,6 +42,13 @@ in {
     settings = {
       cores = 4;
       max-jobs = 4;
+      extra-substituters = [
+        "http://gaia:5000"
+      ];
+      extra-trusted-public-keys = [
+        gaiaNixCachePublicKey
+      ];
+      trusted-users = lib.optional isGaia "brandon";
     };
     gc = {
       automatic = true;
@@ -48,6 +57,14 @@ in {
     };
     optimise.automatic = true;
   };
+
+  services.nix-serve = lib.mkIf isGaia {
+    enable = true;
+    port = 5000;
+    openFirewall = true;
+    secretKeyFile = "/home/brandon/.local/state/nix-cache/gaia-cache-priv-key.pem";
+  };
+
   nixpkgs.overlays = [
     (import ./overlays/toluapp.nix)
     (import ./overlays/ha-ac-infinity.nix)
