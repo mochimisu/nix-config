@@ -5,7 +5,7 @@ Gaia runs `matterjs-server` as the primary Matter backend. The normal service na
 ## Current Shape
 
 - Primary controller: `ghcr.io/matter-js/matterjs-server:stable`.
-- WebSocket/dashboard: `ws://127.0.0.1:5580/ws` and `http://127.0.0.1:5580/`.
+- WebSocket/dashboard: local `ws://127.0.0.1:5580/ws` and `http://127.0.0.1:5580/`; LAN dashboard access is available at `http://gaia:5580/`.
 - Matter.js storage: `/earth/home-assistant/matterjs-server`.
 - Custom OTA drop directory: `/earth/home-assistant/matterjs-server/ota-provider`.
 - PAA root certificate directory: `/earth/home-assistant/matter-server/paa-root-certs`.

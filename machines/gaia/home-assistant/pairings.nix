@@ -13,6 +13,7 @@
   mbrDoorBlindsRemote2Mac = "d6:46:db:18:f0:d1";
   mbrDoorBlindsLeftMac = "70:4b:ca:2e:69:3f";
   mbrDoorBlindsRightMac = "70:4b:ca:2f:9b:83";
+  mbrWindowBlindsMac = "70:4b:ca:2f:1b:ef";
   matterDesiredPairings = [
     {
       name = "Office Blinds";
@@ -341,6 +342,16 @@
       network_only = false;
       match = {
         mac = mbrDoorBlindsRightMac;
+      };
+    }
+
+    {
+      name = "MBR Window Blinds";
+      room = "MBR";
+      code_env = "MATTER_CODE_MBR_WINDOW_BLINDS";
+      network_only = false;
+      match = {
+        mac = mbrWindowBlindsMac;
       };
     }
 

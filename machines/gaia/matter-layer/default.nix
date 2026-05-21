@@ -1,4 +1,14 @@
-{config, ...}: {
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}: let
+  devLiveLock = "/run/lock/matter-layer-dev-live.lock";
+  matterLayerStart = pkgs.writeShellScript "matter-layer-with-dev-live-lock" ''
+    exec ${pkgs.util-linux}/bin/flock ${devLiveLock} ${config.services.matter-layer.package}/bin/matter-layer
+  '';
+in {
   services.matter-layer = {
     enable = true;
     port = 3010;
@@ -11,11 +21,16 @@
   systemd.services.matter-layer = {
     after = [
       "podman-matter-server.service"
-      "network-online.target"
     ];
     wants = [
       "podman-matter-server.service"
-      "network-online.target"
     ];
+    serviceConfig = {
+      ExecStart = lib.mkForce matterLayerStart;
+    };
   };
+
+  systemd.tmpfiles.rules = [
+    "f ${devLiveLock} 0666 root root -"
+  ];
 }

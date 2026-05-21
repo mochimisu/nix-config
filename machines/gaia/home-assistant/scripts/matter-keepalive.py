@@ -27,6 +27,9 @@ KEEPALIVE_STALE_WARN_SEC = float(
 KEEPALIVE_STALE_CRIT_SEC = float(
     os.getenv("MATTER_KEEPALIVE_STALE_CRIT_SEC", str(max(300, KEEPALIVE_INTERVAL_SEC * 10)))
 )
+KEEPALIVE_NODE_BACKOFF_BASE_SEC = float(os.getenv("MATTER_KEEPALIVE_NODE_BACKOFF_BASE_SEC", "60"))
+KEEPALIVE_NODE_BACKOFF_MAX_SEC = float(os.getenv("MATTER_KEEPALIVE_NODE_BACKOFF_MAX_SEC", "900"))
+KEEPALIVE_MAX_ATTRIBUTES_PER_PASS = max(1, int(os.getenv("MATTER_KEEPALIVE_MAX_ATTRIBUTES_PER_PASS", "1")))
 KEEPALIVE_SKIP_SLEEPY = os.getenv("MATTER_KEEPALIVE_SKIP_SLEEPY", "1").lower() not in {"0", "false", "no"}
 KEEPALIVE_FORCE_NODE_IDS = {
     int(value)
@@ -196,6 +199,24 @@ def _keepalive_attribute_paths(node_id: int, attrs: dict) -> list[str]:
     return present or ["0/40/5"]
 
 
+def _rotate_attribute_paths(paths: list[str], previous_entry: dict) -> tuple[list[str], int]:
+    if not paths:
+        return ["0/40/5"], 0
+    previous_index = int(_entry_number(previous_entry, "next_attribute_index", 0))
+    start = previous_index % len(paths)
+    rotated = paths[start:] + paths[:start]
+    selected = rotated[:KEEPALIVE_MAX_ATTRIBUTES_PER_PASS]
+    next_index = (start + len(selected)) % len(paths)
+    return selected, next_index
+
+
+def _failure_backoff_sec(consecutive_failures: int) -> float:
+    if consecutive_failures <= 0:
+        return 0.0
+    backoff = KEEPALIVE_NODE_BACKOFF_BASE_SEC * (2 ** max(0, consecutive_failures - 1))
+    return min(KEEPALIVE_NODE_BACKOFF_MAX_SEC, backoff)
+
+
 async def _read_keepalive_attribute(ws, node_id: int, attribute_path: str) -> dict:
     return await asyncio.wait_for(
         _call(
@@ -247,15 +268,39 @@ async def _keepalive_once(ws_url: str) -> None:
             previous_score = int(_entry_number(previous_entry, "degraded_score", 0))
             previous_failures = int(_entry_number(previous_entry, "consecutive_failures", 0))
             previous_slow = int(_entry_number(previous_entry, "consecutive_slow", 0))
+            previous_next_probe = previous_entry.get("next_probe_epoch")
 
             entry = {
                 "label": _node_label(attrs),
                 "vendor": str(attrs.get("0/40/1") or ""),
                 "product": str(attrs.get("0/40/3") or ""),
                 "last_seen_epoch": now_epoch,
+                "reported_available": available,
             }
-            attribute_paths = _keepalive_attribute_paths(node_id, attrs)
+            all_attribute_paths = _keepalive_attribute_paths(node_id, attrs)
+            attribute_paths, next_attribute_index = _rotate_attribute_paths(all_attribute_paths, previous_entry)
             entry["attribute_paths"] = attribute_paths
+            entry["candidate_attribute_paths"] = all_attribute_paths
+            entry["next_attribute_index"] = next_attribute_index
+
+            if isinstance(previous_last_ack, (int, float)):
+                entry["last_ack_epoch"] = float(previous_last_ack)
+
+            if isinstance(previous_next_probe, (int, float)) and now_epoch < float(previous_next_probe):
+                entry["ok"] = bool(previous_entry.get("ok", False))
+                entry["skipped"] = True
+                entry["skip_reason"] = f"backoff until {int(round(float(previous_next_probe) - now_epoch))}s"
+                entry["consecutive_failures"] = previous_failures
+                entry["consecutive_slow"] = previous_slow
+                entry["degraded_score"] = previous_score
+                entry["next_probe_epoch"] = float(previous_next_probe)
+                state, reason = _health_state(entry, now_epoch)
+                entry["health_state"] = state
+                if reason:
+                    entry["health_reason"] = reason
+                metrics[node_key] = entry
+                continue
+
             started = time.monotonic()
             responses = []
             for attribute_path in attribute_paths:
@@ -270,16 +315,15 @@ async def _keepalive_once(ws_url: str) -> None:
             response = next((item for item in responses if "error_code" not in item), responses[-1])
             latency_ms = (time.monotonic() - started) * 1000.0
             entry["latency_ms"] = latency_ms
-            entry["reported_available"] = available
             if "error_code" in response:
                 details = response.get("details") or "unknown error"
+                consecutive_failures = previous_failures + 1
                 entry["ok"] = False
                 entry["error"] = details
-                entry["consecutive_failures"] = previous_failures + 1
+                entry["consecutive_failures"] = consecutive_failures
                 entry["consecutive_slow"] = 0
                 entry["degraded_score"] = previous_score + KEEPALIVE_FAILURE_PENALTY
-                if isinstance(previous_last_ack, (int, float)):
-                    entry["last_ack_epoch"] = float(previous_last_ack)
+                entry["next_probe_epoch"] = now_epoch + _failure_backoff_sec(consecutive_failures)
                 metrics[node_key] = entry
                 print(f"keepalive node_id={node_id} failed: {details}", file=sys.stderr, flush=True)
             else:
@@ -288,6 +332,7 @@ async def _keepalive_once(ws_url: str) -> None:
                 entry["last_ack_epoch"] = now_epoch
                 entry["consecutive_failures"] = 0
                 entry["consecutive_slow"] = (previous_slow + 1) if slow else 0
+                entry.pop("next_probe_epoch", None)
                 if slow:
                     entry["degraded_score"] = previous_score + KEEPALIVE_SLOW_PENALTY
                 else:

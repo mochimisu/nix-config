@@ -155,9 +155,13 @@ in {
   networking.firewall.allowedUDPPorts = [
     5540
   ];
+  networking.firewall.allowedTCPPorts = [
+    config.gaia.homeAssistant.matterjs.port
+  ];
 
   # Matter support for Home Assistant Core (no Supervisor add-ons on NixOS).
-  # Home Assistant connects to the primary Matter backend at `ws://127.0.0.1:5580/ws`.
+  # Home Assistant connects locally, while the dashboard/API is also reachable
+  # from trusted LAN clients for operator debugging.
   virtualisation.podman.enable = true;
   virtualisation.oci-containers = {
     backend = "podman";
@@ -167,7 +171,7 @@ in {
       environment = {
         STORAGE_PATH = "/data";
         PORT = toString config.gaia.homeAssistant.matterjs.port;
-        LISTEN_ADDRESS = "127.0.0.1";
+        LISTEN_ADDRESS = "0.0.0.0";
         LOG_LEVEL = "debug";
         PRIMARY_INTERFACE = "enp5s0";
         ENABLE_TEST_NET_DCL = "true";
