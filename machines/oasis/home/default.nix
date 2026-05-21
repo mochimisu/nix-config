@@ -1,7 +1,4 @@
-{
-  config,
-  ...
-}: {
+{config, ...}: {
   variables.keyboardLayout = "dvorak";
   variables.hyprpanel = {
     cpuTempSensor = "/sys/devices/pci0000:00/0000:00:08.1/0000:c4:00.0/hwmon/hwmon9/temp1_input";
@@ -43,7 +40,6 @@
     "exec-once" = [
       "mangohud steam -silent"
       "iio-hyprland"
-      "protonvpn-app"
     ];
   };
 
@@ -52,7 +48,6 @@
     ../../../home/apps/touchscreen.nix
     ./fastfetch.nix
   ];
-
 
   # custom full remapped keyboard
   wayland.windowManager.hyprland.settings.input = {
