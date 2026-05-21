@@ -4,6 +4,7 @@ import {
   ms605Presence,
   myggbett,
   nanoleafLight,
+  smartwings,
   smartwingsGroup,
 } from "matter-layer/presets";
 
@@ -16,6 +17,13 @@ export default defineRoomDevices("mbr", ({ room }) => {
   room.doorBlinds = smartwingsGroup([
     "mbr.doorBlindsLeft",
     "mbr.doorBlindsRight",
+  ]);
+  room.windowBlinds = smartwings("mbr.windowBlinds", {
+    openPosition: "50%",
+  });
+  room.blinds = smartwingsGroup([
+    ...room.doorBlinds.covers,
+    room.windowBlinds,
   ]);
   room.door = myggbett("mbr.door");
   room.occupancy = ms605Presence("mbr.presence2");

@@ -17,6 +17,7 @@
   "mbr.blindsRemote2": { "label": "MBR Blinds Remote 2", "mac": "d6:46:db:18:f0:d1" },
   "mbr.doorBlindsLeft": { "label": "MBR Door Blinds Left" },
   "mbr.doorBlindsRight": { "label": "MBR Door Blinds Right" },
+  "mbr.windowBlinds": { "label": "MBR Window Blinds", "mac": "70:4b:ca:2f:1b:ef" },
   "mbr.door": { "label": "MBR Door" },
   "mbr.presence2": { "label": "MBR Presence 2" },
   "networkCloset.light": { "label": "Network Closet Light" },
