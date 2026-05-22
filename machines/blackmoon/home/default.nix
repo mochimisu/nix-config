@@ -8,6 +8,7 @@
     url = "https://w.wallhaven.cc/full/l8/wallhaven-l8mlyy.jpg";
     sha256 = "sha256:1571r0sz1qfz9xdqqkbpzfx8wx22azrhmsmdj14km427qcyiiap6";
   };
+  lua = lib.generators.mkLuaInline;
 in {
   variables.keyboardLayout = "dvorak";
   variables.hyprpanel = {
@@ -35,94 +36,90 @@ in {
   ];
 
   wayland.windowManager.hyprland.settings = {
-    monitors = {
-      monitor = [
-        "DP-1,2560x1440@120,3440x-560,1,transform,1"
-        "DP-3,3440x1440@175,0x0,1,bitdepth,10"
-        "HDMI-A-1,480x1920@60,4880x1400,1,transform,1"
-      ];
-      workspace = [
-        "1, monitor:DP-3, default:true"
-        "2, monitor:DP-1, default:true"
-        "3, monitor:DP-3, default:true"
-        "10, monitor:HDMI-A-1, default:true"
-      ];
-    };
-
-    windowrule = [
-      "workspace 2 silent, match:class ^(steam)$"
-      "workspace 2 silent, match:class ^(discord)$"
-      # Endfield's launcher sometimes restores stale XWayland coordinates off-screen.
-      "match:class ^(steam_app_0)$, match:title ^(GRYPHLINK)$, center 1"
-      "render_unfocused 1, match:class ^(Monster Hunter Wilds)$"
-      "monitor DP-3 tile, match:class ^(ffxiv_dx11.exe)$"
+    monitor = [
+      {output = "DP-1"; mode = "2560x1440@120"; position = "3440x-560"; scale = 1; transform = 1;}
+      {output = "DP-3"; mode = "3440x1440@175"; position = "0x0"; scale = 1; bitdepth = 10;}
+      {output = "HDMI-A-1"; mode = "480x1920@60"; position = "4880x1400"; scale = 1; transform = 1;}
     ];
 
-    input = {
+    workspace_rule = [
+      {workspace = "1"; monitor = "DP-3"; default = true;}
+      {workspace = "2"; monitor = "DP-1"; default = true;}
+      {workspace = "3"; monitor = "DP-3"; default = true;}
+      {workspace = "10"; monitor = "HDMI-A-1"; default = true;}
+    ];
+
+    window_rule = [
+      {name = "steam-workspace"; match.class = "^(steam)$"; workspace = "2 silent";}
+      {name = "discord-workspace"; match.class = "^(discord)$"; workspace = "2 silent";}
+      # Endfield's launcher sometimes restores stale XWayland coordinates off-screen.
+      {name = "endfield-launcher-center"; match = {class = "^(steam_app_0)$"; title = "^(GRYPHLINK)$";}; center = true;}
+      {name = "monster-hunter-render-unfocused"; match.class = "^(Monster Hunter Wilds)$"; render_unfocused = true;}
+      {name = "ffxiv-monitor"; match.class = "^(ffxiv_dx11.exe)$"; monitor = "DP-3 tile";}
+    ];
+
+    config.input = {
       kb_layout = "us,us";
       kb_variant = "dvorak,";
     };
 
-    "exec-once" = [
-      # "discordcanary"
-      # "vesktop"
-      "discord"
-      # set DP-3 as primary
-      "wlr-randr --output DP-3 --primary"
-      # set Xwayland primary so Proton/Wine sees DP-3 as primary
-      "DISPLAY=:1 xrandr --output DP-3 --primary"
-      # todo moon profile
-      "openrgb --profile /home/brandon/.config/OpenRGB/moon.orp"
-      "mangohud steam -silent"
-      "~/.config/hypr/endfield-launcher-fix.sh"
+    on = [
+      {
+        _args = [
+          "hyprland.start"
+          (lua ''
+            function()
+              hl.exec_cmd("discord")
+              hl.exec_cmd("wlr-randr --output DP-3 --primary")
+              hl.exec_cmd("DISPLAY=:1 xrandr --output DP-3 --primary")
+              hl.exec_cmd("openrgb --profile /home/brandon/.config/OpenRGB/moon.orp")
+              hl.exec_cmd("mangohud steam -silent")
+              hl.exec_cmd("~/.config/hypr/endfield-launcher-fix.sh")
+            end
+          '')
+        ];
+      }
     ];
 
-    # nvidia stuff, move to shared
-    nvidia = {
-      env = [
-        # NVIDIA VA-API decode path.
-        "LIBVA_DRIVER_NAME,nvidia"
-        "XDG_SESSION_TYPE,wayland"
-        # Force GBM NVIDIA backend for Wayland.
-        "GBM_BACKEND,nvidia-drm"
-        "__GLX_VENDOR_LIBRARY_NAME,nvidia"
-        "NVD_BACKEND,direct"
-        "NIXOS_OZONE_WL=1"
-        # Enable HDR WSI path for Vulkan clients.
-        "ENABLE_HDR_WSI=1"
-        # Enable HDR metadata path for DXVK titles.
-        "DXVK_HDR=1"
-        # Enable HDR for vkd3d-proton (D3D12) titles.
-        "VKD3D_CONFIG=hdr"
-      ];
-    };
+    env = [
+      # NVIDIA VA-API decode path.
+      {_args = ["LIBVA_DRIVER_NAME" "nvidia"];}
+      {_args = ["XDG_SESSION_TYPE" "wayland"];}
+      # Force GBM NVIDIA backend for Wayland.
+      {_args = ["GBM_BACKEND" "nvidia-drm"];}
+      {_args = ["__GLX_VENDOR_LIBRARY_NAME" "nvidia"];}
+      {_args = ["NVD_BACKEND" "direct"];}
+      {_args = ["NIXOS_OZONE_WL" "1"];}
+      # Enable HDR WSI path for Vulkan clients.
+      {_args = ["ENABLE_HDR_WSI" "1"];}
+      # Enable HDR metadata path for DXVK titles.
+      {_args = ["DXVK_HDR" "1"];}
+      # Enable HDR for vkd3d-proton (D3D12) titles.
+      {_args = ["VKD3D_CONFIG" "hdr"];}
+    ];
 
-    opengl = {
-      nvidia_anti_flicker = 0;
-    };
+    config.opengl.nvidia_anti_flicker = 0;
 
-    render = {
+    config.render = {
       # Enable color-management pipeline required for HDR output.
       cm_enabled = false;
       # Auto-enable HDR when the app advertises HDR output.
       cm_auto_hdr = 0;
     };
 
-    misc = {
+    config.misc = {
       # VRR can introduce microstutter on NVIDIA; disable to test.
-      vrr = "0";
+      vrr = 0;
     };
-    cursor = {
+    config.cursor = {
       default_monitor = "DP-3";
     };
     bind = [
-      "$mod, F2, exec, ~/.config/hypr/gamemode2.sh"
-      "$mod, F3, exec, ~/.config/hypr/toggle-ptt.sh"
-      "$mod, F6, exec, ~/.config/hypr/toggle-hdr.sh"
-      ", mouse:275, exec, ~/.config/hypr/ptt-mouse.sh press"
-    ];
-    bindr = [
-      ", mouse:275, exec, ~/.config/hypr/ptt-mouse.sh release"
+      {_args = [(lua "mod .. \" + F2\"") (lua "hl.dsp.exec_cmd(\"~/.config/hypr/gamemode2.sh\")")];}
+      {_args = [(lua "mod .. \" + F3\"") (lua "hl.dsp.exec_cmd(\"~/.config/hypr/toggle-ptt.sh\")")];}
+      {_args = [(lua "mod .. \" + F6\"") (lua "hl.dsp.exec_cmd(\"~/.config/hypr/toggle-hdr.sh\")")];}
+      {_args = ["mouse:275" (lua "hl.dsp.exec_cmd(\"~/.config/hypr/ptt-mouse.sh press\")")];}
+      {_args = ["mouse:275" (lua "hl.dsp.exec_cmd(\"~/.config/hypr/ptt-mouse.sh release\")") {release = true;}];}
     ];
   };
   home.file.".config/hypr/gamemode2.sh" = {

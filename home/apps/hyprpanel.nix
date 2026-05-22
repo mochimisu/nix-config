@@ -74,8 +74,17 @@
       ];
       wayland.windowManager.hyprland = {
         settings = {
-          "exec-once" = [
-            "hyprpanel"
+          on = [
+            {
+              _args = [
+                "hyprland.start"
+                (lib.generators.mkLuaInline ''
+                  function()
+                    hl.exec_cmd("hyprpanel")
+                  end
+                '')
+              ];
+            }
           ];
         };
       };

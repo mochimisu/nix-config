@@ -58,16 +58,12 @@ in {
       wayland.windowManager.hyprland.plugins = [
         inputs.hyprgrass.packages.${pkgs.stdenv.hostPlatform.system}.default
       ];
-
-      wayland.windowManager.hyprland.extraConfig = ''
-        plugin = ${inputs.hyprgrass.packages.${pkgs.stdenv.hostPlatform.system}.default}/lib/libhyprgrass.so
-      '';
     })
     (lib.mkIf enableHyprgrassBinds {
-      wayland.windowManager.hyprland.settings.plugin.touch_gestures.hyprgrass-bind = hyprgrassBinds;
+      wayland.windowManager.hyprland.settings.config.plugin.touch_gestures.hyprgrass-bind = hyprgrassBinds;
     })
     (lib.mkIf enableHyprgrassBindm {
-      wayland.windowManager.hyprland.settings.plugin.touch_gestures.hyprgrass-bindm = hyprgrassBindm;
+      wayland.windowManager.hyprland.settings.config.plugin.touch_gestures.hyprgrass-bindm = hyprgrassBindm;
     })
   ]);
 }

@@ -87,9 +87,18 @@ in {
   };
 
   wayland.windowManager.hyprland = lib.mkIf isLinuxGui {
-    settings."exec-once" = [
-      startupCommand
-      "hyprland-monitor-attached ${onAttachScript}"
+    settings.on = [
+      {
+        _args = [
+          "hyprland.start"
+          (lib.generators.mkLuaInline ''
+            function()
+              hl.exec_cmd("${startupCommand}")
+              hl.exec_cmd("hyprland-monitor-attached ${onAttachScript}")
+            end
+          '')
+        ];
+      }
     ];
   };
 }

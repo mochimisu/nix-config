@@ -77,7 +77,6 @@ in {
     ./blackvue-sync.nix
     ./blackvue-viewer.nix
     ./sops.nix
-    ./obsidian-sync.nix
     ./transmission.nix
     ./home-assistant
     inputs.matter-layer.nixosModules.default

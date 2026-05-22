@@ -2,31 +2,33 @@
   lib,
   variables,
   ...
-}: {
+}: let
+  lua = lib.generators.mkLuaInline;
+in {
   imports = [../../../vars.nix];
   wayland.windowManager.hyprland.settings = lib.mkIf (variables.keyboardLayout == "dvorak") {
     bind = [
-      "$mod, apostrophe, exec, $terminal"
-      "$mod, C, killactive,"
-      "$mod SHIFT, M, exit,"
-      "$mod, G, exec, $fileManager"
-      "$mod, V, togglefloating,"
-      "$mod, U, pseudo, # dwindle"
-      "$mod, P, layoutmsg, togglesplit"
+      {_args = [(lua "mod .. \" + apostrophe\"") (lua "hl.dsp.exec_cmd(terminal)")];}
+      {_args = [(lua "mod .. \" + C\"") (lua "hl.dsp.window.close()")];}
+      {_args = [(lua "mod .. \" + SHIFT + M\"") (lua "hl.dsp.exit()")];}
+      {_args = [(lua "mod .. \" + G\"") (lua "hl.dsp.exec_cmd(fileManager)")];}
+      {_args = [(lua "mod .. \" + V\"") (lua "hl.dsp.window.float({ action = \"toggle\" })")];}
+      {_args = [(lua "mod .. \" + U\"") (lua "hl.dsp.window.pseudo()")];}
+      {_args = [(lua "mod .. \" + P\"") (lua "hl.dsp.layout(\"togglesplit\")")];}
 
       # Move focus with mod + arrow keys
-      "$mod, a, movefocus, l"
-      "$mod, e, movefocus, r"
-      "$mod, comma, movefocus, u"
-      "$mod, o, movefocus, d"
-      "$mod SHIFT, a, swapwindow, l"
-      "$mod SHIFT, e, swapwindow, r"
-      "$mod SHIFT, comma, swapwindow, u"
-      "$mod SHIFT, o, swapwindow, d"
-      "$mod CONTROL, a, movewindow, l"
-      "$mod CONTROL, e, movewindow, r"
-      "$mod CONTROL, comma, movewindow, u"
-      "$mod CONTROL, o, movewindow, d"
+      {_args = [(lua "mod .. \" + a\"") (lua "hl.dsp.focus({ direction = \"left\" })")];}
+      {_args = [(lua "mod .. \" + e\"") (lua "hl.dsp.focus({ direction = \"right\" })")];}
+      {_args = [(lua "mod .. \" + comma\"") (lua "hl.dsp.focus({ direction = \"up\" })")];}
+      {_args = [(lua "mod .. \" + o\"") (lua "hl.dsp.focus({ direction = \"down\" })")];}
+      {_args = [(lua "mod .. \" + SHIFT + a\"") (lua "hl.dsp.window.swap({ direction = \"left\" })")];}
+      {_args = [(lua "mod .. \" + SHIFT + e\"") (lua "hl.dsp.window.swap({ direction = \"right\" })")];}
+      {_args = [(lua "mod .. \" + SHIFT + comma\"") (lua "hl.dsp.window.swap({ direction = \"up\" })")];}
+      {_args = [(lua "mod .. \" + SHIFT + o\"") (lua "hl.dsp.window.swap({ direction = \"down\" })")];}
+      {_args = [(lua "mod .. \" + CONTROL + a\"") (lua "hl.dsp.window.move({ direction = \"left\" })")];}
+      {_args = [(lua "mod .. \" + CONTROL + e\"") (lua "hl.dsp.window.move({ direction = \"right\" })")];}
+      {_args = [(lua "mod .. \" + CONTROL + comma\"") (lua "hl.dsp.window.move({ direction = \"up\" })")];}
+      {_args = [(lua "mod .. \" + CONTROL + o\"") (lua "hl.dsp.window.move({ direction = \"down\" })")];}
     ];
   };
 }

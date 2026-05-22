@@ -35,6 +35,10 @@
   ];
   gaiaNixCachePublicKey = lib.strings.trim (builtins.readFile ./machines/gaia/nix-cache-pub-key.pem);
 in {
+  imports = [
+    ./obsidian-sync.nix
+  ];
+
   # Nix
   nix = {
     package = pkgs.nixVersions.stable;

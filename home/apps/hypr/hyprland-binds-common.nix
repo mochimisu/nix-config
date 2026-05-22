@@ -1,55 +1,57 @@
-{...}: {
+{lib, ...}: let
+  lua = lib.generators.mkLuaInline;
+in {
   wayland.windowManager.hyprland.settings = {
     bind = [
       # Switch workspaces with mod + [0-9]
-      "$mod, 1, workspace, 1"
-      "$mod, 2, workspace, 2"
-      "$mod, 3, workspace, 3"
-      "$mod, 4, workspace, 4"
-      "$mod, 5, workspace, 5"
-      "$mod, 6, workspace, 6"
-      "$mod, 7, workspace, 7"
-      "$mod, 8, workspace, 8"
-      "$mod, 9, workspace, 9"
-      "$mod, 0, workspace, 10"
+      {_args = [(lua "mod .. \" + 1\"") (lua "hl.dsp.focus({ workspace = 1 })")];}
+      {_args = [(lua "mod .. \" + 2\"") (lua "hl.dsp.focus({ workspace = 2 })")];}
+      {_args = [(lua "mod .. \" + 3\"") (lua "hl.dsp.focus({ workspace = 3 })")];}
+      {_args = [(lua "mod .. \" + 4\"") (lua "hl.dsp.focus({ workspace = 4 })")];}
+      {_args = [(lua "mod .. \" + 5\"") (lua "hl.dsp.focus({ workspace = 5 })")];}
+      {_args = [(lua "mod .. \" + 6\"") (lua "hl.dsp.focus({ workspace = 6 })")];}
+      {_args = [(lua "mod .. \" + 7\"") (lua "hl.dsp.focus({ workspace = 7 })")];}
+      {_args = [(lua "mod .. \" + 8\"") (lua "hl.dsp.focus({ workspace = 8 })")];}
+      {_args = [(lua "mod .. \" + 9\"") (lua "hl.dsp.focus({ workspace = 9 })")];}
+      {_args = [(lua "mod .. \" + 0\"") (lua "hl.dsp.focus({ workspace = 10 })")];}
 
       # Move active window to a workspace with mod + SHIFT + [0-9]
-      "$mod SHIFT, 1, movetoworkspace, 1"
-      "$mod SHIFT, 2, movetoworkspace, 2"
-      "$mod SHIFT, 3, movetoworkspace, 3"
-      "$mod SHIFT, 4, movetoworkspace, 4"
-      "$mod SHIFT, 5, movetoworkspace, 5"
-      "$mod SHIFT, 6, movetoworkspace, 6"
-      "$mod SHIFT, 7, movetoworkspace, 7"
-      "$mod SHIFT, 8, movetoworkspace, 8"
-      "$mod SHIFT, 9, movetoworkspace, 9"
-      "$mod SHIFT, 0, movetoworkspace, 10"
-      "$mod CONTROL, 4, exec, ~/.config/hypr/screenshot.sh"
-      "$mod, F4, exec, ~/.config/hypr/screenshot.sh"
+      {_args = [(lua "mod .. \" + SHIFT + 1\"") (lua "hl.dsp.window.move({ workspace = 1 })")];}
+      {_args = [(lua "mod .. \" + SHIFT + 2\"") (lua "hl.dsp.window.move({ workspace = 2 })")];}
+      {_args = [(lua "mod .. \" + SHIFT + 3\"") (lua "hl.dsp.window.move({ workspace = 3 })")];}
+      {_args = [(lua "mod .. \" + SHIFT + 4\"") (lua "hl.dsp.window.move({ workspace = 4 })")];}
+      {_args = [(lua "mod .. \" + SHIFT + 5\"") (lua "hl.dsp.window.move({ workspace = 5 })")];}
+      {_args = [(lua "mod .. \" + SHIFT + 6\"") (lua "hl.dsp.window.move({ workspace = 6 })")];}
+      {_args = [(lua "mod .. \" + SHIFT + 7\"") (lua "hl.dsp.window.move({ workspace = 7 })")];}
+      {_args = [(lua "mod .. \" + SHIFT + 8\"") (lua "hl.dsp.window.move({ workspace = 8 })")];}
+      {_args = [(lua "mod .. \" + SHIFT + 9\"") (lua "hl.dsp.window.move({ workspace = 9 })")];}
+      {_args = [(lua "mod .. \" + SHIFT + 0\"") (lua "hl.dsp.window.move({ workspace = 10 })")];}
+      {_args = [(lua "mod .. \" + CONTROL + 4\"") (lua "hl.dsp.exec_cmd(\"~/.config/hypr/screenshot.sh\")")];}
+      {_args = [(lua "mod .. \" + F4\"") (lua "hl.dsp.exec_cmd(\"~/.config/hypr/screenshot.sh\")")];}
 
       # Example special workspace (scratchpad)
-      "$mod, S, togglespecialworkspace, magic"
-      "$mod SHIFT, S, movetoworkspace, special:magic"
+      {_args = [(lua "mod .. \" + S\"") (lua "hl.dsp.workspace.toggle_special(\"magic\")")];}
+      {_args = [(lua "mod .. \" + SHIFT + S\"") (lua "hl.dsp.window.move({ workspace = \"special:magic\" })")];}
 
-      "$mod, mouse_down, workspace, e+1"
-      "$mod, mouse_up, workspace, e-1"
-      "SHIFT, mouse_down, movefocus, d"
-      "SHIFT, mouse_up, movefocus, u"
-      "$mod SHIFT, mouse_down, movewindow, d"
-      "$mod SHIFT, mouse_up, movewindow, u"
+      {_args = [(lua "mod .. \" + mouse_down\"") (lua "hl.dsp.focus({ workspace = \"e+1\" })")];}
+      {_args = [(lua "mod .. \" + mouse_up\"") (lua "hl.dsp.focus({ workspace = \"e-1\" })")];}
+      {_args = ["SHIFT + mouse_down" (lua "hl.dsp.focus({ direction = \"down\" })")];}
+      {_args = ["SHIFT + mouse_up" (lua "hl.dsp.focus({ direction = \"up\" })")];}
+      {_args = [(lua "mod .. \" + SHIFT + mouse_down\"") (lua "hl.dsp.window.move({ direction = \"down\" })")];}
+      {_args = [(lua "mod .. \" + SHIFT + mouse_up\"") (lua "hl.dsp.window.move({ direction = \"up\" })")];}
 
       # fullscreen toggle
-      "$mod, return, fullscreen"
+      {_args = [(lua "mod .. \" + return\"") (lua "hl.dsp.window.fullscreen()")];}
 
       # float
-      "$mod, f, togglefloating"
+      {_args = [(lua "mod .. \" + f\"") (lua "hl.dsp.window.float({ action = \"toggle\" })")];}
 
       #lock
-      "$mod, L, exec, hyprlock"
+      {_args = [(lua "mod .. \" + L\"") (lua "hl.dsp.exec_cmd(\"hyprlock\")")];}
 
       # launcher
-      "$mod, space, exec, $menu"
-      "$mod SHIFT, space, exec, $menuAll"
+      {_args = [(lua "mod .. \" + space\"") (lua "hl.dsp.exec_cmd(menu)")];}
+      {_args = [(lua "mod .. \" + SHIFT + space\"") (lua "hl.dsp.exec_cmd(menuAll)")];}
 
       # will switch to a submap called resize
       # bind = $mod CONTROL, R, submap, resize
@@ -71,22 +73,19 @@
 
       # keybinds further down will be global again...
 
-      "$mod, F1, exec, ~/.config/hypr/gamemode.sh"
-      "$mod, F5, exec, ~/.config/hypr/keyboard-toggle.sh"
+      {_args = [(lua "mod .. \" + F1\"") (lua "hl.dsp.exec_cmd(\"~/.config/hypr/gamemode.sh\")")];}
+      {_args = [(lua "mod .. \" + F5\"") (lua "hl.dsp.exec_cmd(\"~/.config/hypr/keyboard-toggle.sh\")")];}
 
-      ",XF86MonBrightnessDown,exec,brightnessctl set 5%-"
-      ",XF86MonBrightnessUp,exec,brightnessctl set +5%"
-      ",XF86AudioLowerVolume,exec,wpctl set-volume @DEFAULT_SINK@ 5%-"
-      ",XF86AudioRaiseVolume,exec,wpctl set-volume @DEFAULT_SINK@ 5%+"
-      ",XF86AudioMute,exec,wpctl set-mute @DEFAULT_SINK@ toggle"
-      ",XF86KbdLightOnOff,exec,brightnessctl --device \*kbd_backlight\* set +1"
-      "SHIFT,XF86KbdLightOnOff,exec,brightnessctl --device \*kbd_backlight\* set 1-"
-    ];
-
-    bindm = [
+      {_args = ["XF86MonBrightnessDown" (lua "hl.dsp.exec_cmd(\"brightnessctl set 5%-\")")];}
+      {_args = ["XF86MonBrightnessUp" (lua "hl.dsp.exec_cmd(\"brightnessctl set +5%\")")];}
+      {_args = ["XF86AudioLowerVolume" (lua "hl.dsp.exec_cmd(\"wpctl set-volume @DEFAULT_SINK@ 5%-\")")];}
+      {_args = ["XF86AudioRaiseVolume" (lua "hl.dsp.exec_cmd(\"wpctl set-volume @DEFAULT_SINK@ 5%+\")")];}
+      {_args = ["XF86AudioMute" (lua "hl.dsp.exec_cmd(\"wpctl set-mute @DEFAULT_SINK@ toggle\")")];}
+      {_args = ["XF86KbdLightOnOff" (lua "hl.dsp.exec_cmd('brightnessctl --device *kbd_backlight* set +1')")];}
+      {_args = ["SHIFT + XF86KbdLightOnOff" (lua "hl.dsp.exec_cmd('brightnessctl --device *kbd_backlight* set 1-')")];}
       # Move/resize windows with mod + LMB/RMB and dragging
-      "$mod, mouse:272, movewindow"
-      "$mod, mouse:273, resizewindow"
+      {_args = [(lua "mod .. \" + mouse:272\"") (lua "hl.dsp.window.drag()") {mouse = true;}];}
+      {_args = [(lua "mod .. \" + mouse:273\"") (lua "hl.dsp.window.resize()") {mouse = true;}];}
     ];
   };
 

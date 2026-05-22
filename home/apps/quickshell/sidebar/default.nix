@@ -86,8 +86,17 @@ in {
   };
 
   wayland.windowManager.hyprland = lib.mkIf isLinuxGui {
-    settings."exec-once" = lib.mkAfter [
-      startupCommand
+    settings.on = lib.mkAfter [
+      {
+        _args = [
+          "hyprland.start"
+          (lib.generators.mkLuaInline ''
+            function()
+              hl.exec_cmd("${startupCommand}")
+            end
+          '')
+        ];
+      }
     ];
   };
 }

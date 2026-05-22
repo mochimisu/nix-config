@@ -375,7 +375,16 @@ in
     '';
 
   # Autostart bar when Hyprland launches
-  wayland.windowManager.hyprland.settings."exec-once" = [
-    "eww daemon --config ~/.config/eww/sysmon && eww --config ~/.config/eww/sysmon open sysmon" 
+  wayland.windowManager.hyprland.settings.on = [
+    {
+      _args = [
+        "hyprland.start"
+        (lib.generators.mkLuaInline ''
+          function()
+            hl.exec_cmd("eww daemon --config ~/.config/eww/sysmon && eww --config ~/.config/eww/sysmon open sysmon")
+          end
+        '')
+      ];
+    }
   ];
 }

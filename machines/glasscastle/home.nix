@@ -5,12 +5,20 @@
   };
 
   wayland.windowManager.hyprland.settings = {
-    monitors = {
-      monitor = [
-        "eDP-1,2880x1920@120,0x0,1.5"
-        "DP-2,3440x1440@120,-580x-1440,1"
-      ];
-    };
+    monitor = [
+      {
+        output = "eDP-1";
+        mode = "2880x1920@120";
+        position = "0x0";
+        scale = 1.5;
+      }
+      {
+        output = "DP-2";
+        mode = "3440x1440@120";
+        position = "-580x-1440";
+        scale = 1;
+      }
+    ];
   };
   imports = [
     ../../home/common-linux.nix
@@ -22,7 +30,7 @@
 
   # custom full remapped keyboard
   
-  wayland.windowManager.hyprland.settings.input = {
+  wayland.windowManager.hyprland.settings.config.input = {
     kb_layout = "custom";
     kb_variant = "dvorak-custom";
   };

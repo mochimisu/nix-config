@@ -1,4 +1,4 @@
-{config, ...}: {
+{config, lib, ...}: {
   variables.keyboardLayout = "dvorak";
   variables.hyprpanel = {
     cpuTempSensor = "/sys/devices/pci0000:00/0000:00:08.1/0000:c4:00.0/hwmon/hwmon9/temp1_input";
@@ -25,21 +25,43 @@
     ];
   };
   wayland.windowManager.hyprland.settings = {
-    monitors = {
-      monitor = [
-        "eDP-1,2560x1600@180,0x0,1.25"
+    monitor = [
+      {
+        output = "eDP-1";
+        mode = "2560x1600@180";
+        position = "0x0";
+        scale = 1.25;
+      }
+      {
+        output = "DP-1";
+        mode = "1920x1080@120";
         # XReal glasses, 2048=2560/1.25
-        "DP-1,1920x1080@120,2048x0,1"
-      ];
-    };
-
-    bind = [
-      "$mod, F2, exec, ~/.config/hypr/xreal-toggle.sh"
+        position = "2048x0";
+        scale = 1;
+      }
     ];
 
-    "exec-once" = [
-      "mangohud steam -silent"
-      "iio-hyprland"
+    bind = [
+      {
+        _args = [
+          (lib.generators.mkLuaInline "mod .. \" + F2\"")
+          (lib.generators.mkLuaInline "hl.dsp.exec_cmd(\"~/.config/hypr/xreal-toggle.sh\")")
+        ];
+      }
+    ];
+
+    on = [
+      {
+        _args = [
+          "hyprland.start"
+          (lib.generators.mkLuaInline ''
+            function()
+              hl.exec_cmd("mangohud steam -silent")
+              hl.exec_cmd("iio-hyprland")
+            end
+          '')
+        ];
+      }
     ];
   };
 
@@ -50,7 +72,7 @@
   ];
 
   # custom full remapped keyboard
-  wayland.windowManager.hyprland.settings.input = {
+  wayland.windowManager.hyprland.settings.config.input = {
     kb_layout = "custom";
     kb_variant = "dvorak-custom";
   };

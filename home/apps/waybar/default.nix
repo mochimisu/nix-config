@@ -216,28 +216,41 @@ in {
 
   wayland.windowManager.hyprland.settings = {
     # Start waybar on login
-    "exec-once" = [
-      "waybar"
+    on = [
+      {
+        _args = [
+          "hyprland.start"
+          (lib.generators.mkLuaInline ''
+            function()
+              hl.exec_cmd("waybar")
+            end
+          '')
+        ];
+      }
     ];
 
     # blur waybar
-    layerrule = [
-      "match:namespace ^(waybar)$, blur on"
+    layer_rule = [
+      {
+        name = "waybar-blur";
+        match.namespace = "^(waybar)$";
+        blur = true;
+      }
     ];
 
-    windowrule = [
+    window_rule = [
       # pwvucontrol to top right
-      "float, match:class ^(com.saivert.pwvucontrol)$"
-      "size 700 600, match:class ^(com.saivert.pwvucontrol)$"
-      "move 100%-700 30, match:class ^(com.saivert.pwvucontrol)$"
+      {name = "pwvucontrol-float"; match.class = "^(com.saivert.pwvucontrol)$"; float = true;}
+      {name = "pwvucontrol-size"; match.class = "^(com.saivert.pwvucontrol)$"; size = "700 600";}
+      {name = "pwvucontrol-move"; match.class = "^(com.saivert.pwvucontrol)$"; move = "100%-700 30";}
       # blueman to top right
-      "float, match:class ^(.blueman-manager-wrapped)$"
-      "size 500 600, match:class ^(.blueman-manager-wrapped)$"
-      "move 100%-510 30, match:class ^(.blueman-manager-wrapped)$"
+      {name = "blueman-float"; match.class = "^(.blueman-manager-wrapped)$"; float = true;}
+      {name = "blueman-size"; match.class = "^(.blueman-manager-wrapped)$"; size = "500 600";}
+      {name = "blueman-move"; match.class = "^(.blueman-manager-wrapped)$"; move = "100%-510 30";}
       # karlender to top right
-      "float, match:class ^(codes.loers.Karlender)$"
-      "size 400 500, match:class ^(codes.loers.Karlender)$"
-      "move 100%-400 30, match:class ^(codes.loers.Karlender)$"
+      {name = "karlender-float"; match.class = "^(codes.loers.Karlender)$"; float = true;}
+      {name = "karlender-size"; match.class = "^(codes.loers.Karlender)$"; size = "400 500";}
+      {name = "karlender-move"; match.class = "^(codes.loers.Karlender)$"; move = "100%-400 30";}
     ];
   };
 }

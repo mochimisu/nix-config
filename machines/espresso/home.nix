@@ -1,4 +1,5 @@
 {
+  lib,
   ...
 }: {
   variables.keyboardLayout = "qwerty";
@@ -14,22 +15,43 @@
     onScreenKeyboard = false;
   };
   wayland.windowManager.hyprland.settings = {
-    monitors = {
-      monitor = [
-        "eDP-1,preferred,0x0,1.6,transform,3"
-      ];
-    };
-    input = {
+    monitor = [
+      {
+        output = "eDP-1";
+        mode = "preferred";
+        position = "0x0";
+        scale = 1.6;
+        transform = 3;
+      }
+    ];
+    config.input = {
       touchdevice = {
         transform = 3;
       };
     };
-    "exec-once" = [
-      "mangohud steam"
+    on = [
+      {
+        _args = [
+          "hyprland.start"
+          (lib.generators.mkLuaInline ''
+            function()
+              hl.exec_cmd("mangohud steam")
+            end
+          '')
+        ];
+      }
     ];
     gesture = [
-      "3, left, dispatcher, workspace, e-1"
-      "3, right, dispatcher, workspace, e+1"
+      {
+        fingers = 3;
+        direction = "left";
+        action = lib.generators.mkLuaInline ''function() hl.dispatch(hl.dsp.focus({ workspace = "e-1" })) end'';
+      }
+      {
+        fingers = 3;
+        direction = "right";
+        action = lib.generators.mkLuaInline ''function() hl.dispatch(hl.dsp.focus({ workspace = "e+1" })) end'';
+      }
     ];
   };
   imports = [

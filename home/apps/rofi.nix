@@ -135,12 +135,27 @@ in {
 
   wayland.windowManager.hyprland = lib.mkIf isLinuxGui {
     settings = {
-      "$menu" = "rofi-toggle -show drun";
-      "$menuAll" = "rofi-toggle -show run";
-      layerrule = [
-        "match:namespace ^(rofi)$, animation fade, blur on, ignore_alpha 0, dim_around on"
-        "match:namespace ^(wvkbd)$, order 0"
-        "match:namespace ^(rofi)$, order 1"
+      menu._var = "rofi-toggle -show drun";
+      menuAll._var = "rofi-toggle -show run";
+      layer_rule = [
+        {
+          name = "rofi-effects";
+          match.namespace = "^(rofi)$";
+          animation = "fade";
+          blur = true;
+          ignore_alpha = 0;
+          dim_around = true;
+        }
+        {
+          name = "wvkbd-order";
+          match.namespace = "^(wvkbd)$";
+          order = 0;
+        }
+        {
+          name = "rofi-order";
+          match.namespace = "^(rofi)$";
+          order = 1;
+        }
       ];
     };
   };

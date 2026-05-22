@@ -45,8 +45,17 @@ in
   };
 
   # on startup
-  wayland.windowManager.hyprland.settings."exec-once" = [
-    "dunst"
+  wayland.windowManager.hyprland.settings.on = [
+    {
+      _args = [
+        "hyprland.start"
+        (lib.generators.mkLuaInline ''
+          function()
+            hl.exec_cmd("dunst")
+          end
+        '')
+      ];
+    }
   ];
 
   # add a view history alias
