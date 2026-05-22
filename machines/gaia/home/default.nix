@@ -1,6 +1,7 @@
 { ... }: {
   variables.isGui = false;
   variables.kitty.sshBackground = "#0a3a21";
+  variables.obsidianVaultPath = "/earth/syncthing/obsidian";
 
   imports = [
     ./fastfetch.nix

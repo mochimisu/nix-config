@@ -134,6 +134,18 @@ in {
 
   services.cloudflare-warp.enable = true;
 
+  services.syncthing = {
+    enable = true;
+    user = "brandon";
+    group = "users";
+    dataDir = lib.mkDefault "/home/brandon/Sync";
+    configDir = lib.mkDefault "/home/brandon/.config/syncthing";
+    guiAddress = lib.mkDefault "127.0.0.1:8384";
+    openDefaultPorts = true;
+    overrideDevices = lib.mkDefault false;
+    overrideFolders = lib.mkDefault false;
+  };
+
   # Power
   services.upower.enable = true;
 

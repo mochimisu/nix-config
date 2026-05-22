@@ -18,6 +18,7 @@
   ];
   otbrUpstreamPort = 8080;
   otbrWebPort = 8088;
+  matterjsWebPort = config.gaia.homeAssistant.matterjs.port;
   otbrWebListen = [
     { addr = "0.0.0.0"; port = otbrWebPort; }
     { addr = "[::]"; port = otbrWebPort; extraParameters = ["ipv6only=on"]; }
@@ -652,6 +653,9 @@
                   </a>
                   <a class="service-card" href="http://${hostName}:3010/">
                     <span class="stock">Port 3010</span><span class="art"><span class="plate"><svg viewBox="0 0 24 24"><path d="M5 12h4"/><path d="M15 12h4"/><path d="M12 5v4"/><path d="M12 15v4"/><circle cx="12" cy="12" r="3"/><path d="M7.5 7.5 9.8 9.8"/><path d="m14.2 14.2 2.3 2.3"/><path d="m16.5 7.5-2.3 2.3"/><path d="m9.8 14.2-2.3 2.3"/></svg></span></span><span class="accent automation"></span><span class="service-name">Matter Layer</span>
+                  </a>
+                  <a class="service-card" href="http://${hostName}:${toString matterjsWebPort}/">
+                    <span class="stock">Port ${toString matterjsWebPort}</span><span class="art"><span class="plate"><svg viewBox="0 0 24 24"><path d="M4 12h4"/><path d="M16 12h4"/><path d="M12 4v4"/><path d="M12 16v4"/><circle cx="12" cy="12" r="2.5"/><path d="M7 7l2 2"/><path d="M15 15l2 2"/><path d="M17 7l-2 2"/><path d="M9 15l-2 2"/></svg></span></span><span class="accent automation"></span><span class="service-name">Matter.js</span>
                   </a>
                   <a class="service-card" href="https://${hostName}:18789/">
                     <span class="stock">Port 18789</span><span class="art"><span class="plate"><svg viewBox="0 0 24 24"><rect x="5" y="7" width="14" height="10"/><path d="M9 7V4h6v3"/><path d="M9 12h.1M15 12h.1"/><path d="M10 16h4"/></svg></span></span><span class="accent agent"></span><span class="service-name">OpenClaw</span>
