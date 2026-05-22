@@ -1,5 +1,6 @@
 {
   inputs,
+  osConfig,
   pkgs,
   ...
 }: {
@@ -11,7 +12,7 @@
   wayland.windowManager.hyprland = {
     enable = true;
     configType = "lua";
-    package = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
+    package = osConfig.programs.hyprland.package;
   };
 
   programs.waybar.enable = true;

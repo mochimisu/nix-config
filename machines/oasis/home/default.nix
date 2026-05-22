@@ -17,7 +17,7 @@
   ];
   variables.touchscreen = {
     enable = true;
-    enableHyprgrass = true;
+    enableHyprgrass = false;
     enableScroll = true;
     onScreenKeyboard = true;
     hyprgrassBinds = [
