@@ -86,12 +86,14 @@
       STATE_FILE="''${XDG_RUNTIME_DIR:-/tmp}/xreal-main-active"
 
       if [ -f "''${STATE_FILE}" ]; then
-        hyprctl --batch "keyword monitor eDP-1,2560x1600@180,0x0,1.25; keyword monitor DP-1,1920x1080@120,2048x0,1"
+        hyprctl eval 'hl.monitor({ output = "eDP-1", mode = "2560x1600@180", position = "0x0", scale = 1.25 })'
+        hyprctl eval 'hl.monitor({ output = "DP-1", mode = "1920x1080@120", position = "2048x0", scale = 1 })'
         rm -f "''${STATE_FILE}"
         exit 0
       fi
 
-      hyprctl --batch "keyword monitor DP-1,1920x1080@120,0x0,1; keyword monitor eDP-1,2560x1600@180,1920x0,1.25"
+      hyprctl eval 'hl.monitor({ output = "DP-1", mode = "1920x1080@120", position = "0x0", scale = 1 })'
+      hyprctl eval 'hl.monitor({ output = "eDP-1", mode = "2560x1600@180", position = "1920x0", scale = 1.25 })'
       touch "''${STATE_FILE}"
     '';
   };

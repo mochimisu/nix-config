@@ -95,14 +95,19 @@ in {
       #!/usr/bin/env sh
       HYPRGAMEMODE=$(hyprctl getoption animations:enabled | awk 'NR==1{print $2}')
       if [ "$HYPRGAMEMODE" = 1 ] ; then
-          hyprctl --batch "\
-              keyword animations:enabled 0;\
-              keyword decoration:drop_shadow 0;\
-              keyword decoration:blur:enabled 0;\
-              keyword general:gaps_in 0;\
-              keyword general:gaps_out 0;\
-              keyword general:border_size 1;\
-              keyword decoration:rounding 0"
+          hyprctl eval 'hl.config({
+            animations = { enabled = false },
+            decoration = {
+              blur = { enabled = false },
+              rounding = 0,
+              shadow = { enabled = false },
+            },
+            general = {
+              border_size = 1,
+              gaps_in = 0,
+              gaps_out = 0,
+            },
+          })'
           exit
       fi
       hyprctl reload
@@ -187,16 +192,22 @@ in {
         fi
 
         # Switch back to the saved layout/variant.
-        hyprctl --batch "\
-          keyword input:kb_layout ''${saved_layout};\
-          keyword input:kb_variant ''${saved_variant}"
+        hyprctl eval "hl.config({
+          input = {
+            kb_layout = \"''${saved_layout}\",
+            kb_variant = \"''${saved_variant}\",
+          },
+        })"
       else
         printf 'layout=%s\nvariant=%s\n' "$current_layout" "$current_variant" > "$state_file"
 
         # Switch to qwerty; clear variant first to avoid mismatched custom variants.
-        hyprctl --batch "\
-          keyword input:kb_variant ''${qwerty_variant};\
-          keyword input:kb_layout ''${qwerty_layout}"
+        hyprctl eval "hl.config({
+          input = {
+            kb_variant = \"''${qwerty_variant}\",
+            kb_layout = \"''${qwerty_layout}\",
+          },
+        })"
       fi
     '';
   };
