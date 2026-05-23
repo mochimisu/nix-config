@@ -34,6 +34,29 @@
     "blackmoon"
   ];
   gaiaNixCachePublicKey = lib.strings.trim (builtins.readFile ./machines/gaia/nix-cache-pub-key.pem);
+  uploadToGaiaNixCacheHook = pkgs.writeShellScript "upload-to-gaia-nix-cache" ''
+    set -efu
+
+    if [ -z "''${OUT_PATHS:-}" ]; then
+      exit 0
+    fi
+
+    export PATH="${lib.makeBinPath [
+      pkgs.coreutils
+      pkgs.nix
+      pkgs.openssh
+    ]}"
+    export NIX_SSHOPTS="-o BatchMode=yes -o ConnectTimeout=3 -o ConnectionAttempts=1"
+
+    if ! ssh $NIX_SSHOPTS brandon@gaia true >/dev/null 2>&1; then
+      echo "upload-to-gaia-nix-cache: gaia is not reachable over SSH; skipping $DRV_PATH" >&2
+      exit 0
+    fi
+
+    if ! nix copy --to ssh://brandon@gaia $OUT_PATHS >&2; then
+      echo "upload-to-gaia-nix-cache: failed to copy outputs for $DRV_PATH to gaia; continuing" >&2
+    fi
+  '';
 in {
   imports = [
     ./obsidian-sync.nix
@@ -52,6 +75,7 @@ in {
       extra-trusted-public-keys = [
         gaiaNixCachePublicKey
       ];
+      post-build-hook = lib.mkIf (!isGaia) uploadToGaiaNixCacheHook;
       trusted-users = lib.optional isGaia "brandon";
     };
     gc = {
