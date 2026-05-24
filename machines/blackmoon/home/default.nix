@@ -127,17 +127,22 @@ in {
     text = ''
       HYPRGAMEMODE=$(hyprctl getoption animations:enabled | awk 'NR==1{print $2}')
       if [ "$HYPRGAMEMODE" = 1 ] ; then
-          hyprctl --batch "\
-              keyword animations:enabled 0;\
-              keyword decoration:drop_shadow 0;\
-              keyword decoration:blur:enabled 0;\
-              keyword general:gaps_in 0;\
-              keyword general:gaps_out 0;\
-              keyword general:border_size 1;\
-              keyword decoration:rounding 0;\
-              keyword monitor DP-1,2560x1440@120,3440x-560,1,transform,1;\
-              keyword monitor DP-3,3440x1440@175,0x0,1;\
-              keyword monitor HDMI-A-1,480x1920@60,4880x1200,1,transform,1"
+          hyprctl eval 'hl.config({
+            animations = { enabled = false },
+            decoration = {
+              blur = { enabled = false },
+              rounding = 0,
+              shadow = { enabled = false },
+            },
+            general = {
+              border_size = 1,
+              gaps_in = 0,
+              gaps_out = 0,
+            },
+          })'
+          hyprctl eval 'hl.monitor({ output = "DP-1", mode = "2560x1440@120", position = "3440x-560", scale = 1, transform = 1 })'
+          hyprctl eval 'hl.monitor({ output = "DP-3", mode = "3440x1440@175", position = "0x0", scale = 1 })'
+          hyprctl eval 'hl.monitor({ output = "HDMI-A-1", mode = "480x1920@60", position = "4880x1200", scale = 1, transform = 1 })'
           exit
       fi
       hyprctl reload
@@ -215,22 +220,23 @@ in {
       state_file="''${XDG_STATE_HOME:-$HOME/.local/state}/hypr/hdr-enabled"
       mkdir -p "''${state_file%/*}"
 
-      HDR_MONITOR="DP-3,3440x1440@175,0x0,1,bitdepth,10,cm,hdr,sdrbrightness,1.20"
-      SDR_MONITOR="DP-3,3440x1440@175,0x0,1,bitdepth,10"
-
       cm_enabled=$(hyprctl getoption render:cm_enabled | awk 'NR==1{print $2}')
       if [ "''${cm_enabled:-0}" = "1" ]; then
         printf "0" > "$state_file"
-        hyprctl --batch "\
-          keyword render:cm_enabled 0;\
-          keyword render:cm_auto_hdr 0;\
-          keyword monitor $SDR_MONITOR"
+        hyprctl eval 'hl.config({ render = { cm_enabled = false, cm_auto_hdr = 0 } })'
+        hyprctl eval 'hl.monitor({ output = "DP-3", mode = "3440x1440@175", position = "0x0", scale = 1, bitdepth = 10 })'
       else
         printf "1" > "$state_file"
-        hyprctl --batch "\
-          keyword render:cm_enabled 1;\
-          keyword render:cm_auto_hdr 0;\
-          keyword monitor $HDR_MONITOR"
+        hyprctl eval 'hl.config({ render = { cm_enabled = true, cm_auto_hdr = 0 } })'
+        hyprctl eval 'hl.monitor({
+          output = "DP-3",
+          mode = "3440x1440@175",
+          position = "0x0",
+          scale = 1,
+          bitdepth = 10,
+          cm = "hdr",
+          sdrbrightness = 1.20,
+        })'
       fi
     '';
   };
