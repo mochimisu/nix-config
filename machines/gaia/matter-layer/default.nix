@@ -16,6 +16,9 @@ in {
     matterWsUrl = "ws://127.0.0.1:${toString config.gaia.homeAssistant.matterjs.port}/ws";
     rulesModule = ./rules.ts;
     bindings = builtins.fromJSON (builtins.readFile ./bindings.json);
+    environment = {
+      MATTER_LAYER_WEB_DEV = "0";
+    };
   };
 
   systemd.services.matter-layer = {

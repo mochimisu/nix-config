@@ -4,16 +4,18 @@ Gaia runs `matterjs-server` as the primary Matter backend. The normal service na
 
 ## Current Shape
 
-- Primary controller: `ghcr.io/matter-js/matterjs-server:stable`.
+- Primary controller: `ghcr.io/matter-js/matterjs-server:0.6.8`. Do not use the floating `stable` tag on Gaia; upgrade deliberately after checking release notes and live health.
 - WebSocket/dashboard: local `ws://127.0.0.1:5580/ws` and `http://127.0.0.1:5580/`; LAN dashboard access is available at `http://gaia:5580/`.
 - Matter.js storage: `/earth/home-assistant/matterjs-server`.
 - Custom OTA drop directory: `/earth/home-assistant/matterjs-server/ota-provider`.
 - PAA root certificate directory: `/earth/home-assistant/matter-server/paa-root-certs`.
 - Thread dataset source: `MATTER_THREAD_DATASET_HEX` from `machines/gaia/secrets/matter-env.env` via sops.
+- Thread border router: Gaia's local ZBT-2 OTBR is enabled and stores OTBR state in `/earth/home-assistant/otbr`.
+- Keepalive: the manual `matter-keepalive` tool remains installed, but the background service is disabled while matter-layer handles targeted stale probes after 2 minutes without source updates for available devices and 5 minutes for unavailable devices.
 
 ## Startup Order
 
-Matter.js depends on the ZBT-2 Thread border router being ready. The normal Matter server unit is ordered after:
+Matter.js depends on the ZBT-2 Thread border router being ready. The Matter server unit is ordered after:
 
 - `podman-otbr.service`
 - `otbr-ensure-dataset.service`
@@ -22,7 +24,7 @@ Matter.js depends on the ZBT-2 Thread border router being ready. The normal Matt
 If Thread devices look unavailable while Wi-Fi Matter devices work, restart in this order:
 
 ```sh
-sudo systemctl stop home-assistant.service matter-keepalive.service podman-matter-server.service
+sudo systemctl stop home-assistant.service podman-matter-server.service
 sudo systemctl restart podman-otbr.service
 sudo systemctl start otbr-ensure-dataset.service otbr-prefer-zbt2-router.service
 sudo podman exec otbr ot-ctl state
@@ -30,7 +32,7 @@ sudo systemctl start podman-matter-server.service matterjs-set-thread-dataset.se
 sleep 90
 matter-health
 timeout 15 matter-watch
-sudo systemctl start home-assistant.service matter-keepalive.service
+sudo systemctl start home-assistant.service
 ```
 
 `ot-ctl state` should be `router` or `leader`, not `child`.

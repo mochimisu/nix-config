@@ -5,6 +5,9 @@
   ...
 }: let
   cfg = config.gaia.homeAssistant.matterjs;
+  otbrSystemdDeps = [
+    "otbr-ensure-dataset.service"
+  ];
 
   matterjsDataDir = "/earth/home-assistant/matterjs-server";
   matterjsOtaDir = "${matterjsDataDir}/ota-provider";
@@ -88,7 +91,7 @@ in {
   options.gaia.homeAssistant.matterjs = {
     imageTag = lib.mkOption {
       type = lib.types.str;
-      default = "stable";
+      default = "0.6.8";
       description = "matter-js/matterjs-server image tag to use for Gaia's primary Matter backend.";
     };
     port = lib.mkOption {
@@ -116,15 +119,17 @@ in {
         wantedBy = [
           "podman-matter-server.service"
         ];
-        after = [
-          "podman-matter-server.service"
-          "otbr-ensure-dataset.service"
-          "network-online.target"
-        ];
-        wants = [
-          "otbr-ensure-dataset.service"
-          "network-online.target"
-        ];
+        after =
+          [
+            "podman-matter-server.service"
+            "network-online.target"
+          ]
+          ++ otbrSystemdDeps;
+        wants =
+          [
+            "network-online.target"
+          ]
+          ++ otbrSystemdDeps;
         serviceConfig = {
           Type = "oneshot";
           EnvironmentFile = config.sops.secrets."matter-env".path;

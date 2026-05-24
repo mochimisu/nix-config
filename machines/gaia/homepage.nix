@@ -19,6 +19,42 @@
   otbrUpstreamPort = 8080;
   otbrWebPort = 8088;
   matterjsWebPort = config.gaia.homeAssistant.matterjs.port;
+  proxiedServiceHeaders = prefix: ''
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-Host $host;
+    proxy_set_header X-Forwarded-Prefix ${prefix};
+    proxy_set_header Accept-Encoding "";
+    proxy_redirect off;
+  '';
+  matterLayerSubstitutions = ''
+    sub_filter_once off;
+    sub_filter_types text/html application/javascript text/javascript;
+    sub_filter 'src="/assets/' 'src="/matter-layer/assets/';
+    sub_filter 'href="/assets/' 'href="/matter-layer/assets/';
+    sub_filter 'src="/src/' 'src="/matter-layer/src/';
+    sub_filter 'from "/src/' 'from "/matter-layer/src/';
+    sub_filter 'import "/src/' 'import "/matter-layer/src/';
+    sub_filter 'src="/@vite/' 'src="/matter-layer/@vite/';
+    sub_filter '"/@vite/' '"/matter-layer/@vite/';
+    sub_filter '"/@fs/' '"/matter-layer/@fs/';
+    sub_filter 'from "/@fs/' 'from "/matter-layer/@fs/';
+    sub_filter 'import "/@fs/' 'import "/matter-layer/@fs/';
+    sub_filter '"/api/' '"/matter-layer/api/';
+    sub_filter 'fetch("/api/' 'fetch("/matter-layer/api/';
+    sub_filter '`/api/' '`/matter-layer/api/';
+    sub_filter 'host}/events' 'host}/matter-layer/events';
+  '';
+  blackvueSubstitutions = ''
+    sub_filter_once off;
+    sub_filter_types text/html application/javascript text/javascript application/json;
+    sub_filter 'src="/assets/' 'src="/blackvue/assets/';
+    sub_filter 'href="/assets/' 'href="/blackvue/assets/';
+    sub_filter 'fetch("/api/' 'fetch("/blackvue/api/';
+    sub_filter '"/api/video/' '"/blackvue/api/video/';
+  '';
   otbrWebListen = [
     { addr = "0.0.0.0"; port = otbrWebPort; }
     { addr = "[::]"; port = otbrWebPort; extraParameters = ["ipv6only=on"]; }
@@ -651,23 +687,23 @@
                   <a class="service-card" href="http://${hostName}:8123/">
                     <span class="stock">Port 8123</span><span class="art"><span class="plate yellow"><svg viewBox="0 0 24 24"><path d="M4 11 12 4l8 7"/><path d="M6 10v9h12v-9"/><path d="M10 19v-5h4v5"/></svg></span></span><span class="accent home"></span><span class="service-name">Home Assistant</span>
                   </a>
-                  <a class="service-card" href="http://${hostName}:3010/">
-                    <span class="stock">Port 3010</span><span class="art"><span class="plate"><svg viewBox="0 0 24 24"><path d="M5 12h4"/><path d="M15 12h4"/><path d="M12 5v4"/><path d="M12 15v4"/><circle cx="12" cy="12" r="3"/><path d="M7.5 7.5 9.8 9.8"/><path d="m14.2 14.2 2.3 2.3"/><path d="m16.5 7.5-2.3 2.3"/><path d="m9.8 14.2-2.3 2.3"/></svg></span></span><span class="accent automation"></span><span class="service-name">Matter Layer</span>
+                  <a class="service-card" href="/matter-layer/">
+                    <span class="stock">/matter-layer</span><span class="art"><span class="plate"><svg viewBox="0 0 24 24"><path d="M5 12h4"/><path d="M15 12h4"/><path d="M12 5v4"/><path d="M12 15v4"/><circle cx="12" cy="12" r="3"/><path d="M7.5 7.5 9.8 9.8"/><path d="m14.2 14.2 2.3 2.3"/><path d="m16.5 7.5-2.3 2.3"/><path d="m9.8 14.2-2.3 2.3"/></svg></span></span><span class="accent automation"></span><span class="service-name">Matter Layer</span>
                   </a>
-                  <a class="service-card" href="http://${hostName}:${toString matterjsWebPort}/">
-                    <span class="stock">Port ${toString matterjsWebPort}</span><span class="art"><span class="plate"><svg viewBox="0 0 24 24"><path d="M4 12h4"/><path d="M16 12h4"/><path d="M12 4v4"/><path d="M12 16v4"/><circle cx="12" cy="12" r="2.5"/><path d="M7 7l2 2"/><path d="M15 15l2 2"/><path d="M17 7l-2 2"/><path d="M9 15l-2 2"/></svg></span></span><span class="accent automation"></span><span class="service-name">Matter.js</span>
+                  <a class="service-card" href="/matterjs/">
+                    <span class="stock">/matterjs</span><span class="art"><span class="plate"><svg viewBox="0 0 24 24"><path d="M4 12h4"/><path d="M16 12h4"/><path d="M12 4v4"/><path d="M12 16v4"/><circle cx="12" cy="12" r="2.5"/><path d="M7 7l2 2"/><path d="M15 15l2 2"/><path d="M17 7l-2 2"/><path d="M9 15l-2 2"/></svg></span></span><span class="accent automation"></span><span class="service-name">Matter.js</span>
                   </a>
                   <a class="service-card" href="https://${hostName}:18789/">
                     <span class="stock">Port 18789</span><span class="art"><span class="plate"><svg viewBox="0 0 24 24"><rect x="5" y="7" width="14" height="10"/><path d="M9 7V4h6v3"/><path d="M9 12h.1M15 12h.1"/><path d="M10 16h4"/></svg></span></span><span class="accent agent"></span><span class="service-name">OpenClaw</span>
                   </a>
-                  <a class="service-card" href="http://${hostName}:${toString otbrWebPort}/">
-                    <span class="stock">Port ${toString otbrWebPort}</span><span class="art"><span class="plate"><svg viewBox="0 0 24 24"><path d="M12 5v4"/><path d="M12 15v4"/><path d="M5 12h4"/><path d="M15 12h4"/><circle cx="12" cy="12" r="3"/><path d="M6.5 6.5 9 9"/><path d="m15 15 2.5 2.5"/><path d="m17.5 6.5-2.5 2.5"/><path d="m9 15-2.5 2.5"/></svg></span></span><span class="accent sync"></span><span class="service-name">OpenThread BR</span>
+                  <a class="service-card" href="/otbr/">
+                    <span class="stock">/otbr</span><span class="art"><span class="plate"><svg viewBox="0 0 24 24"><path d="M12 5v4"/><path d="M12 15v4"/><path d="M5 12h4"/><path d="M15 12h4"/><circle cx="12" cy="12" r="3"/><path d="M6.5 6.5 9 9"/><path d="m15 15 2.5 2.5"/><path d="m17.5 6.5-2.5 2.5"/><path d="m9 15-2.5 2.5"/></svg></span></span><span class="accent sync"></span><span class="service-name">OpenThread BR</span>
                   </a>
                   <a class="service-card" href="http://${hostName}:9091/">
                     <span class="stock">Port 9091</span><span class="art"><span class="plate"><svg viewBox="0 0 24 24"><path d="M12 4v12"/><path d="m7 11 5 5 5-5"/><path d="M5 20h14"/></svg></span></span><span class="accent transfer"></span><span class="service-name">Transmission</span>
                   </a>
-                  <a class="service-card" href="http://${hostName}:3000/">
-                    <span class="stock">Port 3000</span><span class="art"><span class="plate"><svg viewBox="0 0 24 24"><rect x="4" y="7" width="11" height="10"/><path d="m15 10 5-2v8l-5-2"/><path d="M8 17v3h4v-3"/></svg></span></span><span class="accent video"></span><span class="service-name">BlackVue Viewer</span>
+                  <a class="service-card" href="/blackvue/">
+                    <span class="stock">/blackvue</span><span class="art"><span class="plate"><svg viewBox="0 0 24 24"><rect x="4" y="7" width="11" height="10"/><path d="m15 10 5-2v8l-5-2"/><path d="M8 17v3h4v-3"/></svg></span></span><span class="accent video"></span><span class="service-name">BlackVue Viewer</span>
                   </a>
                 </div>
             </section>
@@ -794,6 +830,73 @@ in {
       locations."/stats-ws" = {
         proxyPass = "http://127.0.0.1:8090";
         proxyWebsockets = true;
+      };
+      locations."= /matter-layer" = {
+        return = "302 /matter-layer/";
+      };
+      locations."/matter-layer/" = {
+        proxyPass = "http://127.0.0.1:3010/";
+        extraConfig = (proxiedServiceHeaders "/matter-layer") + matterLayerSubstitutions;
+      };
+      locations."/matter-layer/assets/" = {
+        proxyPass = "http://127.0.0.1:3010/assets/";
+        extraConfig = (proxiedServiceHeaders "/matter-layer") + matterLayerSubstitutions;
+      };
+      locations."/matter-layer/src/" = {
+        proxyPass = "http://127.0.0.1:3010/src/";
+        extraConfig = (proxiedServiceHeaders "/matter-layer") + matterLayerSubstitutions;
+      };
+      locations."/matter-layer/@vite/" = {
+        proxyPass = "http://127.0.0.1:3010/@vite/";
+        proxyWebsockets = true;
+        extraConfig = (proxiedServiceHeaders "/matter-layer") + matterLayerSubstitutions;
+      };
+      locations."/matter-layer/@fs/" = {
+        proxyPass = "http://127.0.0.1:3010/@fs/";
+        extraConfig = (proxiedServiceHeaders "/matter-layer") + matterLayerSubstitutions;
+      };
+      locations."/matter-layer/node_modules/" = {
+        proxyPass = "http://127.0.0.1:3010/node_modules/";
+        extraConfig = (proxiedServiceHeaders "/matter-layer") + matterLayerSubstitutions;
+      };
+      locations."/matter-layer/api/" = {
+        proxyPass = "http://127.0.0.1:3010/api/";
+        extraConfig = proxiedServiceHeaders "/matter-layer";
+      };
+      locations."/matter-layer/events" = {
+        proxyPass = "http://127.0.0.1:3010/events";
+        proxyWebsockets = true;
+        extraConfig = proxiedServiceHeaders "/matter-layer";
+      };
+      locations."= /blackvue" = {
+        return = "302 /blackvue/";
+      };
+      locations."/blackvue/" = {
+        proxyPass = "http://127.0.0.1:3000/";
+        extraConfig = (proxiedServiceHeaders "/blackvue") + blackvueSubstitutions;
+      };
+      locations."/blackvue/assets/" = {
+        proxyPass = "http://127.0.0.1:3000/assets/";
+        extraConfig = (proxiedServiceHeaders "/blackvue") + blackvueSubstitutions;
+      };
+      locations."/blackvue/api/" = {
+        proxyPass = "http://127.0.0.1:3000/api/";
+        extraConfig = (proxiedServiceHeaders "/blackvue") + blackvueSubstitutions;
+      };
+      locations."= /otbr" = {
+        return = "302 /otbr/";
+      };
+      locations."/otbr/" = {
+        proxyPass = "http://127.0.0.1:${toString otbrUpstreamPort}/";
+        extraConfig = proxiedServiceHeaders "/otbr";
+      };
+      locations."= /matterjs" = {
+        return = "302 /matterjs/";
+      };
+      locations."/matterjs/" = {
+        proxyPass = "http://127.0.0.1:${toString matterjsWebPort}/";
+        proxyWebsockets = true;
+        extraConfig = proxiedServiceHeaders "/matterjs";
       };
       extraConfig = ''
         add_header X-Content-Type-Options nosniff;

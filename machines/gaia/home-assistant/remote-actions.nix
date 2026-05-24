@@ -1,11 +1,10 @@
 {
-  config,
   pkgs,
   matterNodeRooms ? {},
   matterNodeRoomsByLabel ? {},
   ...
 }: let
-  keepaliveIntervalSec = 15;
+  keepaliveIntervalSec = 30;
 
   pythonEnv = pkgs.python3.withPackages (ps: [
     ps.websockets
@@ -17,7 +16,6 @@
   matterWatchScript = ./scripts/matter-watch.py;
   matterNodeRoomsJson = builtins.toJSON matterNodeRooms;
   matterNodeRoomsByLabelJson = builtins.toJSON matterNodeRoomsByLabel;
-  matterServerUnit = "podman-matter-server.service";
   matterWsPort = "5580";
   matterWsUrl = "ws://127.0.0.1:${matterWsPort}/ws";
 
@@ -60,6 +58,7 @@
       export MATTER_NODE_ROOMS_JSON='${matterNodeRoomsJson}'
       export MATTER_NODE_ROOMS_BY_LABEL_JSON='${matterNodeRoomsByLabelJson}'
       export MATTER_WS_URL='${matterWsUrl}'
+      export MATTER_WATCH_ZBT2_ENABLE='1'
       exec ${pythonEnv}/bin/python3 ${matterWatchScript} "$@"
     '';
   };
@@ -71,41 +70,6 @@ in {
     matterWatchTool
   ];
 
-  systemd.services.matter-keepalive = {
-    description = "Matter keepalive for routerlike Thread devices";
-    wantedBy = [
-      "multi-user.target"
-    ];
-    after = [
-      matterServerUnit
-      "podman-otbr.service"
-      "otbr-ensure-dataset.service"
-      "network-online.target"
-    ];
-    wants = [
-      matterServerUnit
-      "podman-otbr.service"
-      "otbr-ensure-dataset.service"
-      "network-online.target"
-    ];
-    serviceConfig = {
-      Type = "simple";
-      Restart = "always";
-      RestartSec = "5s";
-      EnvironmentFile = config.sops.secrets."matter-env".path;
-      Environment = [
-        "MATTER_WS_URL=${matterWsUrl}"
-        "MATTER_KEEPALIVE_INTERVAL_SEC=${toString keepaliveIntervalSec}"
-        "MATTER_KEEPALIVE_READ_TIMEOUT_SEC=4"
-        "MATTER_KEEPALIVE_SKIP_SLEEPY=1"
-        "MATTER_KEEPALIVE_NODE_BACKOFF_BASE_SEC=60"
-        "MATTER_KEEPALIVE_NODE_BACKOFF_MAX_SEC=900"
-        "MATTER_KEEPALIVE_MAX_ATTRIBUTES_PER_PASS=1"
-        "MATTER_KEEPALIVE_FORCE_PRODUCT_KEYWORDS=fp300,presence,bilresa,myggbett"
-        "MATTER_KEEPALIVE_FORCE_ATTRIBUTE_PATHS=1/69/0,2/1030/0,1/1030/0,0/47/12,0/40/5"
-      ];
-      ExecStartPre = "${pkgs.bash}/bin/bash -c 'for i in {1..60}; do (echo > /dev/tcp/127.0.0.1/${matterWsPort}) >/dev/null 2>&1 && exit 0; sleep 1; done; echo matter-server ws not ready >&2; exit 1'";
-      ExecStart = "${matterKeepaliveTool}/bin/matter-keepalive";
-    };
-  };
+  # Keep the manual `matter-keepalive` tool available, but do not run the
+  # background service while matter-layer performs targeted stale probes.
 }
