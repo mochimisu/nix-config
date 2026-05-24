@@ -10,7 +10,9 @@ export default defineRoomRules("mbrBathroom", ({ room, rule }) => {
   });
 
   rule("toilet", () => {
-    room.toiletLight.auto(room.toiletPresence);
+    const daytime = state.timeBetween("6:00", "22:00");
+    const onState = daytime ? { power: "on", level: "15%" } : true;
+    room.toiletLight.auto(room.toiletPresence ? onState : false);
   });
 
   rule("toilet-fan", () => {
