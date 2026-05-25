@@ -91,7 +91,7 @@ in {
   options.gaia.homeAssistant.matterjs = {
     imageTag = lib.mkOption {
       type = lib.types.str;
-      default = "stable";
+      default = "latest";
       description = "matter-js/matterjs-server image tag to use for Gaia's primary Matter backend.";
     };
     port = lib.mkOption {

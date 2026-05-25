@@ -155,6 +155,7 @@ in {
     };
     containers.matter-server = {
       image = "ghcr.io/matter-js/matterjs-server:${config.gaia.homeAssistant.matterjs.imageTag}";
+      pull = "always";
       autoStart = true;
       environment = {
         STORAGE_PATH = "/data";
