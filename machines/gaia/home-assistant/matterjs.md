@@ -4,7 +4,7 @@ Gaia runs `matterjs-server` as the primary Matter backend. The normal service na
 
 ## Current Shape
 
-- Primary controller: `ghcr.io/matter-js/matterjs-server:stable`.
+- Primary controller: `ghcr.io/matter-js/matterjs-server:latest`.
 - WebSocket/dashboard: local `ws://127.0.0.1:5580/ws` and `http://127.0.0.1:5580/`; LAN dashboard access is available at `http://gaia:5580/`.
 - Matter.js storage: `/earth/home-assistant/matterjs-server`.
 - Custom OTA drop directory: `/earth/home-assistant/matterjs-server/ota-provider`.
@@ -51,3 +51,13 @@ Pass criteria:
 - Thread and Wi-Fi Matter nodes both respond to live reads.
 - Presence sensors and remotes emit events through the default `5580` URL.
 - Home Assistant's Matter integration is configured for `ws://127.0.0.1:5580/ws`.
+
+## BILRESA Event Latency
+
+If a BILRESA remote answers `ping_node` or Identify but button events arrive minutes late, treat that as Matter.js subscription/session delivery first. A known failure shape is a Switch-cluster event burst only when Matter.js replaces a timed-out subscription. Validate the running server with:
+
+```sh
+matter-health | head
+```
+
+or a direct `server_info` websocket call; it should not report the old floating `stable` image's `matter-server/0.6.4` build. After deploying a fresh `latest` image, restart `podman-matter-server.service`, run `matterjs-set-thread-dataset.service`, restart `matter-layer.service`, then watch `journalctl -u podman-matter-server.service` for `Replacing subscription to @1:2ec` and delayed `node_id: 748` Switch events.

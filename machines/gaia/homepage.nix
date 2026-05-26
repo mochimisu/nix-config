@@ -705,6 +705,9 @@
                   <a class="service-card" href="/blackvue/">
                     <span class="stock">/blackvue</span><span class="art"><span class="plate"><svg viewBox="0 0 24 24"><rect x="4" y="7" width="11" height="10"/><path d="m15 10 5-2v8l-5-2"/><path d="M8 17v3h4v-3"/></svg></span></span><span class="accent video"></span><span class="service-name">BlackVue Viewer</span>
                   </a>
+                  <a class="service-card" href="/jellyfin/">
+                    <span class="stock">/jellyfin</span><span class="art"><span class="plate"><svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="1"/><path d="m10 10 5 2-5 2z"/><path d="M7 21h10"/><path d="M12 18v3"/></svg></span></span><span class="accent media"></span><span class="service-name">Jellyfin</span>
+                  </a>
                 </div>
             </section>
 
@@ -882,6 +885,14 @@ in {
       locations."/blackvue/api/" = {
         proxyPass = "http://127.0.0.1:3000/api/";
         extraConfig = (proxiedServiceHeaders "/blackvue") + blackvueSubstitutions;
+      };
+      locations."= /jellyfin" = {
+        return = "302 /jellyfin/";
+      };
+      locations."/jellyfin/" = {
+        proxyPass = "http://127.0.0.1:8096/";
+        proxyWebsockets = true;
+        extraConfig = proxiedServiceHeaders "/jellyfin";
       };
       locations."= /otbr" = {
         return = "302 /otbr/";

@@ -76,6 +76,7 @@ in {
   imports = [
     ./blackvue-sync.nix
     ./blackvue-viewer.nix
+    ./jellyfin.nix
     ./sops.nix
     ./transmission.nix
     ./home-assistant
