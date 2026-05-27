@@ -45,7 +45,7 @@
   };
 
   # fix kernel hang on suspend + prevent EC from waking on AC power changes
-  boot.kernelParams = ["amdgpu.gpu_recovery=1" "acpi.ec_no_wakeup=1"];
+  boot.kernelParams = ["amdgpu.gpu_recovery=1" "amdgpu.gfxoff=0" "acpi.ec_no_wakeup=1"];
   # MT7925 stability: disable PCIe ASPM on this device.
   boot.extraModprobeConfig = ''
     options mt7925e disable_aspm=Y
@@ -147,6 +147,11 @@
   };
 
   users.users.brandon.extraGroups = lib.mkAfter ["input"];
+
+  systemd.services.asus-shutdown = {
+    overrideStrategy = "asDropin";
+    serviceConfig.SendSIGKILL = lib.mkForce true;
+  };
 
   systemd.services.asus-fan-curve = {
     description = "Apply custom Asus fan curve";
