@@ -10,6 +10,8 @@
   sambaShare = lib.head sambaShares;
   statsMounts = ["/"] ++ lib.optionals (config.fileSystems ? "/earth") ["/earth"];
   statsMountsJson = builtins.toJSON statsMounts;
+  btrfsMounts = builtins.filter (mount: (config.fileSystems.${mount}.fsType or "") == "btrfs") (builtins.attrNames config.fileSystems);
+  btrfsMountsJson = builtins.toJSON btrfsMounts;
   homepageListen = [
     # OTBR's own web process is moved to 127.0.0.1:8080 in
     # home-assistant/default.nix, so nginx can own normal HTTP everywhere.
@@ -65,8 +67,6 @@
     text = ''
       #!${pkgs.python3}/bin/python3
       import asyncio
-      import base64
-      import hashlib
       import ipaddress
       import json
       import os
@@ -113,6 +113,104 @@
                       "percent": parts[4],
                       "mount": parts[5],
                   })
+          return rows
+
+      def run_text(cmd, timeout=10):
+          return subprocess.check_output(cmd, text=True, stderr=subprocess.STDOUT, timeout=timeout)
+
+      def read_btrfs_device_stats(mount):
+          errors = []
+          try:
+              output = run_text(["${pkgs.btrfs-progs}/bin/btrfs", "device", "stats", mount])
+          except Exception as e:
+              return {"ok": False, "error": str(e), "errors": []}
+          for line in output.splitlines():
+              if " " not in line:
+                  continue
+              key, value = line.rsplit(None, 1)
+              try:
+                  count = int(value)
+              except ValueError:
+                  continue
+              name = key.split(".", 1)[-1]
+              if count:
+                  errors.append({"name": name, "count": count})
+          return {"ok": not errors, "errors": errors}
+
+      def read_btrfs_scrub(mount):
+          try:
+              output = run_text(["${pkgs.btrfs-progs}/bin/btrfs", "scrub", "status", "-R", mount])
+          except Exception as e:
+              return {"ok": False, "status": "unknown", "error": str(e)}
+          scrub = {"ok": True, "status": "unknown"}
+          error_total = 0
+          for raw in output.splitlines():
+              line = raw.strip()
+              if not line or ":" not in line:
+                  continue
+              key, value = [part.strip() for part in line.split(":", 1)]
+              key_l = key.lower().replace(" ", "_")
+              if key_l == "status":
+                  scrub["status"] = value
+              elif key_l == "duration":
+                  scrub["duration"] = value
+              elif key_l == "total_to_scrub":
+                  scrub["totalToScrub"] = value
+              elif key_l == "rate":
+                  scrub["rate"] = value
+              elif key_l.endswith("_errors"):
+                  try:
+                      count = int(value.split()[0])
+                  except Exception:
+                      continue
+                  if count:
+                      error_total += count
+          scrub["errorCount"] = error_total
+          scrub["ok"] = error_total == 0 and "aborted" not in scrub.get("status", "").lower()
+          return scrub
+
+      def read_btrfs_usage(mount):
+          usage = {}
+          try:
+              output = run_text(["${pkgs.btrfs-progs}/bin/btrfs", "filesystem", "usage", "-h", mount])
+          except Exception as e:
+              return {"ok": False, "error": str(e)}
+          for raw in output.splitlines():
+              line = raw.strip()
+              if ":" not in line:
+                  continue
+              key, value = [part.strip() for part in line.split(":", 1)]
+              if key == "Device size":
+                  usage["deviceSize"] = value
+              elif key == "Device allocated":
+                  usage["deviceAllocated"] = value
+              elif key == "Device unallocated":
+                  usage["deviceUnallocated"] = value
+              elif key == "Used":
+                  usage["used"] = value
+              elif key == "Free (estimated)":
+                  usage["freeEstimated"] = value
+          usage["ok"] = True
+          return usage
+
+      def read_btrfs_health():
+          rows = []
+          for mount in ${btrfsMountsJson}:
+              if not os.path.ismount(mount):
+                  rows.append({"mount": mount, "ok": False, "status": "not mounted"})
+                  continue
+              device_stats = read_btrfs_device_stats(mount)
+              scrub = read_btrfs_scrub(mount)
+              usage = read_btrfs_usage(mount)
+              ok = device_stats.get("ok", False) and scrub.get("ok", False) and usage.get("ok", False)
+              rows.append({
+                  "mount": mount,
+                  "ok": ok,
+                  "status": "healthy" if ok else "attention",
+                  "deviceStats": device_stats,
+                  "scrub": scrub,
+                  "usage": usage,
+              })
           return rows
 
       def read_top():
@@ -178,20 +276,12 @@
                       lan = lan or ip
           return {"lan": lan, "tailnet": tailnet}
 
-      def frame_text(message):
-          payload = message.encode("utf-8")
-          size = len(payload)
-          if size < 126:
-              header = bytes([0x81, size])
-          elif size < 65536:
-              header = bytes([0x81, 126]) + size.to_bytes(2, "big")
-          else:
-              header = bytes([0x81, 127]) + size.to_bytes(8, "big")
-          return header + payload
+      def sse_event(message):
+          return ("data: " + message.replace("\n", "\ndata: ") + "\n\n").encode("utf-8")
 
       async def broadcast(message):
           dead = []
-          packet = frame_text(message)
+          packet = sse_event(message)
           for writer in list(clients):
               try:
                   writer.write(packet)
@@ -205,6 +295,24 @@
                   await writer.wait_closed()
               except Exception:
                   pass
+
+      async def keepalive_loop():
+          while True:
+              await asyncio.sleep(15)
+              dead = []
+              for writer in list(clients):
+                  try:
+                      writer.write(b": keepalive\n\n")
+                      await writer.drain()
+                  except Exception:
+                      dead.append(writer)
+              for writer in dead:
+                  clients.discard(writer)
+                  try:
+                      writer.close()
+                      await writer.wait_closed()
+                  except Exception:
+                      pass
 
       async def stats_loop():
           global latest_payload
@@ -223,6 +331,7 @@
                   "memory": read_mem(),
                   "topProcesses": read_top(),
                   "filesystems": read_df(),
+                  "btrfsHealth": read_btrfs_health(),
                   "cpuTemp": read_temp(),
                   "uptimeSeconds": read_uptime(),
                   "networkAddresses": read_addresses(),
@@ -235,50 +344,31 @@
               await broadcast(latest_payload)
               await asyncio.sleep(5)
 
-      async def handle_ws(reader, writer):
+      async def handle_sse(reader, writer):
           try:
               data = await reader.readuntil(b"\r\n\r\n")
               request = data.decode("latin1")
-              headers = {}
-              lines = request.split("\r\n")
-              for line in lines[1:]:
-                  if ":" in line:
-                      k, v = line.split(":", 1)
-                      headers[k.strip().lower()] = v.strip()
-              key = headers.get("sec-websocket-key")
-              if not key or "upgrade" not in headers.get("connection", "").lower():
-                  writer.write(b"HTTP/1.1 400 Bad Request\r\nConnection: close\r\n\r\n")
+              request_line = request.split("\r\n", 1)[0]
+              if not request_line.startswith("GET "):
+                  writer.write(b"HTTP/1.1 405 Method Not Allowed\r\nConnection: close\r\n\r\n")
                   await writer.drain()
                   writer.close()
                   return
-              accept = base64.b64encode(hashlib.sha1((key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11").encode()).digest()).decode()
               writer.write((
-                  "HTTP/1.1 101 Switching Protocols\r\n"
-                  "Upgrade: websocket\r\n"
-                  "Connection: Upgrade\r\n"
-                  "Sec-WebSocket-Accept: " + accept + "\r\n\r\n"
+                  "HTTP/1.1 200 OK\r\n"
+                  "Content-Type: text/event-stream; charset=utf-8\r\n"
+                  "Cache-Control: no-store\r\n"
+                  "Connection: keep-alive\r\n"
+                  "X-Accel-Buffering: no\r\n\r\n"
               ).encode("ascii"))
               await writer.drain()
               clients.add(writer)
               if latest_payload:
-                  writer.write(frame_text(latest_payload))
+                  writer.write(sse_event(latest_payload))
                   await writer.drain()
-              while not reader.at_eof():
-                  data = await reader.read(2)
+              while True:
+                  data = await reader.read(1024)
                   if not data:
-                      break
-                  opcode = data[0] & 0x0F
-                  length = data[1] & 0x7F
-                  if length == 126:
-                      length = int.from_bytes(await reader.readexactly(2), "big")
-                  elif length == 127:
-                      length = int.from_bytes(await reader.readexactly(8), "big")
-                  masked = data[1] & 0x80
-                  if masked:
-                      await reader.readexactly(4)
-                  if length:
-                      await reader.readexactly(length)
-                  if opcode == 8:
                       break
           except Exception:
               pass
@@ -292,9 +382,9 @@
 
       async def main():
           out_dir.mkdir(parents=True, exist_ok=True)
-          server = await asyncio.start_server(handle_ws, "127.0.0.1", 8090)
+          server = await asyncio.start_server(handle_sse, "127.0.0.1", 8090)
           async with server:
-              await asyncio.gather(server.serve_forever(), stats_loop())
+              await asyncio.gather(server.serve_forever(), stats_loop(), keepalive_loop())
 
       asyncio.run(main())
     '';
@@ -659,6 +749,82 @@
             padding-top: 0.55rem;
           }
 
+          .health-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+            gap: 0.75rem;
+          }
+
+          .health-card {
+            display: grid;
+            gap: 0.7rem;
+            padding: 0.85rem;
+            background: rgba(248,247,242,0.86);
+            border: 1px solid rgba(62,67,70,0.15);
+            box-shadow: 0 0.25rem 0.65rem rgba(45,49,51,0.08);
+          }
+
+          .health-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.8rem;
+          }
+
+          .health-mount {
+            font-family: "SFMono-Regular", ui-monospace, Menlo, Consolas, monospace;
+            font-size: 1rem;
+            font-weight: 680;
+          }
+
+          .health-pill {
+            flex: 0 0 auto;
+            padding: 0.18rem 0.45rem;
+            background: rgba(155,194,69,0.18);
+            border: 1px solid rgba(94,133,33,0.24);
+            color: #4f7219;
+            font-size: 0.62rem;
+            font-weight: 760;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+          }
+
+          .health-card.attention .health-pill {
+            background: rgba(240,138,36,0.18);
+            border-color: rgba(174,87,18,0.28);
+            color: #99530e;
+          }
+
+          .health-facts {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.6rem;
+          }
+
+          .health-fact {
+            min-width: 0;
+            padding-top: 0.45rem;
+            border-top: 1px solid rgba(37,41,44,0.08);
+          }
+
+          .health-fact strong {
+            display: block;
+            color: rgba(37,41,44,0.54);
+            font-size: 0.58rem;
+            font-weight: 740;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+          }
+
+          .health-fact span {
+            display: block;
+            margin-top: 0.2rem;
+            color: rgba(37,41,44,0.76);
+            font-size: 0.76rem;
+            line-height: 1.3;
+            overflow-wrap: anywhere;
+          }
+
           @media (max-width: 760px) {
             .stats-wide { grid-column: span 1; }
           }
@@ -747,6 +913,12 @@
                   <div class="stat-card stats-wide"><div class="stat-label">Disk</div><ul class="stat-list" id="df"></ul></div>
                 </div>
             </section>
+
+            <div class="section-icon" aria-hidden="true"><button class="rail-item" type="button" data-target="btrfs-title" aria-label="BTRFS Health"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="16"/><path d="M8 8h8"/><path d="M8 12h8"/><path d="M8 16h3"/><path d="m14 16 1.6 1.6L19 14"/></svg></button></div>
+            <section class="stats-panel" aria-labelledby="btrfs-title">
+                <h2 class="category-title" id="btrfs-title">BTRFS Health</h2>
+                <div class="health-list" id="btrfs-health"></div>
+            </section>
           </section>
         </main>
 
@@ -763,6 +935,58 @@
           };
           const setMeter = (id, value) => {
             document.getElementById(id).style.setProperty('--value', Math.max(0, Math.min(100, value)) + '%');
+          };
+          const addFact = (parent, label, value) => {
+            const fact = document.createElement('div');
+            fact.className = 'health-fact';
+            const strong = document.createElement('strong');
+            strong.textContent = label;
+            const span = document.createElement('span');
+            span.textContent = value || 'n/a';
+            fact.append(strong, span);
+            parent.appendChild(fact);
+          };
+
+          const renderBtrfsHealth = (items) => {
+            const root = document.getElementById('btrfs-health');
+            root.textContent = "";
+            if (!items || !items.length) {
+              const empty = document.createElement('div');
+              empty.className = 'health-card attention';
+              empty.textContent = 'No BTRFS mounts are declared for this host.';
+              root.appendChild(empty);
+              return;
+            }
+            items.forEach((item) => {
+              const card = document.createElement('article');
+              card.className = 'health-card' + (item.ok ? "" : ' attention');
+              const head = document.createElement('div');
+              head.className = 'health-head';
+              const mount = document.createElement('div');
+              mount.className = 'health-mount';
+              mount.textContent = item.mount;
+              const pill = document.createElement('div');
+              pill.className = 'health-pill';
+              pill.textContent = item.status || (item.ok ? 'healthy' : 'attention');
+              head.append(mount, pill);
+              const facts = document.createElement('div');
+              facts.className = 'health-facts';
+              const usage = item.usage || {};
+              const scrub = item.scrub || {};
+              const deviceStats = item.deviceStats || {};
+              const errors = deviceStats.errors || [];
+              const errorText = errors.length ? errors.map((err) => err.name + ': ' + err.count).join(', ') : '0';
+              addFact(facts, 'Used', usage.used || 'unknown');
+              addFact(facts, 'Free est.', usage.freeEstimated || 'unknown');
+              addFact(facts, 'Scrub', scrub.status || 'unknown');
+              addFact(facts, 'Errors', errorText);
+              if (scrub.errorCount) addFact(facts, 'Scrub errors', String(scrub.errorCount));
+              if (usage.error) addFact(facts, 'Usage check', usage.error);
+              if (scrub.error) addFact(facts, 'Scrub check', scrub.error);
+              if (deviceStats.error) addFact(facts, 'Device stats', deviceStats.error);
+              card.append(head, facts);
+              root.appendChild(card);
+            });
           };
 
           const railItems = Array.from(document.querySelectorAll('.rail-item'));
@@ -792,6 +1016,7 @@
             document.getElementById('uptime').textContent = fmtUptime(stats.uptimeSeconds);
             document.getElementById('top-procs').innerHTML = stats.topProcesses.map((p) => '<li><code>' + p.command + '</code><span>' + p.cpu.toFixed(1) + '%</span></li>').join("");
             document.getElementById('df').innerHTML = stats.filesystems.map((fs) => '<li><code>' + fs.mount + '</code><span>' + fs.used + '/' + fs.size + ' · ' + fs.percent + '</span></li>').join("");
+            renderBtrfsHealth(stats.btrfsHealth);
             if (stats.networkAddresses) {
               document.getElementById('lan-address').textContent = stats.networkAddresses.lan || 'n/a';
               document.getElementById('tailnet-address').textContent = stats.networkAddresses.tailnet || 'n/a';
@@ -806,15 +1031,16 @@
               document.getElementById('cpu').textContent = 'offline';
             }
           }
-          function connectStatsSocket() {
-            const scheme = location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const socket = new WebSocket(scheme + '//' + location.host + '/stats-ws');
-            socket.onmessage = (event) => renderStats(JSON.parse(event.data));
-            socket.onerror = () => socket.close();
-            socket.onclose = () => setTimeout(connectStatsSocket, 2500);
+          function connectStatsEvents() {
+            const events = new EventSource('/stats-events');
+            events.onmessage = (event) => renderStats(JSON.parse(event.data));
+            events.onerror = () => {
+              events.close();
+              setTimeout(connectStatsEvents, 2500);
+            };
           }
           refreshStatsSnapshot();
-          connectStatsSocket();
+          connectStatsEvents();
         </script>
       </body>
     </html>
@@ -836,9 +1062,15 @@ in {
           add_header X-Content-Type-Options nosniff;
         '';
       };
-      locations."/stats-ws" = {
+      locations."/stats-events" = {
         proxyPass = "http://127.0.0.1:8090";
-        proxyWebsockets = true;
+        extraConfig = ''
+          proxy_buffering off;
+          proxy_cache off;
+          add_header Cache-Control "no-store";
+          add_header X-Accel-Buffering no;
+          add_header X-Content-Type-Options nosniff;
+        '';
       };
       locations."= /matter-layer" = {
         return = "302 /matter-layer/";
