@@ -708,6 +708,9 @@
                   <a class="service-card" href="/jellyfin/">
                     <span class="stock">/jellyfin</span><span class="art"><span class="plate"><svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="1"/><path d="m10 10 5 2-5 2z"/><path d="M7 21h10"/><path d="M12 18v3"/></svg></span></span><span class="accent media"></span><span class="service-name">Jellyfin</span>
                   </a>
+                  <a class="service-card" href="http://${hostName}:8083/">
+                    <span class="stock">Port 8083</span><span class="art"><span class="plate"><svg viewBox="0 0 24 24"><path d="M5 5h11a3 3 0 0 1 3 3v11H8a3 3 0 0 1-3-3z"/><path d="M8 5v11a3 3 0 0 0 3 3"/><path d="M9 9h6"/><path d="M9 12h5"/></svg></span></span><span class="accent media"></span><span class="service-name">Kavita</span>
+                  </a>
                 </div>
             </section>
 
@@ -723,6 +726,9 @@
                   </a>
                   <a class="service-card" href="smb://${hostName}/${sambaShare}/">
                     <span class="stock">Port 445</span><span class="art"><span class="plate"><svg viewBox="0 0 24 24"><path d="M4 7h16v10H4z"/><path d="M7 7V5h10v2"/><path d="M8 17v2h8v-2"/></svg></span></span><span class="accent storage"></span><span class="service-name">Samba Share</span>
+                  </a>
+                  <a class="service-card" href="http://${hostName}:17200/healthcheck">
+                    <span class="stock">Port 17200</span><span class="art"><span class="plate yellow"><svg viewBox="0 0 24 24"><path d="M7 8a6 6 0 0 1 10 2"/><path d="m17 6 1 4-4 1"/><path d="M17 16a6 6 0 0 1-10-2"/><path d="m7 18-1-4 4-1"/><path d="M12 8v5l3 2"/></svg></span></span><span class="accent sync"></span><span class="service-name">KOReader Sync</span>
                   </a>
                 </div>
             </section>

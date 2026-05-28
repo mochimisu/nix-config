@@ -19,12 +19,9 @@ export default defineRoomDevices("mbr", ({ room }) => {
     "mbr.doorBlindsRight",
   ]);
   room.windowBlinds = smartwings("mbr.windowBlinds", {
-    openPosition: "50%",
+    openPosition: "70%",
   });
-  room.blinds = smartwingsGroup([
-    ...room.doorBlinds.covers,
-    room.windowBlinds,
-  ]);
+  room.blinds = smartwingsGroup([...room.doorBlinds.covers, room.windowBlinds]);
   room.door = myggbett("mbr.door");
   room.occupancy = ms605Presence("mbr.presence2");
 

@@ -1,5 +1,6 @@
 import { any, defineRoomDevices, pulse, signal, solarDark } from "matter-layer/rules";
 import {
+  alpstuga,
   bilresa,
   innovelli,
   matterLight,
@@ -18,6 +19,7 @@ export default defineRoomDevices("office", ({ room }) => {
   room.nearPresence = ms605Presence("office.presence");
   room.farPresence = ms605Presence("office.presenceFar");
   room.door = myggbett("office.door");
+  room.airQuality = alpstuga("office.airQuality");
 
   room.presence = signal(() =>
     any(

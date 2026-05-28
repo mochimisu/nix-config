@@ -89,7 +89,7 @@ in {
       (final: prev: {
         openclaw-gateway = prev.openclaw-gateway.overrideAttrs (old: {
           pnpmDeps = old.pnpmDeps.overrideAttrs (_: {
-            outputHash = "sha256-QEMFy/PTb2Lq/2gNP+m6ViiBr4O0jvKvDfcKXY/hrdY=";
+            outputHash = "sha256-j0vTmAihVbg+rQb3DBYXFhcZZV7Z6ntypKwZyt/Qa7s=";
           });
           patches =
             (old.patches or [])

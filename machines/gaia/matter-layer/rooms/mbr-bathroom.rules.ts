@@ -2,16 +2,13 @@ import { defineRoomRules, state } from "matter-layer/rules";
 
 export default defineRoomRules("mbrBathroom", ({ room, rule }) => {
   rule("lights", () => {
-    const daytime = state.timeBetween("6:00", "22:00");
-    const morning = daytime && state.timeBetween("6:00", "11:00");
-    room.main.auto(room.presence && daytime);
-    room.mirror.auto(room.presence && morning);
-    room.warm.auto(room.presence && !daytime);
+    room.main.auto(room.presence && room.daytime);
+    room.mirror.auto(room.presence && room.morning);
+    room.warm.auto(room.presence && !room.daytime);
   });
 
   rule("toilet", () => {
-    const daytime = state.timeBetween("6:00", "22:00");
-    const onState = daytime ? { power: "on", level: "15%" } : true;
+    const onState = room.daytime ? true : { power: "on", level: "15%" };
     room.toiletLight.auto(room.toiletPresence ? onState : false);
   });
 
