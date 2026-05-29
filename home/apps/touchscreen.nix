@@ -15,8 +15,8 @@ let
   hyprgrassBinds = defaultHyprgrassBinds
     ++ (touchscreenVars.hyprgrassBinds or [])
     ++ lib.optionals onScreenKeyboard [
-      ",swipe:4:u,exec,wvkbd-mobintl -H 600 -L 600"
-      ",swipe:4:d,exec,pkill wvkbd-mobintl"
+      ",swipe:4:u,exec,${wvkbdStartScript}"
+      ",swipe:4:d,exec,${wvkbdStopScript}"
     ];
   hyprgrassBindm = touchscreenVars.hyprgrassBindm or [
     ",longpress:2,movewindow"
@@ -24,6 +24,65 @@ let
   ];
   enableHyprgrassBinds = enableHyprgrass && hyprgrassBinds != [];
   enableHyprgrassBindm = enableHyprgrass && hyprgrassBindm != [];
+  enableHyprgrassLuaConfig = enableHyprgrassBinds || enableHyprgrassBindm;
+  hyprgrassPackage = inputs.hyprgrass.packages.${pkgs.stdenv.hostPlatform.system}.default;
+  hyprgrassPluginPath = "${hyprgrassPackage}/lib/libhyprgrass.so";
+  wvkbdStartScript = "${config.home.homeDirectory}/.config/hypr/wvkbd-mobintl-start.sh";
+  wvkbdStopScript = "${config.home.homeDirectory}/.config/hypr/wvkbd-mobintl-stop.sh";
+  splitCsv = value: lib.splitString "," value;
+  luaString = builtins.toJSON;
+  hyprlandDispatcherToLua = dispatcher: arg:
+    if dispatcher == "exec"
+    then "hl.dsp.exec_cmd(${luaString arg})"
+    else if dispatcher == "togglefloating"
+    then "hl.dsp.window.float({ action = \"toggle\" })"
+    else if dispatcher == "fullscreen"
+    then "hl.dsp.window.fullscreen()"
+    else if dispatcher == "killactive"
+    then "hl.dsp.window.close()"
+    else "hl.dsp.exec_cmd(${luaString "hyprctl dispatch ${dispatcher}${lib.optionalString (arg != "") " ${arg}"}"})";
+  hyprgrassBindToLua = value: let
+    parts = splitCsv value;
+    mod = lib.elemAt parts 0;
+    gesture = lib.elemAt parts 1;
+    dispatcher = lib.elemAt parts 2;
+    arg = lib.concatStringsSep "," (lib.drop 3 parts);
+    action = hyprlandDispatcherToLua dispatcher arg;
+  in ''
+    hl.plugin.hyprgrass.bind {
+      gesture = ${luaString gesture},
+      ${lib.optionalString (mod != "") "mod = ${luaString mod},"}
+      action = ${action},
+    }
+  '';
+  hyprgrassBindmToLua = value: let
+    parts = splitCsv value;
+    mod = lib.elemAt parts 0;
+    gesture = lib.elemAt parts 1;
+    dispatcher = lib.elemAt parts 2;
+    action =
+      if dispatcher == "movewindow"
+      then "hl.dsp.window.drag()"
+      else if dispatcher == "resizewindow"
+      then "hl.dsp.window.resize()"
+      else "function() hl.exec_cmd(${luaString "hyprctl dispatch ${dispatcher}"}) end";
+  in ''
+    hl.plugin.hyprgrass.bind {
+      gesture = ${luaString gesture},
+      ${lib.optionalString (mod != "") "mod = ${luaString mod},"}
+      action = ${action},
+      mouse = true,
+    }
+  '';
+  hyprgrassLuaConfig = ''
+    -- Hyprgrass PR #381 Lua API.
+    hl.plugin.load(${luaString hyprgrassPluginPath})
+
+    if hl.plugin and hl.plugin.hyprgrass and hl.plugin.hyprgrass.bind then
+    ${lib.concatMapStrings hyprgrassBindToLua hyprgrassBinds}
+    ${lib.concatMapStrings hyprgrassBindmToLua hyprgrassBindm}
+    end
+  '';
   lisgdScrollCmd = "${pkgs.ydotool}/bin/ydotool mousemove --wheel -- 0";
   lisgdScrollUp = "1,DU,*,*,P,${lisgdScrollCmd} -1";
   lisgdScrollDown = "1,UD,*,*,P,${lisgdScrollCmd} 1";
@@ -53,17 +112,33 @@ in {
           WantedBy = ["graphical-session.target"];
         };
       };
+
+      home.file.".config/hypr/wvkbd-mobintl-start.sh" = lib.mkIf onScreenKeyboard {
+        executable = true;
+        text = ''
+          #!/usr/bin/env sh
+          set -eu
+
+          lock="''${XDG_RUNTIME_DIR:-/tmp}/wvkbd-mobintl.lock"
+          ${pkgs.util-linux}/bin/flock -n "$lock" sh -c '
+            ${pkgs.procps}/bin/pgrep -x wvkbd-mobintl >/dev/null && exit 0
+            exec ${pkgs.wvkbd}/bin/wvkbd-mobintl -H 600 -L 600
+          '
+        '';
+      };
+
+      home.file.".config/hypr/wvkbd-mobintl-stop.sh" = lib.mkIf onScreenKeyboard {
+        executable = true;
+        text = ''
+          #!/usr/bin/env sh
+          set -eu
+
+          ${pkgs.procps}/bin/pkill -x wvkbd-mobintl || true
+        '';
+      };
     }
-    (lib.mkIf enableHyprgrass {
-      wayland.windowManager.hyprland.plugins = [
-        inputs.hyprgrass.packages.${pkgs.stdenv.hostPlatform.system}.default
-      ];
-    })
-    (lib.mkIf enableHyprgrassBinds {
-      wayland.windowManager.hyprland.settings.config.plugin.touch_gestures.hyprgrass-bind = hyprgrassBinds;
-    })
-    (lib.mkIf enableHyprgrassBindm {
-      wayland.windowManager.hyprland.settings.config.plugin.touch_gestures.hyprgrass-bindm = hyprgrassBindm;
+    (lib.mkIf enableHyprgrassLuaConfig {
+      wayland.windowManager.hyprland.extraConfig = hyprgrassLuaConfig;
     })
   ]);
 }

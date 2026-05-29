@@ -4,7 +4,9 @@
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     hyprland.url = "github:hyprwm/Hyprland";
     hyprgrass = {
-      url = "github:horriblename/hyprgrass";
+      # PR #381 adds the Lua API we need to load/configure Hyprgrass from our Hyprland Lua config.
+      # Switch back to upstream main once that support lands there.
+      url = "github:horriblename/hyprgrass/pull/381/head";
       inputs.hyprland.follows = "hyprland";
     };
     home-manager = {

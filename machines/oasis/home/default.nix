@@ -1,4 +1,4 @@
-{config, lib, ...}: {
+{config, lib, pkgs, ...}: {
   variables.keyboardLayout = "dvorak";
   variables.hyprpanel = {
     cpuTempSensor = "/sys/devices/pci0000:00/0000:00:08.1/0000:c4:00.0/hwmon/hwmon9/temp1_input";
@@ -17,7 +17,7 @@
   ];
   variables.touchscreen = {
     enable = true;
-    enableHyprgrass = false;
+    enableHyprgrass = true;
     enableScroll = true;
     onScreenKeyboard = true;
     hyprgrassBinds = [
@@ -105,18 +105,33 @@
       set -eu
 
       STATE_FILE="''${XDG_RUNTIME_DIR:-/tmp}/hyprgrass-3tap"
-      now="$(date +%s%3N)"
+      LOCK_FILE="''${XDG_RUNTIME_DIR:-/tmp}/hyprgrass-3tap.lock"
+      exec 9>"$LOCK_FILE"
+      ${pkgs.util-linux}/bin/flock 9
+
+      now="$(${pkgs.coreutils}/bin/date +%s%3N)"
+      min_delta=120
+      max_delta=350
+      action_cooldown=500
+      last=0
+      last_action=0
 
       if [ -f "$STATE_FILE" ]; then
-        last="$(cat "$STATE_FILE" 2>/dev/null || echo 0)"
-        delta=$((now - last))
-        if [ "$delta" -le 350 ]; then
-          rm -f "$STATE_FILE"
-          exec kitty
-        fi
+        read -r last last_action < "$STATE_FILE" || true
       fi
 
-      echo "$now" > "$STATE_FILE"
+      if [ "$((now - last_action))" -lt "$action_cooldown" ]; then
+        exit 0
+      fi
+
+      delta=$((now - last))
+      if [ "$delta" -ge "$min_delta" ] && [ "$delta" -le "$max_delta" ]; then
+        printf '0 %s\n' "$now" > "$STATE_FILE"
+        kitty >/dev/null 2>&1 &
+        exit 0
+      fi
+
+      printf '%s %s\n' "$now" "$last_action" > "$STATE_FILE"
     '';
   };
 }
