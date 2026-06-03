@@ -53,6 +53,7 @@ in {
         position = "0x0";
         scale = 1;
         bitdepth = 10;
+        cm = "auto";
       }
       {
         output = "HDMI-A-1";
@@ -272,14 +273,30 @@ in {
   home.file.".config/hypr/toggle-hdr.sh" = {
     executable = true;
     text = ''
+      #!/usr/bin/env bash
+      set -euo pipefail
+
       state_file="''${XDG_STATE_HOME:-$HOME/.local/state}/hypr/hdr-enabled"
       mkdir -p "''${state_file%/*}"
 
       cm_enabled=$(hyprctl getoption render:cm_enabled | awk 'NR==1{print $2}')
-      if [ "''${cm_enabled:-0}" = "1" ]; then
+      monitor_cm=$(
+        hyprctl -j monitors |
+          jq -r '.[] | select(.name == "DP-3") | .colorManagementPreset // "unknown"' |
+          tail -n 1
+      )
+
+      if [ "$monitor_cm" = "hdr" ] || [ "''${cm_enabled:-0}" = "1" ]; then
         printf "0" > "$state_file"
         hyprctl eval 'hl.config({ render = { cm_enabled = false, cm_auto_hdr = 0 } })'
-        hyprctl eval 'hl.monitor({ output = "DP-3", mode = "3440x1440@175", position = "0x0", scale = 1, bitdepth = 10 })'
+        hyprctl eval 'hl.monitor({
+          output = "DP-3",
+          mode = "3440x1440@175",
+          position = "0x0",
+          scale = 1,
+          bitdepth = 10,
+          cm = "auto",
+        })'
       else
         printf "1" > "$state_file"
         hyprctl eval 'hl.config({ render = { cm_enabled = true, cm_auto_hdr = 0 } })'
