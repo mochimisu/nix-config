@@ -35,27 +35,82 @@ in {
     nvidia-vaapi-driver
   ];
 
+  home.shellAliases = {
+  };
+
   wayland.windowManager.hyprland.settings = {
     monitor = [
-      {output = "DP-1"; mode = "2560x1440@120"; position = "3440x-560"; scale = 1; transform = 1;}
-      {output = "DP-3"; mode = "3440x1440@175"; position = "0x0"; scale = 1; bitdepth = 10;}
-      {output = "HDMI-A-1"; mode = "480x1920@60"; position = "4880x1400"; scale = 1; transform = 1;}
+      {
+        output = "DP-1";
+        mode = "2560x1440@120";
+        position = "3440x-560";
+        scale = 1;
+        transform = 1;
+      }
+      {
+        output = "DP-3";
+        mode = "3440x1440@175";
+        position = "0x0";
+        scale = 1;
+        bitdepth = 10;
+      }
+      {
+        output = "HDMI-A-1";
+        mode = "480x1920@60";
+        position = "4880x1400";
+        scale = 1;
+        transform = 1;
+      }
     ];
 
     workspace_rule = [
-      {workspace = "1"; monitor = "DP-3"; default = true;}
-      {workspace = "2"; monitor = "DP-1"; default = true;}
-      {workspace = "3"; monitor = "DP-3"; default = true;}
-      {workspace = "10"; monitor = "HDMI-A-1"; default = true;}
+      {
+        workspace = "1";
+        monitor = "DP-3";
+        default = true;
+      }
+      {
+        workspace = "2";
+        monitor = "DP-1";
+        default = true;
+      }
+      {
+        workspace = "3";
+        monitor = "DP-3";
+        default = true;
+      }
+      {
+        workspace = "10";
+        monitor = "HDMI-A-1";
+        default = true;
+      }
     ];
 
     window_rule = [
-      {name = "steam-workspace"; match.class = "^(steam)$"; workspace = "2 silent";}
-      {name = "discord-workspace"; match.class = "^(discord)$"; workspace = "2 silent";}
+      {
+        name = "discord-workspace";
+        match.class = "^(discord)$";
+        workspace = "2 silent";
+      }
       # Endfield's launcher sometimes restores stale XWayland coordinates off-screen.
-      {name = "endfield-launcher-center"; match = {class = "^(steam_app_0)$"; title = "^(GRYPHLINK)$";}; center = true;}
-      {name = "monster-hunter-render-unfocused"; match.class = "^(Monster Hunter Wilds)$"; render_unfocused = true;}
-      {name = "ffxiv-monitor"; match.class = "^(ffxiv_dx11.exe)$"; monitor = "DP-3 tile";}
+      {
+        name = "endfield-launcher-center";
+        match = {
+          class = "^(steam_app_0)$";
+          title = "^(GRYPHLINK)$";
+        };
+        center = true;
+      }
+      {
+        name = "monster-hunter-render-unfocused";
+        match.class = "^(Monster Hunter Wilds)$";
+        render_unfocused = true;
+      }
+      {
+        name = "ffxiv-monitor";
+        match.class = "^(ffxiv_dx11.exe)$";
+        monitor = "DP-3 tile";
+      }
     ];
 
     config.input = {
@@ -73,7 +128,7 @@ in {
               hl.exec_cmd("wlr-randr --output DP-3 --primary")
               hl.exec_cmd("DISPLAY=:1 xrandr --output DP-3 --primary")
               hl.exec_cmd("openrgb --profile /home/brandon/.config/OpenRGB/moon.orp")
-              hl.exec_cmd("mangohud steam -silent")
+              hl.exec_cmd("steam -silent")
               hl.exec_cmd("~/.config/hypr/endfield-launcher-fix.sh")
             end
           '')
