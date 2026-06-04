@@ -44,7 +44,8 @@
   };
 
   # fix kernel hang on suspend + prevent EC from waking on AC power changes
-  boot.kernelParams = ["amdgpu.gpu_recovery=1" "amdgpu.gfxoff=0" "acpi.ec_no_wakeup=1"];
+  # Do not use amdgpu.pg_mask=0 here; May 30 2026 boots were unstable/crashed with it.
+  boot.kernelParams = ["amdgpu.gpu_recovery=1" "acpi.ec_no_wakeup=1"];
   # MT7925 stability: disable PCIe ASPM on this device.
   boot.extraModprobeConfig = ''
     options mt7925e disable_aspm=Y
