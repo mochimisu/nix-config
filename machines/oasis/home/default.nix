@@ -3,6 +3,9 @@
   variables.hyprpanel = {
     cpuTempSensor = "/sys/devices/pci0000:00/0000:00:08.1/0000:c4:00.0/hwmon/hwmon9/temp1_input";
   };
+  variables.rofi = {
+    useX11 = true;
+  };
   variables.hyprpaper-config = ''
     wallpaper {
       monitor = DP-2
@@ -57,7 +60,6 @@
           (lib.generators.mkLuaInline ''
             function()
               hl.exec_cmd("mangohud steam -silent")
-              hl.exec_cmd("iio-hyprland")
             end
           '')
         ];

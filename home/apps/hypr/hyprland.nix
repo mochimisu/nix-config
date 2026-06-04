@@ -46,6 +46,10 @@ in {
           };
         };
 
+        gestures = {
+          workspace_swipe_touch = true;
+        };
+
         general = {
           gaps_in = 3;
           gaps_out = 0;
@@ -136,7 +140,7 @@ in {
         {
           _args = [
             (lua "mod .. \" + V\"")
-            (lua "hl.dsp.exec_cmd(\"cliphist list | rofi --dmenu | cliphist decode | wl-copy\")")
+            (lua "hl.dsp.exec_cmd(\"cliphist list | rofi-touch --dmenu | cliphist decode | wl-copy\")")
           ];
         }
       ];

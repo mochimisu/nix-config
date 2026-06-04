@@ -8,9 +8,21 @@
   palette = (lib.importJSON "${sources.palette}/palette.json").${flavor}.colors;
   variables = config.variables or {};
   isLinuxGui = pkgs.stdenv.isLinux && (variables.isGui or true);
+  rofiVars = variables.rofi or {};
+  rofiX11 = pkgs.rofi.override {
+    rofi-unwrapped = pkgs.rofi-unwrapped.override {
+      waylandSupport = false;
+      x11Support = true;
+    };
+  };
+  rofiPackage =
+    if rofiVars.useX11 or false
+    then rofiX11
+    else pkgs.rofi;
 in {
   programs.rofi = lib.mkIf isLinuxGui {
     enable = true;
+    package = rofiPackage;
     extraConfig = {
       modi = "drun,run,window,ssh,calc";
       show-icons = true;
@@ -19,7 +31,7 @@ in {
       sort = true;
       icon-theme = "Papirus-Dark";
       transparency = "real";
-      "click-to-exit" = false;
+      "click-to-exit" = true;
       "kb-mode-next" = "Super+Right";
       "kb-mode-previous" = "Super+Left";
     };
@@ -157,6 +169,18 @@ in {
           order = 1;
         }
       ];
+      window_rule = [
+        {
+          name = "rofi-normal-window-float";
+          match.class = "^([Rr]ofi)$";
+          float = true;
+        }
+        {
+          name = "rofi-normal-window-center";
+          match.class = "^([Rr]ofi)$";
+          center = true;
+        }
+      ];
     };
   };
   # catppuccin.rofi.enable = true;
@@ -167,8 +191,16 @@ in {
         if pgrep -x rofi > /dev/null; then
           pkill rofi
         else
-          rofi -no-click-to-exit "$@"
+          rofi-touch "$@"
         fi
+      '')
+      (writeShellScriptBin "rofi-touch" ''
+        #!/usr/bin/env bash
+        args=("$@")
+        if pgrep -x wvkbd-mobintl >/dev/null; then
+          args=(-normal-window "''${args[@]}")
+        fi
+        exec rofi "''${args[@]}"
       '')
     ];
   };

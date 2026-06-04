@@ -28,7 +28,6 @@
 
     # rotate screen
     jq
-    iio-hyprland
 
     # on screen keyboard
     wvkbd
