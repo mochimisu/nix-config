@@ -69,6 +69,7 @@ ShellRoot {
     property string qwertyState: "other"
     property string pttState: "unknown"
     property var toastNotifications: []
+    property var notificationTimestamps: ({})
     property int notificationSerial: 0
     readonly property int notificationCount: notificationServer.trackedNotifications && notificationServer.trackedNotifications.values
         ? notificationServer.trackedNotifications.values.length
@@ -282,30 +283,96 @@ ShellRoot {
         return fgColor;
     }
 
+    function notificationEntryAccent(entry) {
+        if (entry && entry.critical) {
+            return urgentColor;
+        }
+
+        return fgColor;
+    }
+
+    function notificationIconSource(notification) {
+        if (!notification) {
+            return "";
+        }
+
+        const image = String(notification.image || "");
+        if (image !== "") {
+            return image;
+        }
+
+        const appIcon = String(notification.appIcon || "");
+        if (appIcon === "") {
+            return "";
+        }
+
+        if (appIcon.indexOf("/") === 0 || appIcon.indexOf("file:") === 0 || appIcon.indexOf("image:") === 0) {
+            return appIcon;
+        }
+
+        return "image://icon/" + appIcon;
+    }
+
+    function notificationKey(notification) {
+        if (!notification) {
+            return "";
+        }
+
+        return String(notification.appName || "") + ":" + String(notification.id || "") + ":" + root.notificationSummary(notification);
+    }
+
+    function formatTimestamp(date) {
+        const hours = date.getHours();
+        const minutes = date.getMinutes();
+        const hour12 = hours % 12 || 12;
+        const suffix = hours >= 12 ? "pm" : "am";
+        return String(hour12) + ":" + String(minutes).padStart(2, "0") + suffix;
+    }
+
+    function rememberNotificationTimestamp(notification, timestamp) {
+        const key = root.notificationKey(notification);
+        if (key === "") {
+            return;
+        }
+
+        const next = Object.assign({}, root.notificationTimestamps);
+        next[key] = timestamp;
+        root.notificationTimestamps = next;
+    }
+
+    function notificationTimestamp(notification) {
+        const key = root.notificationKey(notification);
+        if (key !== "" && root.notificationTimestamps[key]) {
+            return root.notificationTimestamps[key];
+        }
+
+        const timestamp = root.formatTimestamp(new Date());
+        root.rememberNotificationTimestamp(notification, timestamp);
+        return timestamp;
+    }
+
     function pushToastNotification(notification) {
-        const now = Date.now();
+        const timestamp = root.formatTimestamp(new Date());
+        root.rememberNotificationTimestamp(notification, timestamp);
         root.notificationSerial += 1;
         const next = [{
             "notification": notification,
             "serial": root.notificationSerial,
-            "expiresAt": now + 5500
+            "summary": root.notificationSummary(notification),
+            "body": root.notificationBody(notification),
+            "icon": root.notificationIconSource(notification),
+            "timestamp": timestamp,
+            "critical": notification && notification.urgency === NotificationUrgency.Critical
         }];
 
-        for (let i = 0; i < root.toastNotifications.length && next.length < 5; i += 1) {
+        for (let i = 0; i < root.toastNotifications.length; i += 1) {
             const entry = root.toastNotifications[i];
-            if (entry && entry.notification && entry.expiresAt > now) {
+            if (entry) {
                 next.push(entry);
             }
         }
 
         root.toastNotifications = next;
-    }
-
-    function pruneToastNotifications() {
-        const now = Date.now();
-        root.toastNotifications = root.toastNotifications.filter(function(entry) {
-            return entry && entry.notification && entry.expiresAt > now;
-        });
     }
 
     function removeToastNotification(serial) {
@@ -442,15 +509,6 @@ ShellRoot {
             notification.tracked = true;
             root.pushToastNotification(notification);
         }
-    }
-
-    Timer {
-        id: notificationToastPruneTimer
-
-        running: root.toastNotifications.length > 0
-        interval: 1000
-        repeat: true
-        onTriggered: root.pruneToastNotifications()
     }
 
     // ----- Data feeds -----
@@ -1372,6 +1430,7 @@ ShellRoot {
                                             for (let i = 0; i < notifications.length; i += 1) {
                                                 notifications[i].dismiss();
                                             }
+                                            root.toastNotifications = [];
                                         }
                                     }
                                 }
@@ -1388,32 +1447,48 @@ ShellRoot {
                                         required property var modelData
 
                                         width: controlCenterColumn.width
-                                        height: 54
+                                        height: Math.max(58, notificationHistoryContent.implicitHeight + 12)
                                         radius: 5
                                         color: "#22ffffff"
                                         border.width: modelData.urgency === NotificationUrgency.Critical ? 1 : 0
                                         border.color: root.urgentColor
 
                                         Column {
+                                            id: notificationHistoryContent
+
                                             anchors.fill: parent
                                             anchors.margins: 6
                                             spacing: 2
 
-                                            Text {
+                                            Row {
                                                 width: parent.width
-                                                text: root.notificationSummary(modelData)
-                                                color: root.notificationAccent(modelData)
-                                                elide: Text.ElideRight
-                                                font.family: root.baseFont
-                                                font.pixelSize: 11
+                                                spacing: 6
+
+                                                Text {
+                                                    width: parent.width - historyTimestamp.width - parent.spacing
+                                                    text: root.notificationSummary(modelData)
+                                                    color: root.notificationAccent(modelData)
+                                                    wrapMode: Text.Wrap
+                                                    maximumLineCount: 2
+                                                    font.family: root.baseFont
+                                                    font.pixelSize: 11
+                                                }
+
+                                                Text {
+                                                    id: historyTimestamp
+
+                                                    text: root.notificationTimestamp(modelData)
+                                                    color: root.mutedColor
+                                                    font.family: root.baseFont
+                                                    font.pixelSize: 9
+                                                }
                                             }
 
                                             Text {
                                                 width: parent.width
                                                 text: root.notificationBody(modelData)
                                                 color: root.mutedColor
-                                                elide: Text.ElideRight
-                                                maximumLineCount: 2
+                                                maximumLineCount: 4
                                                 wrapMode: Text.Wrap
                                                 font.family: root.baseFont
                                                 font.pixelSize: 10
@@ -1466,8 +1541,8 @@ ShellRoot {
                     }
                     exclusiveZone: 0
                     focusable: false
-                    aboveWindows: true
-                    WlrLayershell.layer: WlrLayer.Overlay
+                    aboveWindows: false
+                    WlrLayershell.layer: WlrLayer.Top
                     WlrLayershell.namespace: "quickshell-notification-toast"
                     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
@@ -1484,37 +1559,75 @@ ShellRoot {
                                 required property var modelData
 
                                 width: toastStack.width
-                                height: 76
+                                height: Math.max(76, toastContent.implicitHeight + 16)
                                 radius: 8
                                 color: "#dd11111b"
                                 border.width: 1
-                                border.color: modelData.notification && modelData.notification.urgency === NotificationUrgency.Critical
+                                border.color: modelData.critical
                                     ? root.urgentColor
                                     : "#80ffffff"
 
-                                Column {
+                                Row {
+                                    id: toastContent
+
                                     anchors.fill: parent
                                     anchors.margins: 8
-                                    spacing: 3
+                                    spacing: 8
 
-                                    Text {
-                                        width: parent.width
-                                        text: root.notificationSummary(modelData.notification)
-                                        color: root.notificationAccent(modelData.notification)
-                                        elide: Text.ElideRight
-                                        font.family: root.baseFont
-                                        font.pixelSize: 12
+                                    Rectangle {
+                                        visible: !!modelData.icon
+                                        width: visible ? 38 : 0
+                                        height: visible ? 38 : 0
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        radius: 6
+                                        color: "#22ffffff"
+                                        clip: true
+
+                                        IconImage {
+                                            anchors.centerIn: parent
+                                            width: 28
+                                            height: 28
+                                            source: modelData.icon || ""
+                                        }
                                     }
 
-                                    Text {
-                                        width: parent.width
-                                        text: root.notificationBody(modelData.notification)
-                                        color: root.fgColor
-                                        elide: Text.ElideRight
-                                        maximumLineCount: 2
-                                        wrapMode: Text.Wrap
-                                        font.family: root.baseFont
-                                        font.pixelSize: 10
+                                    Column {
+                                        width: parent.width - (modelData.icon ? 46 : 0)
+                                        spacing: 3
+
+                                        Row {
+                                            width: parent.width
+                                            spacing: 8
+
+                                            Text {
+                                                width: parent.width - toastTimestamp.width - parent.spacing
+                                                text: modelData.summary || ""
+                                                color: root.notificationEntryAccent(modelData)
+                                                wrapMode: Text.Wrap
+                                                maximumLineCount: 2
+                                                font.family: root.baseFont
+                                                font.pixelSize: 12
+                                            }
+
+                                            Text {
+                                                id: toastTimestamp
+
+                                                text: modelData.timestamp || ""
+                                                color: root.mutedColor
+                                                font.family: root.baseFont
+                                                font.pixelSize: 9
+                                            }
+                                        }
+
+                                        Text {
+                                            width: parent.width
+                                            text: modelData.body || ""
+                                            color: root.fgColor
+                                            maximumLineCount: 5
+                                            wrapMode: Text.Wrap
+                                            font.family: root.baseFont
+                                            font.pixelSize: 10
+                                        }
                                     }
                                 }
 
