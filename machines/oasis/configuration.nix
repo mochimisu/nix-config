@@ -5,6 +5,10 @@
   ...
 }: {
   networking.hostName = "oasis";
+  gaming.performance = {
+    enable = true;
+    mobileAcGovernor = true;
+  };
   variables.touchscreen.sddmKeyboard = true;
   # mt7925 stability: prefer iwd and avoid legacy wext path.
   networking.networkmanager.wifi.backend = "iwd";

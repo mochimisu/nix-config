@@ -4,6 +4,10 @@
   ...
 }: {
   networking.hostName = "espresso";
+  gaming.performance = {
+    enable = true;
+    mobileAcGovernor = true;
+  };
   variables.touchscreen.sddmKeyboard = true;
   environment.systemPackages = with pkgs; [
     brightnessctl

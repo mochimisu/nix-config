@@ -52,8 +52,6 @@ in {
         mode = "3440x1440@175";
         position = "0x0";
         scale = 1;
-        bitdepth = 10;
-        cm = "auto";
       }
       {
         output = "HDMI-A-1";
@@ -294,8 +292,6 @@ in {
           mode = "3440x1440@175",
           position = "0x0",
           scale = 1,
-          bitdepth = 10,
-          cm = "auto",
         })'
       else
         printf "1" > "$state_file"

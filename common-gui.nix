@@ -31,6 +31,7 @@ in {
     (chromium.override {enableWideVine = true;})
     cliphist
     xdg-utils
+    brightnessctl
 
     grim
     slurp
@@ -53,7 +54,6 @@ in {
     # vesktop
     discord
     proton-pass
-    remmina
     caprine
     hyprpicker
     vlc
@@ -101,7 +101,7 @@ in {
     gamemode.enable = true;
     hyprland = {
       enable = true;
-      package = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
+      withUWSM = true;
     };
   };
 
@@ -112,6 +112,8 @@ in {
     powerOnBoot = true;
   };
   services.blueman.enable = true;
+  services.dbus.implementation = "broker";
+  services.power-profiles-daemon.enable = true;
 
   # Fonts
   fonts.packages = with pkgs; [
@@ -198,6 +200,7 @@ in {
   # catppuccin
   catppuccin = {
     enable = true;
+    autoEnable = true;
     flavor = "mocha";
   };
 

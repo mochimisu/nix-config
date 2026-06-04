@@ -10,6 +10,8 @@
   isLinuxGui = isLinux && isGui;
 in {
   home.stateVersion = "24.11";
+  catppuccin.autoEnable = false;
+
   home.packages = with pkgs; [
     tmux
     btop

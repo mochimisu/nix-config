@@ -10,6 +10,10 @@
   ];
 
   networking.hostName = "blackmoon";
+  gaming.performance = {
+    enable = true;
+    desktopGovernor = true;
+  };
   boot.kernelPackages = lib.mkForce pkgs.linuxPackages_xanmod;
   environment.systemPackages =
     (with pkgs; [
