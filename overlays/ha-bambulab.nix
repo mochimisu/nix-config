@@ -1,5 +1,5 @@
 _: super: let
-  haPythonPackages = super.home-assistant.python.pkgs;
+  haPythonPackages = super.home-assistant.python3Packages;
 in {
   home-assistant-custom-components =
     super.home-assistant-custom-components

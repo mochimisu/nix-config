@@ -87,16 +87,6 @@ in {
     nixpkgs.overlays = [
       inputs.nix-openclaw.overlays.default
       (final: prev: {
-        openclaw-gateway = prev.openclaw-gateway.overrideAttrs (old: {
-          pnpmDeps = old.pnpmDeps.overrideAttrs (_: {
-            outputHash = "sha256-j0vTmAihVbg+rQb3DBYXFhcZZV7Z6ntypKwZyt/Qa7s=";
-          });
-          patches =
-            (old.patches or [])
-            ++ [
-              ./openclaw-patches/codex-app-server-partial-replies.patch
-            ];
-        });
         openclaw = prev.openclaw.overrideAttrs (old: {
           env =
             (old.env or {})
@@ -163,7 +153,14 @@ in {
         launchd.enable = false;
         systemd.enable = false;
         exposePluginPackages = false;
-        documents = ./openclaw-documents;
+        workspace.bootstrapFiles = {
+          agents = ./openclaw-documents/AGENTS.md;
+          soul = ./openclaw-documents/SOUL.md;
+          tools = ./openclaw-documents/TOOLS.md;
+          identity = ./openclaw-documents/IDENTITY.md;
+          user = ./openclaw-documents/USER.md;
+          heartbeat = ./openclaw-documents/HEARTBEAT.md;
+        };
 
         bundledPlugins = {
           sag.enable = true;
@@ -204,9 +201,6 @@ in {
 
             agents = {
               defaults = {
-                agentRuntime = {
-                  id = "codex";
-                };
                 model = {
                   primary = "codex/gpt-5.5";
                 };
@@ -216,9 +210,6 @@ in {
                 {
                   id = "main";
                   default = true;
-                  agentRuntime = {
-                    id = "codex";
-                  };
                   model = "codex/gpt-5.5";
                 }
               ];
