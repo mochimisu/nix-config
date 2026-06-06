@@ -140,6 +140,11 @@ ShellRoot {
         return String(monitor.title);
     }
 
+    function isMonitorFullscreen(screenName) {
+        const monitor = windowState[screenName];
+        return !!monitor && monitor.fullscreen === true;
+    }
+
     function dispatchWorkspace(workspace) {
         if (!workspace || workspace.id === undefined || workspace.id === null) {
             return;
@@ -352,12 +357,14 @@ ShellRoot {
     }
 
     function pushToastNotification(notification) {
+        const now = Date.now();
         const timestamp = root.formatTimestamp(new Date());
         root.rememberNotificationTimestamp(notification, timestamp);
         root.notificationSerial += 1;
         const next = [{
             "notification": notification,
             "serial": root.notificationSerial,
+            "expiresAt": now + 5500,
             "summary": root.notificationSummary(notification),
             "body": root.notificationBody(notification),
             "icon": root.notificationIconSource(notification),
@@ -365,9 +372,9 @@ ShellRoot {
             "critical": notification && notification.urgency === NotificationUrgency.Critical
         }];
 
-        for (let i = 0; i < root.toastNotifications.length; i += 1) {
+        for (let i = 0; i < root.toastNotifications.length && next.length < 5; i += 1) {
             const entry = root.toastNotifications[i];
-            if (entry) {
+            if (entry && entry.notification && entry.expiresAt > now) {
                 next.push(entry);
             }
         }
@@ -375,10 +382,35 @@ ShellRoot {
         root.toastNotifications = next;
     }
 
+    function pruneToastNotifications() {
+        const now = Date.now();
+        root.toastNotifications = root.toastNotifications.filter(function(entry) {
+            return entry && entry.notification && entry.expiresAt > now;
+        });
+    }
+
     function removeToastNotification(serial) {
         root.toastNotifications = root.toastNotifications.filter(function(entry) {
             return entry && entry.serial !== serial;
         });
+    }
+
+    function dismissToastNotification(entry) {
+        if (!entry) {
+            return;
+        }
+
+        root.removeToastNotification(entry.serial);
+
+        if (!entry.notification) {
+            return;
+        }
+
+        try {
+            entry.notification.dismiss();
+        } catch (error) {
+            console.warn("Unable to dismiss notification:", error);
+        }
     }
 
     function activateNotification(notification) {
@@ -489,6 +521,15 @@ ShellRoot {
         const menuPoint = trayItem.mapToItem(panelRoot, trayItem.width, Math.round(trayItem.height / 2));
         item.display(panelWindow, Math.round(menuPoint.x), Math.round(menuPoint.y));
         return true;
+    }
+
+    Timer {
+        id: notificationToastPruneTimer
+
+        running: root.toastNotifications.length > 0
+        interval: 1000
+        repeat: true
+        onTriggered: root.pruneToastNotifications()
     }
 
     PwObjectTracker {
@@ -1526,7 +1567,9 @@ ShellRoot {
                 PanelWindow {
                     id: notificationToast
 
-                    visible: root.toastNotifications.length > 0 && root.isPrimarySidebarScreen(panel.modelData.name, panel.monitorIndex)
+                    visible: root.toastNotifications.length > 0
+                        && root.isPrimarySidebarScreen(panel.modelData.name, panel.monitorIndex)
+                        && !root.isMonitorFullscreen(panel.modelData.name)
                     screen: panel.modelData
                     color: "transparent"
                     implicitWidth: 300
@@ -1631,24 +1674,7 @@ ShellRoot {
                                     }
                                 }
 
-                                MouseArea {
-                                    anchors.fill: parent
-                                    acceptedButtons: Qt.AllButtons
-                                    onClicked: function(mouse) {
-                                        if (!modelData.notification) {
-                                            return;
-                                        }
-
-                                        if (mouse.button === Qt.RightButton) {
-                                            modelData.notification.dismiss();
-                                        } else {
-                                            root.activateNotification(modelData.notification);
-                                        }
-
-                                        root.removeToastNotification(modelData.serial);
-                                    }
                                 }
-                            }
                         }
                     }
                 }

@@ -14,12 +14,8 @@ in {
 
   config = lib.mkMerge [
     {
-      # Pin CPU to performance governor for lower frametime variance during gaming.
-      # Use sched_ext with lavd policy for gaming-oriented scheduling behavior.
-      services.scx = {
-        enable = true;
-        scheduler = "scx_lavd";
-      };
+      # scx_lavd caused visible desktop microstutter on blackmoon.
+      services.scx.enable = false;
 
       # Prefer "none" for NVMe and "kyber" for non-rotational SATA/virt disks.
       services.udev.extraRules = ''
