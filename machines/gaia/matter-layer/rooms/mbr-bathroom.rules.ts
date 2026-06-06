@@ -13,23 +13,22 @@ export default defineRoomRules("mbrBathroom", ({ room, rule }) => {
   });
 
   rule("toilet-fan", () => {
-    const wasOccupiedLongEnough = state.wasTrueFor(room.toiletPresence, "2m");
-    if (room.toiletPresence) {
-      state.cancelDelay("mbr-bathroom.toiletFan.offDelay");
-      room.toiletFan.auto(true);
-      return;
-    }
+    const occupiedLongEnough = state.wasTrueFor(room.toiletPresence, "2m");
+    room.toiletFan.auto(state.holdTrue("mbr-bathroom.toiletFan.offDelay", occupiedLongEnough, "5m"));
+  });
 
-    if (wasOccupiedLongEnough) {
-      room.toiletFan.auto(
-        state.delayClear("mbr-bathroom.toiletFan.offDelay", "5m", {
-          power: "off",
-        }) ?? true,
-      );
-      return;
-    }
-
-    room.toiletFan.auto(false);
+  rule("dehumidifier", () => {
+    const humidity = Number(room.environment.humidity ?? 0);
+    const activeWindow = state.timeBetween("6:00", "23:30");
+    const humidityLowLongEnough = state.wasTrueFor(humidity < 45, "10m");
+    const active = state.latch(
+      "mbr-bathroom.dehumidifier.humidity",
+      activeWindow && humidity > 65,
+      !activeWindow || humidityLowLongEnough,
+    );
+    room.dehumidifier.auto(active);
+    room.toiletFan.auto(active);
+    room.fan.auto(active);
   });
 
   rule("shower-light", () => room.showerLight.auto(room.showerPresence));

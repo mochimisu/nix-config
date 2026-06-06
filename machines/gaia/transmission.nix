@@ -92,7 +92,8 @@
     fi
 
     if [ "$did_extract" -eq 1 ]; then
-      chmod -R g+rw "$work_dir" || true
+      chgrp -R media "$work_dir" || true
+      chmod -R g+rwX "$work_dir" || true
     fi
 
     exit 0
@@ -182,7 +183,8 @@ in {
     tmp=$(${pkgs.coreutils}/bin/mktemp)
 
     ${pkgs.jq}/bin/jq --arg pwd "$password" '
-      .["rpc-authentication-required"]=true
+      . + ${builtins.toJSON transmissionSettings}
+      | .["rpc-authentication-required"]=true
       | .["rpc-password"]=$pwd
     ' "$SETTINGS_PATH" > "$tmp"
 
