@@ -13,7 +13,7 @@
 
     background {
       monitor =
-      path = ${config.home.homeDirectory}/.config/hypr/wallpaper.jpg
+      path = ${config.home.homeDirectory}/.config/hypr/turquoiseTree.jpg
       brightness = 0.5
     }
 

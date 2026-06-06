@@ -4,19 +4,14 @@
   pkgs,
   ...
 }: let
-  perfHosts = [
-    "blackmoon"
-    "espresso"
-    "oasis"
-  ];
-  desktopPerfHosts = [
-    "blackmoon"
-  ];
-  mobilePerfHosts = [
-    "espresso"
-    "oasis"
-  ];
+  cfg = config.gaming.performance;
 in {
+  options.gaming.performance = {
+    enable = lib.mkEnableOption "gaming performance tuning";
+    desktopGovernor = lib.mkEnableOption "fixed performance CPU governor for desktop gaming systems";
+    mobileAcGovernor = lib.mkEnableOption "AC-aware CPU governor switching for mobile gaming systems";
+  };
+
   config = lib.mkMerge [
     {
       # Pin CPU to performance governor for lower frametime variance during gaming.
@@ -33,10 +28,10 @@ in {
         ACTION=="add", SUBSYSTEM=="block", KERNEL=="vd[a-z]", ATTR{queue/rotational}=="0", ATTR{queue/scheduler}="kyber"
       '';
     }
-    (lib.mkIf (builtins.elem config.networking.hostName desktopPerfHosts) {
+    (lib.mkIf cfg.desktopGovernor {
       powerManagement.cpuFreqGovernor = "performance";
     })
-    (lib.mkIf (builtins.elem config.networking.hostName perfHosts) {
+    (lib.mkIf cfg.enable {
       services.irqbalance.enable = true;
       services.ananicy = {
         enable = true;
@@ -69,7 +64,7 @@ in {
         "vm.max_map_count" = 2147483642;
       };
     })
-    (lib.mkIf (builtins.elem config.networking.hostName mobilePerfHosts) {
+    (lib.mkIf cfg.mobileAcGovernor {
       systemd.services.ac-power-governor = {
         description = "Set CPU governor based on AC adapter state";
         wantedBy = [ "multi-user.target" ];

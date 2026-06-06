@@ -78,6 +78,10 @@ in {
       post-build-hook = lib.mkIf (!isGaia) uploadToGaiaNixCacheHook;
       trusted-users = lib.optional isGaia "brandon";
     };
+    registry = {
+      nixpkgs.flake = inputs.nixpkgs;
+      n.flake = inputs.nixpkgs;
+    };
     gc = {
       automatic = true;
       dates = "weekly";
@@ -145,6 +149,8 @@ in {
       enable = true;
       flake = "/home/brandon/stuff/nix-config";
     };
+    nix-ld.enable = true;
+    nix-index.enable = true;
     zsh.enable = true;
   };
 
@@ -260,6 +266,9 @@ in {
     };
   };
 
-  # Latest kernel
-  boot.kernelPackages = pkgs.linuxPackages_latest;
+  boot = {
+    # Latest kernel
+    kernelPackages = pkgs.linuxPackages_latest;
+    tmp.cleanOnBoot = true;
+  };
 }

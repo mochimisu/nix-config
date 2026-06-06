@@ -10,7 +10,7 @@ in
 {
 
   services.mako = lib.mkIf isLinuxGui {
-    enable = true;
+    enable = false;
     
     settings =  {
       "anchor" = "top-right";
@@ -36,19 +36,5 @@ in
     };
   };
 
-  # on startup
-  wayland.windowManager.hyprland = lib.mkIf isLinuxGui {
-    settings.on = [
-      {
-        _args = [
-          "hyprland.start"
-          (lib.generators.mkLuaInline ''
-            function()
-              hl.exec_cmd("mako")
-            end
-          '')
-        ];
-      }
-    ];
-  };
+  # Quickshell owns the notification server.
 }

@@ -5,6 +5,10 @@
   ...
 }: {
   networking.hostName = "oasis";
+  gaming.performance = {
+    enable = true;
+    mobileAcGovernor = true;
+  };
   variables.touchscreen.sddmKeyboard = true;
   # mt7925 stability: prefer iwd and avoid legacy wext path.
   networking.networkmanager.wifi.backend = "iwd";
@@ -28,7 +32,6 @@
 
     # rotate screen
     jq
-    iio-hyprland
 
     # on screen keyboard
     wvkbd
@@ -45,7 +48,8 @@
   };
 
   # fix kernel hang on suspend + prevent EC from waking on AC power changes
-  boot.kernelParams = ["amdgpu.gpu_recovery=1" "amdgpu.gfxoff=0" "acpi.ec_no_wakeup=1"];
+  # Do not use amdgpu.pg_mask=0 here; May 30 2026 boots were unstable/crashed with it.
+  boot.kernelParams = ["amdgpu.gpu_recovery=1" "acpi.ec_no_wakeup=1"];
   # MT7925 stability: disable PCIe ASPM on this device.
   boot.extraModprobeConfig = ''
     options mt7925e disable_aspm=Y

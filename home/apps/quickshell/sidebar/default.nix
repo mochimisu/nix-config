@@ -2,10 +2,15 @@
   lib,
   pkgs,
   config,
+  osConfig ? null,
   ...
 }: let
   variables = config.variables or {};
   isLinuxGui = pkgs.stdenv.isLinux && (variables.isGui or true);
+  hostName =
+    if osConfig != null
+    then osConfig.networking.hostName or ""
+    else "";
 
   sidebarScreens =
     if pkgs.stdenv.isLinux && builtins.hasAttr "ewwSidebarScreens" variables
@@ -23,8 +28,6 @@
   clockBin = mkScript "qs-clock" ../../eww/sidebar/scripts/clock.sh;
   networkBin = mkScript "qs-network" ../../eww/sidebar/scripts/network.sh;
   batteryBin = mkScript "qs-battery" ../../eww/sidebar/scripts/battery.sh;
-  audioSinksBin = mkScript "qs-audio-sinks" ../../eww/sidebar/scripts/audio-sinks.sh;
-  volBin = mkScript "qs-volume" ../../eww/sidebar/scripts/vol.sh;
   cavaBin = mkScript "qs-cava" ../../eww/sidebar/scripts/cava.sh;
   qwertyBin = mkScript "qs-qwerty" ../../eww/sidebar/scripts/qwerty.sh;
 
@@ -58,6 +61,7 @@
       sleep 0.1
     done
 
+    ${pkgs.procps}/bin/pkill -x mako >/dev/null 2>&1 || true
     exec ${pkgs.quickshell}/bin/qs -n -d -c sidebar
   '';
   startupCommand = "${startupScript}";
@@ -74,13 +78,14 @@ in {
     file = {
       ".config/quickshell/sidebar/shell.qml".source = pkgs.replaceVars ./shell.qml {
         sidebarScreensJson = builtins.toJSON sidebarScreens;
+        inherit hostName;
         fontSize = variables.ewwSidebarFontSize or "13px";
         iconSize = variables.ewwSidebarIconSize or "16";
         inherit pttStateFile;
 
         inherit workspacesBin windowsBin;
-        inherit clockBin networkBin batteryBin audioSinksBin;
-        inherit volBin cavaBin qwertyWatchBin pttWatchBin;
+        inherit clockBin networkBin batteryBin;
+        inherit cavaBin qwertyWatchBin pttWatchBin;
       };
     };
   };

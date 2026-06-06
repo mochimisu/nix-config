@@ -136,7 +136,7 @@ in {
         {
           _args = [
             (lua "mod .. \" + V\"")
-            (lua "hl.dsp.exec_cmd(\"cliphist list | rofi --dmenu | cliphist decode | wl-copy\")")
+            (lua "hl.dsp.exec_cmd(\"cliphist list | rofi-touch --dmenu | cliphist decode | wl-copy\")")
           ];
         }
       ];

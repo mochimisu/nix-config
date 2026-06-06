@@ -2,10 +2,10 @@
   description = "my flake";
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    hyprland.url = "github:hyprwm/Hyprland";
     hyprgrass = {
-      url = "github:horriblename/hyprgrass";
-      inputs.hyprland.follows = "hyprland";
+      # PR #381 adds the Lua API we need to load/configure Hyprgrass from our Hyprland Lua config.
+      # Keep this input for the touchscreen module while Hyprland itself comes from nixpkgs.
+      url = "github:horriblename/hyprgrass/pull/381/head";
     };
     home-manager = {
       url = "github:nix-community/home-manager";
