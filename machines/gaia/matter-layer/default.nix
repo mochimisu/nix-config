@@ -6,6 +6,8 @@
 }: let
   devLiveLock = "/run/lock/matter-layer-dev-live.lock";
   matterWsPort = toString config.gaia.homeAssistant.matterjs.port;
+  matterLayerBindings = builtins.fromJSON (builtins.readFile ./bindings.json);
+  moduleCompatibleBindings = lib.mapAttrs (_: binding: builtins.removeAttrs binding ["unique_id"]) matterLayerBindings;
   matterLayerStart = pkgs.writeShellScript "matter-layer-with-dev-live-lock" ''
     for _ in $(${pkgs.coreutils}/bin/seq 1 60); do
       if ${pkgs.bash}/bin/bash -c 'exec 3<>/dev/tcp/127.0.0.1/${matterWsPort}' 2>/dev/null; then
@@ -19,12 +21,16 @@
 in {
   services.matter-layer = {
     enable = true;
+    group = "users";
     port = 3010;
     openFirewall = true;
     matterWsUrl = "ws://127.0.0.1:${toString config.gaia.homeAssistant.matterjs.port}/ws";
     rulesModule = ./rules.ts;
-    bindings = builtins.fromJSON (builtins.readFile ./bindings.json);
+    bindings = moduleCompatibleBindings;
+    environmentFile = /etc/secret/matter-reconcile.env;
     environment = {
+      MATTER_LAYER_BINDINGS_JSON = builtins.toJSON matterLayerBindings;
+      MATTER_LAYER_DB_PATH = "/var/lib/matter-layer/matter-layer.sqlite";
       MATTER_LAYER_WEB_DEV = "0";
     };
   };
@@ -42,6 +48,7 @@ in {
   };
 
   systemd.tmpfiles.rules = [
+    "d /var/lib/matter-layer 0775 matter-layer users -"
     "f ${devLiveLock} 0666 root root -"
   ];
 }

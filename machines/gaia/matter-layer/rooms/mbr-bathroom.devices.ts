@@ -1,5 +1,5 @@
 import { any, defineRoomDevices, pulse, signal, state } from "matter-layer/rules";
-import { fp300, innovelli, ms605Presence, myggbett } from "matter-layer/presets";
+import { fp300, haEnvironmentSensor, innovelli, matterSwitch, ms605Presence, myggbett } from "matter-layer/presets";
 
 export default defineRoomDevices("mbrBathroom", ({ room }) => {
   room.main = innovelli("mbrBathroom.main");
@@ -9,7 +9,21 @@ export default defineRoomDevices("mbrBathroom", ({ room }) => {
   });
   room.toiletLight = innovelli("mbrBathroom.toiletLight");
   room.toiletFan = innovelli("mbrBathroom.toiletFan");
+  room.fan = innovelli("mbrBathroom.fan");
   room.showerLight = innovelli("mbrBathroom.shower");
+  room.dehumidifier = matterSwitch("mbrBathroom.dehumidifier", { endpoint: 2, displayName: "Dehumidifier" });
+  room.environment = haEnvironmentSensor("mbrBathroom.environment", {
+    humidity: {
+      label: "Humidity",
+      uniqueId: "8CEDE1B2EE0C_humidity_level",
+      unit: "%",
+    },
+    temperature: {
+      label: "Temp",
+      uniqueId: "8CEDE1B2EE0C_temperature_level",
+      unit: "°",
+    },
+  });
   room.mainPresence = fp300("mbrBathroom.mainPresence");
   room.toilet = ms605Presence("mbrBathroom.toiletPresence");
   room.shower = ms605Presence("mbrBathroom.showerPresence");

@@ -120,14 +120,26 @@ in {
     openFirewall = true;
   };
 
-  # Matter operates over UDP/5540.
-  networking.firewall.allowedUDPPorts = [
-    5540
-  ];
-  networking.firewall.allowedTCPPorts = [
-    8123
-    config.gaia.homeAssistant.matterjs.port
-  ];
+  networking.firewall = {
+    # Matter operates over UDP/5540.
+    allowedUDPPorts = [
+      5540
+    ];
+    allowedTCPPorts = [
+      8123
+      config.gaia.homeAssistant.matterjs.port
+    ];
+
+    # Thread/Matter event reports may enter Gaia either directly through the
+    # local ZBT-2 OTBR (`wpan0`) or through same-dataset Ethernet border routers
+    # such as the Aqara M3 hubs and IKEA DIRIGERA on `enp5s0`.
+    trustedInterfaces = lib.mkAfter [
+      "wpan0"
+    ];
+    extraInputRules = ''
+      iifname "enp5s0" ip6 saddr fd0b:6932:1d1a:1::/64 accept comment "Allow GaiaThread OMR traffic via Ethernet border routers"
+    '';
+  };
 
   # Home Assistant runs as the upstream Container install type, while Matter.js
   # and OTBR remain separately managed host containers/services.

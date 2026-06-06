@@ -6,11 +6,8 @@
 }: let
   # Declarative desired pairings. Keep setup codes in encrypted sops secret env file
   # using the environment variable named in `code_env`.
-  guestBedroomBlindsRemoteMac = "a6:86:cb:d2:f3:37";
   guestBedroomWindowBlindsMac = "88:13:bf:aa:5c:13";
   guestBedroomDoorBlindsMac = "88:13:bf:aa:48:2b";
-  mbrDoorBlindsRemoteMac = "7e:3a:3e:9d:0a:81";
-  mbrDoorBlindsRemote2Mac = "d6:46:db:18:f0:d1";
   mbrDoorBlindsLeftMac = "70:4b:ca:2e:69:3f";
   mbrDoorBlindsRightMac = "70:4b:ca:2f:9b:83";
   mbrWindowBlindsMac = "70:4b:ca:2f:1b:ef";
@@ -31,7 +28,7 @@
       code_env = "MATTER_CODE_OFFICE_BLINDS_REMOTE";
       network_only = false;
       match = {
-        mac = "c2:eb:0a:46:60:31";
+        unique_id = "BCA41EC02DFE052E";
       };
     }
 
@@ -291,7 +288,7 @@
       code_env = "MATTER_CODE_NURSERY_BLINDS_REMOTE";
       network_only = false;
       match = {
-        mac = "3e:de:81:b4:b3:8c";
+        unique_id = "9ADDE61E4ABE793F";
       };
     }
 
@@ -321,7 +318,7 @@
       code_env = "MATTER_CODE_GUEST_BEDROOM_BLINDS_REMOTE";
       network_only = false;
       match = {
-        mac = guestBedroomBlindsRemoteMac;
+        unique_id = "D5440C317DD1BD27";
       };
     }
 
@@ -361,7 +358,7 @@
       code_env = "MATTER_CODE_MBR_BLINDS_REMOTE";
       network_only = false;
       match = {
-        mac = mbrDoorBlindsRemoteMac;
+        unique_id = "3961FF6525ED9E14";
       };
     }
 
@@ -371,7 +368,7 @@
       code_env = "MATTER_CODE_MBR_BLINDS_REMOTE_2";
       network_only = false;
       match = {
-        mac = mbrDoorBlindsRemote2Mac;
+        unique_id = "4A9D015733B18F5F";
       };
     }
 
