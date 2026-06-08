@@ -214,8 +214,8 @@ in {
     wikiskill-dev = {
       description = "wikiskill wiki:dev";
       wantedBy = ["multi-user.target"];
-      after = ["network-online.target"];
-      wants = ["network-online.target"];
+      after = ["network.target"];
+      unitConfig.ConditionPathIsDirectory = wikiskillDir;
       path = with pkgs; [
         bash
         nodejs
@@ -230,18 +230,18 @@ in {
         ExecStart = "${pkgs.nodejs}/bin/node ${wikiskillDir}/wiki/build.mjs --dev";
         Restart = "always";
         RestartSec = 5;
+        TimeoutStopSec = "10s";
         Environment = [
           "HOME=/home/brandon"
         ];
-        ConditionPathIsDirectory = wikiskillDir;
       };
     };
 
     wikiskill-daily-daemon = {
       description = "wikiskill wiki:daily-daemon";
       wantedBy = ["multi-user.target"];
-      after = ["network-online.target"];
-      wants = ["network-online.target"];
+      after = ["network.target"];
+      unitConfig.ConditionPathIsDirectory = wikiskillDir;
       path = with pkgs; [
         bash
         nodejs
@@ -257,11 +257,10 @@ in {
         Restart = "always";
         RestartSec = 5;
         SuccessExitStatus = [130 143];
-        TimeoutStopSec = "30s";
+        TimeoutStopSec = "10s";
         Environment = [
           "HOME=/home/brandon"
         ];
-        ConditionPathIsDirectory = wikiskillDir;
       };
     };
   };
