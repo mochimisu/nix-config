@@ -35,6 +35,8 @@ in {
     nvidia-vaapi-driver
   ];
 
+  programs.kitty.settings.auto_reload_config = -1;
+
   systemd.user.services.steam-autostart = {
     Unit = {
       Description = "Start Steam silently";
