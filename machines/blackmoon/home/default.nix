@@ -9,6 +9,39 @@
     sha256 = "sha256:1571r0sz1qfz9xdqqkbpzfx8wx22azrhmsmdj14km427qcyiiap6";
   };
   lua = lib.generators.mkLuaInline;
+  steamAutostart = pkgs.writeShellScript "blackmoon-steam-autostart" ''
+    set -u
+
+    log_dir="''${XDG_STATE_HOME:-$HOME/.local/state}/hypr"
+    log="$log_dir/steam-autostart.log"
+    mkdir -p "$log_dir"
+
+    {
+      printf '\n[%s] Steam autostart requested\n' "$(date --iso-8601=seconds)"
+
+      if pgrep -u "$USER" -f '/Steam/ubuntu12_32/steam|steamwebhelper' >/dev/null 2>&1; then
+        echo "Steam is already running; skipping."
+        exit 0
+      fi
+
+      if [ -n "''${DISPLAY:-}" ]; then
+        socket="/tmp/.X11-unix/X''${DISPLAY#:}"
+        for _ in $(seq 1 30); do
+          if [ -S "$socket" ]; then
+            echo "XWayland is ready at $socket."
+            break
+          fi
+          sleep 1
+        done
+      else
+        echo "DISPLAY is not set; sleeping before Steam launch."
+        sleep 10
+      fi
+
+      echo "Launching steam -silent."
+      exec steam -silent
+    } >>"$log" 2>&1
+  '';
 in {
   variables.keyboardLayout = "dvorak";
   variables.hyprpanel = {
@@ -127,7 +160,7 @@ in {
               hl.exec_cmd("wlr-randr --output DP-3 --primary")
               hl.exec_cmd("DISPLAY=:1 xrandr --output DP-3 --primary")
               hl.exec_cmd("openrgb --profile /home/brandon/.config/OpenRGB/moon.orp")
-              hl.exec_cmd("steam -silent")
+              hl.exec_cmd("${steamAutostart}")
               hl.exec_cmd("~/.config/hypr/endfield-launcher-fix.sh")
             end
           '')
