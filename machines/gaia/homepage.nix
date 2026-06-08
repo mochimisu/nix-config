@@ -215,13 +215,16 @@
 
       def read_top():
           output = subprocess.check_output([
-              "${pkgs.procps}/bin/ps", "-eo", "pid=,comm=,pcpu=", "--sort=-pcpu"
+              "${pkgs.procps}/bin/ps", "-eo", "pid=,pcpu=,comm=", "--sort=-pcpu"
           ], text=True)
           rows = []
           for line in output.splitlines()[:5]:
               parts = line.split(None, 2)
               if len(parts) == 3:
-                  rows.append({"pid": parts[0], "command": parts[1], "cpu": float(parts[2])})
+                  try:
+                      rows.append({"pid": parts[0], "command": parts[2], "cpu": float(parts[1])})
+                  except ValueError:
+                      continue
           return rows
 
       def read_temp():
@@ -853,25 +856,25 @@
                   <a class="service-card" href="http://${hostName}:8123/">
                     <span class="stock">Port 8123</span><span class="art"><span class="plate yellow"><svg viewBox="0 0 24 24"><path d="M4 11 12 4l8 7"/><path d="M6 10v9h12v-9"/><path d="M10 19v-5h4v5"/></svg></span></span><span class="accent home"></span><span class="service-name">Home Assistant</span>
                   </a>
-                  <a class="service-card" href="/matter-layer/">
+                  <a class="service-card" href="/matter-layer/" data-lan-href="http://${hostName}:3010/" data-lan-label="Port 3010" data-wan-href="/matter-layer/" data-wan-label="/matter-layer">
                     <span class="stock">/matter-layer</span><span class="art"><span class="plate"><svg viewBox="0 0 24 24"><path d="M5 12h4"/><path d="M15 12h4"/><path d="M12 5v4"/><path d="M12 15v4"/><circle cx="12" cy="12" r="3"/><path d="M7.5 7.5 9.8 9.8"/><path d="m14.2 14.2 2.3 2.3"/><path d="m16.5 7.5-2.3 2.3"/><path d="m9.8 14.2-2.3 2.3"/></svg></span></span><span class="accent automation"></span><span class="service-name">Matter Layer</span>
                   </a>
-                  <a class="service-card" href="/matterjs/">
+                  <a class="service-card" href="/matterjs/" data-lan-href="http://${hostName}:${toString matterjsWebPort}/" data-lan-label="Port ${toString matterjsWebPort}" data-wan-href="/matterjs/" data-wan-label="/matterjs">
                     <span class="stock">/matterjs</span><span class="art"><span class="plate"><svg viewBox="0 0 24 24"><path d="M4 12h4"/><path d="M16 12h4"/><path d="M12 4v4"/><path d="M12 16v4"/><circle cx="12" cy="12" r="2.5"/><path d="M7 7l2 2"/><path d="M15 15l2 2"/><path d="M17 7l-2 2"/><path d="M9 15l-2 2"/></svg></span></span><span class="accent automation"></span><span class="service-name">Matter.js</span>
                   </a>
                   <a class="service-card" href="https://${hostName}:18789/">
                     <span class="stock">Port 18789</span><span class="art"><span class="plate"><svg viewBox="0 0 24 24"><rect x="5" y="7" width="14" height="10"/><path d="M9 7V4h6v3"/><path d="M9 12h.1M15 12h.1"/><path d="M10 16h4"/></svg></span></span><span class="accent agent"></span><span class="service-name">OpenClaw</span>
                   </a>
-                  <a class="service-card" href="/otbr/">
+                  <a class="service-card" href="/otbr/" data-lan-href="http://${hostName}:${toString otbrWebPort}/" data-lan-label="Port ${toString otbrWebPort}" data-wan-href="/otbr/" data-wan-label="/otbr">
                     <span class="stock">/otbr</span><span class="art"><span class="plate"><svg viewBox="0 0 24 24"><path d="M12 5v4"/><path d="M12 15v4"/><path d="M5 12h4"/><path d="M15 12h4"/><circle cx="12" cy="12" r="3"/><path d="M6.5 6.5 9 9"/><path d="m15 15 2.5 2.5"/><path d="m17.5 6.5-2.5 2.5"/><path d="m9 15-2.5 2.5"/></svg></span></span><span class="accent sync"></span><span class="service-name">OpenThread BR</span>
                   </a>
                   <a class="service-card" href="http://${hostName}:9091/">
                     <span class="stock">Port 9091</span><span class="art"><span class="plate"><svg viewBox="0 0 24 24"><path d="M12 4v12"/><path d="m7 11 5 5 5-5"/><path d="M5 20h14"/></svg></span></span><span class="accent transfer"></span><span class="service-name">Transmission</span>
                   </a>
-                  <a class="service-card" href="/blackvue/">
+                  <a class="service-card" href="/blackvue/" data-lan-href="http://${hostName}:3000/" data-lan-label="Port 3000" data-wan-href="/blackvue/" data-wan-label="/blackvue">
                     <span class="stock">/blackvue</span><span class="art"><span class="plate"><svg viewBox="0 0 24 24"><rect x="4" y="7" width="11" height="10"/><path d="m15 10 5-2v8l-5-2"/><path d="M8 17v3h4v-3"/></svg></span></span><span class="accent video"></span><span class="service-name">BlackVue Viewer</span>
                   </a>
-                  <a class="service-card" href="/jellyfin/">
+                  <a class="service-card" href="/jellyfin/" data-lan-href="http://${hostName}:8096/" data-lan-label="Port 8096" data-wan-href="/jellyfin/" data-wan-label="/jellyfin">
                     <span class="stock">/jellyfin</span><span class="art"><span class="plate"><svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="1"/><path d="m10 10 5 2-5 2z"/><path d="M7 21h10"/><path d="M12 18v3"/></svg></span></span><span class="accent media"></span><span class="service-name">Jellyfin</span>
                   </a>
                   <a class="service-card" href="http://${hostName}:8083/">
@@ -923,6 +926,34 @@
         </main>
 
         <script>
+          const isPrivateIpv4 = (hostname) => {
+            const parts = hostname.split('.').map((part) => Number(part));
+            if (parts.length !== 4 || parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)) return false;
+            return parts[0] === 10 ||
+              parts[0] === 127 ||
+              (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) ||
+              (parts[0] === 192 && parts[1] === 168);
+          };
+          const isLanHostname = (hostname) => {
+            const host = hostname.toLowerCase().replace(/^\[/, "").replace(/\]$/, "");
+            return host === '${hostName}' ||
+              host === '${hostName}.local' ||
+              host === 'localhost' ||
+              host.startsWith('fe80:') ||
+              host.startsWith('fd') ||
+              isPrivateIpv4(host);
+          };
+          const applyServiceLinkMode = () => {
+            const mode = isLanHostname(window.location.hostname) ? 'lan' : 'wan';
+            document.querySelectorAll('[data-lan-href][data-wan-href]').forEach((card) => {
+              const href = card.dataset[mode + 'Href'];
+              const label = card.dataset[mode + 'Label'];
+              const stock = card.querySelector('.stock');
+              if (href) card.href = href;
+              if (label && stock) stock.textContent = label;
+            });
+          };
+          applyServiceLinkMode();
           const fmtBytes = (bytes) => {
             const gib = bytes / 1024 / 1024 / 1024;
             return gib.toFixed(gib >= 10 ? 0 : 1) + " GiB";

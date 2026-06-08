@@ -15,7 +15,6 @@ in {
   home.packages = with pkgs; [
     tmux
     btop
-    silver-searcher
     tree
     obsidian
   ];
