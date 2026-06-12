@@ -667,11 +667,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1780891868,
-        "narHash": "sha256-egmuu1Z4v/pamPmvrUUhMDT13N5t+ijYpU/b5/6BYBk=",
+        "lastModified": 1781235916,
+        "narHash": "sha256-Bq6tr7pAW+4A5sNj8i5p26db3tFQDJwESDV4OTdtZbQ=",
         "owner": "mochimisu",
         "repo": "matter-layer",
-        "rev": "7dd0e86eb3502982fc0af9403685387cc3ba40fd",
+        "rev": "fab77c6b5c536e4e59681521492a7defc0ea5a1f",
         "type": "github"
       },
       "original": {
