@@ -49,8 +49,15 @@
     home-manager,
     nix-darwin,
     ...
-  } @ inputs: {
-    defaultPackage.x86_64-linux = home-manager.defaultPackage.x86_64-linux;
+  } @ inputs: let
+    pkgsX86Linux = import nixpkgs {
+      system = "x86_64-linux";
+      config.allowUnfree = true;
+      overlays = [
+        inputs.aagl.overlays.default
+      ];
+    };
+  in {
     packages.x86_64-linux = {
       gaia-iso = let
         isoSystem = nixpkgs.lib.nixosSystem {
@@ -59,6 +66,7 @@
           modules = [
             "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
             ./vars.nix
+            inputs.sops-nix.nixosModules.sops
             ({lib, ...}: {
               boot.supportedFilesystems = lib.mkForce [
                 "ext4"
@@ -75,6 +83,11 @@
             })
             ./common.nix
             ./machines/gaia/configuration.nix
+            home-manager.nixosModules.home-manager
+            {
+              home-manager.useGlobalPkgs = true;
+              home-manager.useUserPackages = true;
+            }
           ];
         };
       in
@@ -90,9 +103,14 @@
 
     homeConfigurations = {
       brandon = home-manager.lib.homeManagerConfiguration {
-        pkgs = nixpkgs;
+        pkgs = pkgsX86Linux;
         modules = [
+          inputs.catppuccin.homeModules.catppuccin
           self.homeModules.home
+          {
+            home.username = "brandon";
+            home.homeDirectory = "/home/brandon";
+          }
         ];
       };
     };

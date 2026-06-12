@@ -17,7 +17,6 @@ in {
           path = vaultPath;
         }
       ];
-      completion.nvim_cmp = true;
       legacy_commands = false;
       opts = {
         legacy_commands = false;
