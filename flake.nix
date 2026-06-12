@@ -3,9 +3,8 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     hyprgrass = {
-      # PR #381 adds the Lua API we need to load/configure Hyprgrass from our Hyprland Lua config.
       # Keep this input for the touchscreen module while Hyprland itself comes from nixpkgs.
-      url = "github:horriblename/hyprgrass/pull/381/head";
+      url = "github:horriblename/hyprgrass";
     };
     home-manager = {
       url = "github:nix-community/home-manager";
