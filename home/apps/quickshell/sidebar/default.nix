@@ -61,7 +61,6 @@
       sleep 0.1
     done
 
-    ${pkgs.procps}/bin/pkill -x mako >/dev/null 2>&1 || true
     exec ${pkgs.quickshell}/bin/qs -n -d -c sidebar
   '';
   startupCommand = "${startupScript}";

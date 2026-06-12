@@ -71,9 +71,8 @@ ShellRoot {
     property var toastNotifications: []
     property var notificationTimestamps: ({})
     property int notificationSerial: 0
-    readonly property int notificationCount: notificationServer.trackedNotifications && notificationServer.trackedNotifications.values
-        ? notificationServer.trackedNotifications.values.length
-        : 0
+    readonly property var notificationModel: []
+    readonly property int notificationCount: 0
 
     // ----- Helpers -----
     function parseJsonLine(data, fallback) {
@@ -534,22 +533,6 @@ ShellRoot {
 
     PwObjectTracker {
         objects: root.defaultSink ? [root.defaultSink] : []
-    }
-
-    NotificationServer {
-        id: notificationServer
-
-        actionsSupported: true
-        bodySupported: true
-        bodyMarkupSupported: false
-        imageSupported: true
-        persistenceSupported: true
-        keepOnReload: true
-
-        onNotification: function(notification) {
-            notification.tracked = true;
-            root.pushToastNotification(notification);
-        }
     }
 
     // ----- Data feeds -----
@@ -1465,12 +1448,6 @@ ShellRoot {
                                     MouseArea {
                                         anchors.fill: parent
                                         onClicked: {
-                                            const notifications = notificationServer.trackedNotifications && notificationServer.trackedNotifications.values
-                                                ? notificationServer.trackedNotifications.values.slice()
-                                                : [];
-                                            for (let i = 0; i < notifications.length; i += 1) {
-                                                notifications[i].dismiss();
-                                            }
                                             root.toastNotifications = [];
                                         }
                                     }
@@ -1482,7 +1459,7 @@ ShellRoot {
                                 spacing: 4
 
                                 Repeater {
-                                    model: notificationServer.trackedNotifications
+                                    model: root.notificationModel
 
                                     Rectangle {
                                         required property var modelData
@@ -1567,7 +1544,8 @@ ShellRoot {
                 PanelWindow {
                     id: notificationToast
 
-                    visible: root.toastNotifications.length > 0
+                    visible: false
+                        && root.toastNotifications.length > 0
                         && root.isPrimarySidebarScreen(panel.modelData.name, panel.monitorIndex)
                         && !root.isMonitorFullscreen(panel.modelData.name)
                     screen: panel.modelData

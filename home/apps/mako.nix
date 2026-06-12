@@ -10,7 +10,7 @@ in
 {
 
   services.mako = lib.mkIf isLinuxGui {
-    enable = false;
+    enable = true;
     
     settings =  {
       "anchor" = "top-right";
@@ -36,5 +36,5 @@ in
     };
   };
 
-  # Quickshell owns the notification server.
+  # Mako owns the notification server; Quickshell only provides the sidebar.
 }
