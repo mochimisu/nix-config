@@ -132,12 +132,16 @@ in {
 
     # Thread/Matter event reports may enter Gaia either directly through the
     # local ZBT-2 OTBR (`wpan0`) or through same-dataset Ethernet border routers
-    # such as the Aqara M3 hubs and IKEA DIRIGERA on `enp5s0`.
+    # such as the Aqara M3 hubs and IKEA DIRIGERA on `enp5s0`. Thread OMR
+    # prefixes are ULA /64s and can change when the dataset is rebuilt, so keep
+    # the Ethernet fallback broad enough for any current same-LAN border router
+    # while still scoped to Matter-over-Thread traffic.
     trustedInterfaces = lib.mkAfter [
       "wpan0"
     ];
     extraInputRules = ''
-      iifname "enp5s0" ip6 saddr fd0b:6932:1d1a:1::/64 accept comment "Allow GaiaThread OMR traffic via Ethernet border routers"
+      iifname "enp5s0" ip6 saddr fc00::/7 udp dport 5540 accept comment "Allow Matter-over-Thread from ULA OMR routes via Ethernet border routers"
+      iifname "enp5s0" ip6 saddr fc00::/7 udp sport 5540 accept comment "Allow Matter-over-Thread replies from ULA OMR routes via Ethernet border routers"
     '';
   };
 

@@ -102,6 +102,7 @@ in {
     (import ./overlays/ha-ac-infinity.nix)
     (import ./overlays/ha-bambulab.nix)
     (import ./overlays/wvkbd.nix)
+    inputs.hyprgrass.overlays.default
   ];
 
   nixpkgs.config = {

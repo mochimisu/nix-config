@@ -1,10 +1,11 @@
-{ config, inputs, lib, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 let
   touchscreenVars = if builtins.hasAttr "touchscreen" config.variables then config.variables.touchscreen else {};
   enable = touchscreenVars.enable or false;
   enableScroll = touchscreenVars.enableScroll or true;
   onScreenKeyboard = touchscreenVars.onScreenKeyboard or false;
   enableHyprgrass = touchscreenVars.enableHyprgrass or onScreenKeyboard;
+  enableHyprgrassWorkspaceSwipe = touchscreenVars.enableHyprgrassWorkspaceSwipe or true;
   lisgdDevice = touchscreenVars.device or "/dev/input/touchscreen";
   ydotoolSocket = touchscreenVars.ydotoolSocket or "/run/ydotoold.socket";
   defaultHyprgrassBinds = [
@@ -24,13 +25,38 @@ let
   ];
   enableHyprgrassBinds = enableHyprgrass && hyprgrassBinds != [];
   enableHyprgrassBindm = enableHyprgrass && hyprgrassBindm != [];
-  enableHyprgrassLuaConfig = enableHyprgrassBinds || enableHyprgrassBindm;
-  hyprgrassPackage = inputs.hyprgrass.packages.${pkgs.stdenv.hostPlatform.system}.default;
+  enableHyprgrassWorkspaceGestures = enableHyprgrass && enableHyprgrassWorkspaceSwipe;
+  enableHyprgrassLuaConfig = enableHyprgrassBinds || enableHyprgrassBindm || enableHyprgrassWorkspaceGestures;
+  hyprgrassPackage = pkgs.hyprlandPlugins.hyprgrass;
   hyprgrassPluginPath = "${hyprgrassPackage}/lib/libhyprgrass.so";
   wvkbdStartScript = "${config.home.homeDirectory}/.config/hypr/wvkbd-mobintl-start.sh";
   wvkbdStopScript = "${config.home.homeDirectory}/.config/hypr/wvkbd-mobintl-stop.sh";
   splitCsv = value: lib.splitString "," value;
   luaString = builtins.toJSON;
+  hyprgrassDirectionToLua = direction:
+    luaString ({
+      l = "left";
+      r = "right";
+      u = "up";
+      d = "down";
+      i = "pinchin";
+      o = "pinchout";
+    }.${direction} or direction);
+  hyprgrassPatternToLua = gesture: let
+    parts = lib.splitString ":" gesture;
+    kind = lib.elemAt parts 0;
+  in
+    if kind == "swipe"
+    then "{ kind = \"swipe\", fingers = ${lib.elemAt parts 1}, direction = ${hyprgrassDirectionToLua (lib.elemAt parts 2)} }"
+    else if kind == "edge"
+    then "{ kind = \"edge\", origin = ${hyprgrassDirectionToLua (lib.elemAt parts 1)}, direction = ${hyprgrassDirectionToLua (lib.elemAt parts 2)} }"
+    else if kind == "longpress"
+    then "{ kind = \"longpress\", fingers = ${lib.elemAt parts 1} }"
+    else if kind == "tap"
+    then "{ kind = \"tap\", fingers = ${lib.elemAt parts 1} }"
+    else if kind == "pinch"
+    then "{ kind = \"pinch\", fingers = ${lib.elemAt parts 1}, direction = ${hyprgrassDirectionToLua (lib.elemAt parts 2)} }"
+    else luaString gesture;
   hyprlandDispatcherToLua = dispatcher: arg:
     if dispatcher == "exec"
     then "hl.dsp.exec_cmd(${luaString arg})"
@@ -50,7 +76,7 @@ let
     action = hyprlandDispatcherToLua dispatcher arg;
   in ''
     hl.plugin.hyprgrass.bind {
-      gesture = ${luaString gesture},
+      pattern = ${hyprgrassPatternToLua gesture},
       ${lib.optionalString (mod != "") "mod = ${luaString mod},"}
       action = ${action},
     }
@@ -68,20 +94,29 @@ let
       else "function() hl.exec_cmd(${luaString "hyprctl dispatch ${dispatcher}"}) end";
   in ''
     hl.plugin.hyprgrass.bind {
-      gesture = ${luaString gesture},
+      pattern = ${hyprgrassPatternToLua gesture},
       ${lib.optionalString (mod != "") "mod = ${luaString mod},"}
       action = ${action},
       mouse = true,
     }
   '';
   hyprgrassLuaConfig = ''
-    -- Hyprgrass PR #381 Lua API.
+    -- Hyprgrass Lua API.
     hl.plugin.load(${luaString hyprgrassPluginPath})
 
     if hl.plugin and hl.plugin.hyprgrass and hl.plugin.hyprgrass.bind then
     ${lib.concatMapStrings hyprgrassBindToLua hyprgrassBinds}
     ${lib.concatMapStrings hyprgrassBindmToLua hyprgrassBindm}
     end
+
+    ${lib.optionalString enableHyprgrassWorkspaceGestures ''
+      if hl.plugin and hl.plugin.hyprgrass and hl.plugin.hyprgrass.gesture then
+        hl.plugin.hyprgrass.gesture {
+          pattern = { kind = "swipe", fingers = 3, direction = "horizontal" },
+          action = "workspace",
+        }
+      end
+    ''}
   '';
   lisgdScrollCmd = "${pkgs.ydotool}/bin/ydotool mousemove --wheel -- 0";
   lisgdScrollUp = "1,DU,*,*,P,${lisgdScrollCmd} -1";
