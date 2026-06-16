@@ -139,9 +139,9 @@ in {
     trustedInterfaces = lib.mkAfter [
       "wpan0"
     ];
-    extraInputRules = ''
-      iifname "enp5s0" ip6 saddr fc00::/7 udp dport 5540 accept comment "Allow Matter-over-Thread from ULA OMR routes via Ethernet border routers"
-      iifname "enp5s0" ip6 saddr fc00::/7 udp sport 5540 accept comment "Allow Matter-over-Thread replies from ULA OMR routes via Ethernet border routers"
+    extraCommands = ''
+      ${pkgs.iptables}/bin/ip6tables -A nixos-fw -i enp5s0 -s fc00::/7 -p udp --dport 5540 -j nixos-fw-accept -m comment --comment "Allow Matter-over-Thread from ULA OMR routes via Ethernet border routers"
+      ${pkgs.iptables}/bin/ip6tables -A nixos-fw -i enp5s0 -s fc00::/7 -p udp --sport 5540 -j nixos-fw-accept -m comment --comment "Allow Matter-over-Thread replies from ULA OMR routes via Ethernet border routers"
     '';
   };
 
