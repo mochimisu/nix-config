@@ -7,6 +7,17 @@
 }: let
   touchscreenVars = lib.attrByPath ["touchscreen"] {} config.variables;
   enableSddmKeyboard = touchscreenVars.sddmKeyboard or false;
+  useDvorakSddmKeyboard =
+    (touchscreenVars.sddmKeyboardLayout or "")
+    == "dvorak-custom"
+    || (
+      (config.services.xserver.xkb.layout or "") == "custom"
+      && (config.services.xserver.xkb.variant or "") == "dvorak-custom"
+    );
+  sddmKeyboardLayoutFile =
+    if useDvorakSddmKeyboard
+    then ./apps/qtvirtualkeyboard/layouts/en_US/dvorak-custom.qml
+    else ./apps/qtvirtualkeyboard/layouts/en_US/main.qml;
   # pkgsPinned = import (builtins.fetchTarball {
   #   # walker broken on 2/13/2025, use a commit from 2/3/2025
   #   url = "https://github.com/NixOS/nixpkgs/archive/9d962cd4ad268f64d125aa8c5599a87a374af78a.tar.gz";
@@ -106,7 +117,6 @@ in {
   };
 
   home-manager.extraSpecialArgs = {inherit inputs;};
-  services.hypridle.enable = true;
   hardware.bluetooth = {
     enable = true;
     powerOnBoot = true;
@@ -177,7 +187,7 @@ in {
     };
 
   environment.etc = lib.mkIf enableSddmKeyboard {
-    "xdg/qtvirtualkeyboard/layouts/en_US/main.qml".source = ./apps/qtvirtualkeyboard/layouts/en_US/main.qml;
+    "xdg/qtvirtualkeyboard/layouts/en_US/main.qml".source = sddmKeyboardLayoutFile;
     "xdg/qtvirtualkeyboard/qml/QtQuick/VirtualKeyboard/Styles/compact/style.qml".source =
       ./apps/qtvirtualkeyboard/qml/QtQuick/VirtualKeyboard/Styles/compact/style.qml;
   };

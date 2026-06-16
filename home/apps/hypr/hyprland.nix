@@ -21,7 +21,6 @@ in {
                 hl.exec_cmd("sleep 2 && blueman-applet")
                 hl.exec_cmd("sleep 2 && blueman-tray")
                 hl.exec_cmd("systemctl --user start hyprpolkitagent")
-                hl.exec_cmd("hypridle")
                 hl.exec_cmd("walker --gapplication-service")
                 hl.exec_cmd("wl-paste --type text --watch cliphist store")
                 hl.exec_cmd("wl-paste --type image --watch cliphist store")
