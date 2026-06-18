@@ -84,7 +84,7 @@ in {
   variables.ewwPttStateFile = "${config.home.homeDirectory}/.local/state/hypr-ptt/state";
   home.file.".config/hypr/moon.jpg".source = moonWallpaper;
   home.file.".config/hypr/cat-in-the-swamp-moewalls-com.mp4".source =
-    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/Downloads/cat-in-the-swamp-moewalls-com.mp4";
+    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/stuff/nix-config/untracked-assets/cat-in-the-swamp-moewalls-com.mp4";
   variables.hyprpaper-config = ''
     wallpaper {
       monitor = DP-3
