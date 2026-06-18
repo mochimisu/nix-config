@@ -1,7 +1,5 @@
 {
-  inputs,
   osConfig,
-  pkgs,
   ...
 }: {
   imports = [

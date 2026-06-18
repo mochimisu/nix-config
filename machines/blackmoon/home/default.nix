@@ -9,7 +9,7 @@
     sha256 = "sha256:1571r0sz1qfz9xdqqkbpzfx8wx22azrhmsmdj14km427qcyiiap6";
   };
   lua = lib.generators.mkLuaInline;
-  catWallpaperPath = "${config.home.homeDirectory}/.config/hypr/cat-in-the-swamp-moewalls-com.mp4";
+  catWallpaperPath = "${config.home.homeDirectory}/stuff/nix-config/untracked-assets/cat-in-the-swamp-moewalls-com.mp4";
   catWallpaperService = pkgs.writeShellScript "blackmoon-cat-wallpaper" ''
     set -eu
 
@@ -42,28 +42,36 @@
     trap stop_wallpaper EXIT INT TERM
 
     i=0
-    while [ "$i" -lt 100 ]; do
+    while true; do
       if [ -e "${catWallpaperPath}" ] && ${config.wayland.windowManager.hyprland.package}/bin/hyprctl monitors 2>/dev/null | ${pkgs.gnugrep}/bin/grep -q '^Monitor DP-3 '; then
         break
       fi
       i=$((i + 1))
-      ${pkgs.coreutils}/bin/sleep 0.1
+      if [ "$i" -eq 1 ] || [ $((i % 30)) -eq 0 ]; then
+        echo "waiting for DP-3 and ${catWallpaperPath}" >&2
+      fi
+      ${pkgs.coreutils}/bin/sleep 1
     done
 
-    if [ "$i" -ge 100 ]; then
-      echo "DP-3 or ${catWallpaperPath} did not become available" >&2
-      exit 1
-    fi
-
+    unavailable_count=0
     while true; do
       dp3_id="$(${config.wayland.windowManager.hyprland.package}/bin/hyprctl -j monitors | ${pkgs.jq}/bin/jq -r '.[] | select(.name == "DP-3") | .id' | ${pkgs.coreutils}/bin/head -n1)"
-      fullscreen_on_dp3=0
-      if [ -n "$dp3_id" ]; then
-        if ${config.wayland.windowManager.hyprland.package}/bin/hyprctl -j clients | ${pkgs.jq}/bin/jq -e --argjson monitor "$dp3_id" '
-          any(.[]; .mapped == true and .monitor == $monitor and ((.fullscreen // 0) != 0))
-        ' >/dev/null; then
-          fullscreen_on_dp3=1
+      if [ ! -e "${catWallpaperPath}" ] || [ -z "$dp3_id" ]; then
+        stop_wallpaper
+        unavailable_count=$((unavailable_count + 1))
+        if [ "$unavailable_count" -eq 1 ] || [ $((unavailable_count % 30)) -eq 0 ]; then
+          echo "waiting for DP-3 and ${catWallpaperPath}" >&2
         fi
+        ${pkgs.coreutils}/bin/sleep 1
+        continue
+      fi
+      unavailable_count=0
+
+      fullscreen_on_dp3=0
+      if ${config.wayland.windowManager.hyprland.package}/bin/hyprctl -j clients | ${pkgs.jq}/bin/jq -e --argjson monitor "$dp3_id" '
+        any(.[]; .mapped == true and .monitor == $monitor and ((.fullscreen // 0) != 0))
+      ' >/dev/null; then
+        fullscreen_on_dp3=1
       fi
 
       if [ "$fullscreen_on_dp3" -eq 1 ]; then
@@ -83,8 +91,6 @@ in {
   };
   variables.ewwPttStateFile = "${config.home.homeDirectory}/.local/state/hypr-ptt/state";
   home.file.".config/hypr/moon.jpg".source = moonWallpaper;
-  home.file.".config/hypr/cat-in-the-swamp-moewalls-com.mp4".source =
-    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/stuff/nix-config/untracked-assets/cat-in-the-swamp-moewalls-com.mp4";
   variables.hyprpaper-config = ''
     wallpaper {
       monitor = DP-3
