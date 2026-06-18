@@ -24,24 +24,23 @@
       dots_size = 0.33
       dots_spacing = 0.15
       dots_center = true
-      outer_color = #5e81ac
-      inner_color = #2e3440
-      font_color = #d8dee9
+      outer_color = rgb(5e81ac)
+      inner_color = rgb(2e3440)
+      font_color = rgb(d8dee9)
       placeholder_text = <i>Password...</i>
-      position = "0, -20"
+      position = 0, -20
     }
 
     label {
       monitor =
       text = $TIME
-      text_align =
-      color = rgb(235, 188, 186)
+      color = rgb(ebbcba)
       font_size = 50
       font_family = IBM Plex
       rotate = 0.000000
       shadow_passes = 0
       shadow_size = 3
-      shadow_color = rgba(0, 0, 0, 1.0)
+      shadow_color = rgba(000000ff)
       shadow_boost = 1.200000
 
       position = 0, 80

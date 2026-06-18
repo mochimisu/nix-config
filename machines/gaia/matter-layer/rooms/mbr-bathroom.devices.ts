@@ -31,7 +31,7 @@ export default defineRoomDevices("mbrBathroom", ({ room }) => {
 
   room.toiletPresence = signal(() => room.toilet.presence);
   room.showerPresence = signal(() => room.shower.presence);
-  room.daytime = signal(() => state.timeBetween("6:00", "22:00"));
+  room.daytime = signal(() => state.timeBetween("6:00", "20:00"));
   room.morning = signal(() => room.daytime && state.timeBetween("6:00", "11:00"));
 
   room.presence = signal(() =>
