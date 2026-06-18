@@ -17,8 +17,6 @@ in {
     ./keymap.nix
     inputs.catppuccin.nixosModules.catppuccin
     inputs.flatpaks.nixosModules.nix-flatpak
-    # AAGL is for Zenless Zone Zero
-    inputs.aagl.nixosModules.default
   ];
 
   # Packages
@@ -63,7 +61,6 @@ in {
     ledger-live-desktop
     proton-vpn
     thunar
-    signal-desktop
 
     # Games
     mangohud
@@ -203,8 +200,4 @@ in {
     autoEnable = true;
     flavor = "mocha";
   };
-
-  # zzz
-  nix.settings = inputs.aagl.nixConfig;
-  programs.sleepy-launcher.enable = true;
 }

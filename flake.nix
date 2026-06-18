@@ -29,10 +29,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     catppuccin.url = "github:catppuccin/nix";
-    aagl = {
-      url = "github:ezKEa/aagl-gtk-on-nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     nix-openclaw.url = "github:openclaw/nix-openclaw";
     matter-layer = {
       url = "github:mochimisu/matter-layer";
@@ -53,9 +49,6 @@
     pkgsX86Linux = import nixpkgs {
       system = "x86_64-linux";
       config.allowUnfree = true;
-      overlays = [
-        inputs.aagl.overlays.default
-      ];
     };
   in {
     packages.x86_64-linux = {
@@ -80,6 +73,9 @@
                 "btrfs"
                 "xfs"
               ];
+              # The installer profile and Gaia service stack both set this for
+              # Redis; keep the ISO evaluation deterministic.
+              boot.kernel.sysctl."vm.overcommit_memory" = lib.mkForce "1";
             })
             ./common.nix
             ./machines/gaia/configuration.nix
