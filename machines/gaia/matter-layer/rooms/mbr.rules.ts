@@ -6,8 +6,7 @@ export default defineRoomRules("mbr", ({ room, rule }) => {
   bilresaBlinds(room.blindsRemote2, room.blinds);
 
   rule("bed-light", () => {
-    const activeWindow = time.minuteBetween("8:00", "20:00");
-    room.bedLight.auto(room.presence && activeWindow);
+    room.bedLight.auto(room.presence);
   });
   rule("blinds", () => {
     if (time.minuteBetween("8:00", "20:00")) {

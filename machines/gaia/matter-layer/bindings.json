@@ -22,6 +22,8 @@
   "mbr.windowBlinds": { "label": "MBR Window Blinds", "mac": "70:4b:ca:2f:1b:ef" },
   "mbr.door": { "label": "MBR Door" },
   "mbr.presence2": { "label": "MBR Presence 2" },
+  "mbr.bedLeft": { "label": "MBR Bed Left" },
+  "mbr.bedRight": { "label": "MBR Bed Right" },
   "networkCloset.light": { "label": "Network Closet Light" },
   "networkCloset.door": { "label": "Network Closet Door" },
   "nursery.blindsRemote": { "label": "Nursery Blinds Remote", "unique_id": "9ADDE61E4ABE793F" },

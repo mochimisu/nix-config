@@ -495,9 +495,15 @@
 
   # Keep device labels in this file too, so adding a device usually means
   # touching only pairings.nix.
-  matterExtraNodeLabels = {};
+  matterExtraNodeLabels = {
+    "unique_id:CE244175FB2EA90F" = "MBR Bed Left";
+    "unique_id:5243A6818ADDD056" = "MBR Bed Right";
+  };
 
-  matterExtraNodeRooms = {};
+  matterExtraNodeRooms = {
+    "unique_id:CE244175FB2EA90F" = "MBR";
+    "unique_id:5243A6818ADDD056" = "MBR";
+  };
 
   nodeLabelKeyFromMatch = match:
     if match ? unique_id
