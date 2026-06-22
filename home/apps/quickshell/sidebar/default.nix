@@ -81,6 +81,7 @@ in {
         fontSize = variables.ewwSidebarFontSize or "13px";
         iconSize = variables.ewwSidebarIconSize or "16";
         inherit pttStateFile;
+        inherit hyprctlBin;
 
         inherit workspacesBin windowsBin;
         inherit clockBin networkBin batteryBin;

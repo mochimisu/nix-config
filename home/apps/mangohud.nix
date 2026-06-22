@@ -1,4 +1,13 @@
-{ pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}: let
+  mangoHudVars = config.variables.mangohud or {};
+  showCpuTemp = mangoHudVars.cpuTemp or true;
+  extraConfig = mangoHudVars.extraConfig or "";
+in
 {
   programs.mangohud = {
     enable = true;
@@ -10,7 +19,8 @@
     background_alpha=0
     toggle_hud=F8
 
-    cpu_temp
+    ${lib.optionalString showCpuTemp "cpu_temp"}
+    ${extraConfig}
     battery
     '';
 }

@@ -17,6 +17,7 @@ ShellRoot {
     // ----- Config injected from Nix -----
     property var sidebarScreens: @sidebarScreensJson@
     readonly property string hostName: "@hostName@"
+    readonly property string hyprctlBin: "@hyprctlBin@"
     readonly property bool pttEnabled: "@pttStateFile@" !== ""
 
     readonly property int iconSize: {
@@ -149,7 +150,7 @@ ShellRoot {
             return;
         }
 
-        Quickshell.execDetached(["hyprctl", "dispatch", "workspace", String(workspace.id)]);
+        Quickshell.execDetached([hyprctlBin, "dispatch", "workspace", String(workspace.id)]);
     }
 
     function isAudioSink(node) {
@@ -666,7 +667,10 @@ ShellRoot {
                             model: contentRoot.monitorWorkspaces
 
                             Item {
+                                id: workspaceItem
+
                                 required property var modelData
+                                readonly property var workspace: modelData
 
                                 width: topSection.width
                                 height: 18
@@ -690,10 +694,14 @@ ShellRoot {
                                 }
 
                                 MouseArea {
+                                    z: 10
                                     anchors.fill: parent
-                                    acceptedButtons: Qt.AllButtons
-                                    onClicked: {
-                                        root.dispatchWorkspace(modelData);
+                                    acceptedButtons: Qt.LeftButton
+                                    cursorShape: Qt.PointingHandCursor
+
+                                    onClicked: function(mouse) {
+                                        root.dispatchWorkspace(workspaceItem.workspace);
+                                        mouse.accepted = true;
                                     }
                                 }
                             }
