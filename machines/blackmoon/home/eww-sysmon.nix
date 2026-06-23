@@ -179,8 +179,8 @@ in
           :xalign 0.0)
         (box
          :hexpand true
-         :vexpand true
-         :width 200
+         :vexpand false
+         :width 105
          (children))))
     (defwidget mid-row [label value]
       (box
@@ -191,24 +191,27 @@ in
           (mid-value :text value)
           (box
             :hexpand true
-            :vexpand true
-            :width 200
+            :vexpand false
+            :width 105
             (children))))
 
 
     (defwidget sys-info []
       (box
         :orientation "h"
+        :width 1396
+        :height 168
+        :hexpand false
+        :vexpand false
         :space-evenly false
-        :vexpand true
         (box
           :orientation "v"
-          :vexpand true
+          :vexpand false
           :space-evenly false
           :class "left"
           :halign "start"
           :hexpand true
-          :valign "end"
+          :valign "start"
           (left-row :label "Up" :value uptime)
           (left-row :label "CPU" :value "''${round(EWW_CPU.avg, 1)}%"
             (history-graph :value "''${EWW_CPU.avg}" :max 100 :class "cpu-history history-graph"))
@@ -221,10 +224,10 @@ in
         )
         (box
           :orientation "v"
-          :vexpand true
+          :vexpand false
           :space-evenly false
           :class "mid"
-          :valign "end"
+          :valign "start"
           (mid-row :label "CPU" :value "''${round(EWW_TEMPS.CORETEMP_PACKAGE_ID_0,0)}°C"
             (history-graph :value "''${EWW_TEMPS.CORETEMP_PACKAGE_ID_0}" :max 120 :class "cpu-temp-history history-graph"))
           (mid-row :label "GPU" :value "''${sensors.gpu_temp}°C"
@@ -252,17 +255,15 @@ in
             (label :text "''${procs.top1}" :xalign 1.0)
             (label :text "''${procs.top2}" :xalign 1.0)
             (label :text "''${procs.top3}" :xalign 1.0)
-            (label :text "''${procs.top4}" :xalign 1.0)
-            (label :text "''${procs.top5}" :xalign 1.0)
-            (label :text "''${procs.top6}" :xalign 1.0)
           )
         )))
 
     (defwindow sysmon
-      :monitor 0
-      :geometry (geometry :x "0px" :y "0px" :width "1920px" :height "480px" :anchor "top left")
+      :exclusive true
+      :monitor "DP-1"
+      :geometry (geometry :x "0px" :y "0px" :width "1396px" :height "168px" :anchor "bottom center")
       :stacking "fg"
-      :windowtype "desktop"
+      :windowtype "dock"
       :wm-ignore false
       (sys-info))
   '';
@@ -272,30 +273,30 @@ in
         background-color: rgba(30, 30, 46, 0.5);
         color: rgba(255, 255, 255, 1.0);
         font-family: "Montserrat Bold";
-        font-size: 36px;
-        padding: 0 10px;
+        font-size: 19px;
+        padding: 2px 6px;
       }
       
       .left {
-        min-width: 480px;
-        margin: 0 20px;
+        min-width: 252px;
+        margin: 0 11px;
       }
 
       .mid {
-        min-width: 480px;
-        margin: 0 20px;
+        min-width: 252px;
+        margin: 0 11px;
       }
 
       .right {
-        min-width: 600px;
+        min-width: 315px;
       }
 
       .mid-value {
-        min-width: 200px;
+        min-width: 105px;
       }
 
       .left-value {
-        min-width: 130px;
+        min-width: 69px;
       }
 
       .left-label,
@@ -311,16 +312,16 @@ in
       }
 
       .left-label {
-        min-width: 120px;
+        min-width: 63px;
       }
 
       .mid-label {
-        min-width: 120px;
+        min-width: 63px;
       }
 
       .graph.history-graph {
-        min-height: 42px;
-        padding: 2px 0;
+        min-height: 22px;
+        padding: 1px 0;
         opacity: 0.9;
       }
 
@@ -358,19 +359,20 @@ in
       .pump-speed-bar progressbar progress { background-color: rgba(148,226,213,0.9); }
 
       .left-subtext {
-        font-size: 24px;
+        font-size: 13px;
         color: rgba(255,255,255,0.7);
-        min-width: 150px;
+        min-width: 79px;
       }
 
       .processes {
         font-family: "Cascadia Code";
-        margin-top: 40px;
+        font-size: 16px;
+        margin-top: 4px;
       }
 
       .time {
         font-family: "Montserrat Medium";
-        font-size: 100px;
+        font-size: 53px;
       }
     '';
 
@@ -381,7 +383,7 @@ in
         "hyprland.start"
         (lib.generators.mkLuaInline ''
           function()
-            hl.exec_cmd("eww daemon --config ~/.config/eww/sysmon && eww --config ~/.config/eww/sysmon open sysmon")
+            hl.exec_cmd("eww daemon --config ~/.config/eww/sysmon && eww --config ~/.config/eww/sysmon close sysmon; eww --config ~/.config/eww/sysmon open sysmon")
           end
         '')
       ];

@@ -162,13 +162,6 @@ in {
         position = "0x0";
         scale = 1;
       }
-      {
-        output = "HDMI-A-1";
-        mode = "480x1920@60";
-        position = "4880x1400";
-        scale = 1;
-        transform = 1;
-      }
     ];
 
     workspace_rule = [
@@ -185,11 +178,6 @@ in {
       {
         workspace = "3";
         monitor = "DP-3";
-        default = true;
-      }
-      {
-        workspace = "10";
-        monitor = "HDMI-A-1";
         default = true;
       }
     ];
@@ -304,7 +292,6 @@ in {
           })'
           hyprctl eval 'hl.monitor({ output = "DP-1", mode = "2560x1440@120", position = "3440x-560", scale = 1, transform = 1 })'
           hyprctl eval 'hl.monitor({ output = "DP-3", mode = "3440x1440@175", position = "0x0", scale = 1 })'
-          hyprctl eval 'hl.monitor({ output = "HDMI-A-1", mode = "480x1920@60", position = "4880x1200", scale = 1, transform = 1 })'
           exit
       fi
       hyprctl reload
