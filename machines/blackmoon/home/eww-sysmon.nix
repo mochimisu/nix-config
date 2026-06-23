@@ -121,6 +121,47 @@ while true; do
   sleep 6
 done
 '';
+
+ewwNet = pkgs.writeShellScriptBin "eww-net" ''
+#!/usr/bin/env bash
+
+format_rate() {
+  local bytes="$1"
+  awk -v b="$bytes" 'BEGIN {
+    if (b >= 1048576) printf "%.1fM", b / 1048576;
+    else if (b >= 1024) printf "%.0fK", b / 1024;
+    else printf "%dB", b;
+  }'
+}
+
+read_totals() {
+  local rx=0 tx=0 iface state
+  for iface in /sys/class/net/*; do
+    iface="''${iface##*/}"
+    case "$iface" in
+      lo|docker*|podman*|veth*|br-*|virbr*|tailscale*) continue ;;
+    esac
+    state="$(cat "/sys/class/net/$iface/operstate" 2>/dev/null || true)"
+    [ "$state" = "up" ] || continue
+    rx=$((rx + $(cat "/sys/class/net/$iface/statistics/rx_bytes" 2>/dev/null || echo 0)))
+    tx=$((tx + $(cat "/sys/class/net/$iface/statistics/tx_bytes" 2>/dev/null || echo 0)))
+  done
+  printf '%s %s\n' "$rx" "$tx"
+}
+
+read -r prev_rx prev_tx < <(read_totals)
+while true; do
+  sleep 1
+  read -r rx tx < <(read_totals)
+  down=$((rx - prev_rx))
+  up=$((tx - prev_tx))
+  [ "$down" -ge 0 ] || down=0
+  [ "$up" -ge 0 ] || up=0
+  printf '{"down":"%s","up":"%s"}\n' "$(format_rate "$down")" "$(format_rate "$up")"
+  prev_rx="$rx"
+  prev_tx="$tx"
+done
+'';
 in
 {
   programs.eww = {
@@ -149,6 +190,7 @@ in
       "free | awk '/^Swap/ {printf \"%.0f\", $3/$2 * 100.0}'")
     (deflisten procs "bash ${ewwProcs}/bin/eww-procs")
     (deflisten sensors "bash ${ewwSensors}/bin/eww-sensors")
+    (deflisten net "bash ${ewwNet}/bin/eww-net")
 
     (defwidget left-label [text]
       (label
@@ -179,8 +221,8 @@ in
           :xalign 0.0)
         (box
          :hexpand true
-         :vexpand true
-         :width 200
+         :vexpand false
+         :width 105
          (children))))
     (defwidget mid-row [label value]
       (box
@@ -191,24 +233,27 @@ in
           (mid-value :text value)
           (box
             :hexpand true
-            :vexpand true
-            :width 200
+            :vexpand false
+            :width 105
             (children))))
 
 
     (defwidget sys-info []
       (box
         :orientation "h"
+        :width 1416
+        :height 112
+        :hexpand false
+        :vexpand false
         :space-evenly false
-        :vexpand true
         (box
           :orientation "v"
-          :vexpand true
+          :vexpand false
           :space-evenly false
-          :class "left"
+          :class "column left"
           :halign "start"
           :hexpand true
-          :valign "end"
+          :valign "start"
           (left-row :label "Up" :value uptime)
           (left-row :label "CPU" :value "''${round(EWW_CPU.avg, 1)}%"
             (history-graph :value "''${EWW_CPU.avg}" :max 100 :class "cpu-history history-graph"))
@@ -217,14 +262,14 @@ in
             (history-graph :value "''${EWW_RAM.used_mem_perc}" :max 100 :class "ram-history history-graph"))
           (left-row :label "Swap" :value "''${round((EWW_RAM.total_swap - EWW_RAM.free_swap) / EWW_RAM.total_swap, 0)}%" :subtext "''${round((EWW_RAM.total_swap - EWW_RAM.free_swap) / 1073741824, 1)}/''${round(EWW_RAM.total_swap / 1073741824, 0)} GB")
           (left-row :label "Disk" :value "''${round(EWW_DISK["/"].used_perc, 0)}%" :subtext "''${round(EWW_DISK["/"].used / 1073741824, 0)} / ''${round(EWW_DISK["/"].total / 1073741824, 0)} GB")
-          (left-row :label "Procs" :value "''${procs.total} / ''${procs.running}")
+          (left-row :label "Net" :value "↓ ''${net.down}" :subtext "↑ ''${net.up}")
         )
         (box
           :orientation "v"
-          :vexpand true
+          :vexpand false
           :space-evenly false
-          :class "mid"
-          :valign "end"
+          :class "column mid"
+          :valign "start"
           (mid-row :label "CPU" :value "''${round(EWW_TEMPS.CORETEMP_PACKAGE_ID_0,0)}°C"
             (history-graph :value "''${EWW_TEMPS.CORETEMP_PACKAGE_ID_0}" :max 120 :class "cpu-temp-history history-graph"))
           (mid-row :label "GPU" :value "''${sensors.gpu_temp}°C"
@@ -243,26 +288,36 @@ in
           :vexpand false
           :hexpand true
           :space-evenly false
-          :class "right"
-          (label :text "''${formattime(EWW_TIME, '%I:%M %p')}" :class "time" :xalign 1.0 :hexpand true)
-          (label :text "''${formattime(EWW_TIME, '%A, %B %d, %Y')}" :class "date" :xalign 1.0 :hexpand true)
+          :class "column proc-col"
           (box
-            :orientation "v"
-            :class "processes"
-            (label :text "''${procs.top1}" :xalign 1.0)
-            (label :text "''${procs.top2}" :xalign 1.0)
-            (label :text "''${procs.top3}" :xalign 1.0)
-            (label :text "''${procs.top4}" :xalign 1.0)
-            (label :text "''${procs.top5}" :xalign 1.0)
-            (label :text "''${procs.top6}" :xalign 1.0)
-          )
+            :orientation "h"
+            :class "process-summary"
+            :space-evenly false
+            (label :text "Procs" :class "process-summary-label" :xalign 0.0)
+            (label :text "''${procs.total} / ''${procs.running}" :class "process-summary-value" :xalign 0.0))
+          (label :text "''${procs.top1}" :class "process-line" :xalign 0.0)
+          (label :text "''${procs.top2}" :class "process-line" :xalign 0.0)
+          (label :text "''${procs.top3}" :class "process-line" :xalign 0.0)
+          (label :text "''${procs.top4}" :class "process-line" :xalign 0.0)
+          (label :text "''${procs.top5}" :class "process-line" :xalign 0.0)
+        )
+        (box
+          :orientation "v"
+          :vexpand false
+          :hexpand true
+          :space-evenly false
+          :class "column clock-col"
+          :valign "start"
+          (label :text "''${formattime(EWW_TIME, '%I:%M %p')}" :class "time" :xalign 1.0 :hexpand true)
+          (label :text "''${formattime(EWW_TIME, '%A, %B %d')}" :class "date" :xalign 1.0 :hexpand true)
         )))
 
     (defwindow sysmon
-      :monitor 0
-      :geometry (geometry :x "0px" :y "0px" :width "1920px" :height "480px" :anchor "top left")
+      :exclusive true
+      :monitor "DP-1"
+      :geometry (geometry :x "0px" :y "0px" :width "1416px" :height "112px" :anchor "bottom center")
       :stacking "fg"
-      :windowtype "desktop"
+      :windowtype "dock"
       :wm-ignore false
       (sys-info))
   '';
@@ -272,30 +327,42 @@ in
         background-color: rgba(30, 30, 46, 0.5);
         color: rgba(255, 255, 255, 1.0);
         font-family: "Montserrat Bold";
-        font-size: 36px;
-        padding: 0 10px;
+        font-size: 19px;
+        padding: 0 2px;
+      }
+
+      .column {
+        padding: 3px 8px 0 8px;
+        border-left: 1px solid rgba(255,255,255,0.12);
       }
       
       .left {
-        min-width: 480px;
-        margin: 0 20px;
+        min-width: 252px;
+        margin: 0 6px;
+        border-left: 0;
+        font-size: 15px;
       }
 
       .mid {
-        min-width: 480px;
-        margin: 0 20px;
+        min-width: 252px;
+        margin: 0 6px;
+        font-size: 15px;
       }
 
-      .right {
-        min-width: 600px;
+      .proc-col {
+        min-width: 360px;
+      }
+
+      .clock-col {
+        min-width: 300px;
       }
 
       .mid-value {
-        min-width: 200px;
+        min-width: 105px;
       }
 
       .left-value {
-        min-width: 130px;
+        min-width: 69px;
       }
 
       .left-label,
@@ -311,16 +378,16 @@ in
       }
 
       .left-label {
-        min-width: 120px;
+        min-width: 63px;
       }
 
       .mid-label {
-        min-width: 120px;
+        min-width: 63px;
       }
 
       .graph.history-graph {
-        min-height: 42px;
-        padding: 2px 0;
+        min-height: 20px;
+        padding: 1px 0;
         opacity: 0.9;
       }
 
@@ -358,19 +425,38 @@ in
       .pump-speed-bar progressbar progress { background-color: rgba(148,226,213,0.9); }
 
       .left-subtext {
-        font-size: 24px;
+        font-size: 12px;
         color: rgba(255,255,255,0.7);
-        min-width: 150px;
+        min-width: 79px;
       }
 
-      .processes {
+      .process-summary {
+        font-size: 16px;
+        margin-bottom: 2px;
+      }
+
+      .process-summary-label {
+        color: rgba(255,255,255,0.5);
+        min-width: 52px;
+      }
+
+      .process-summary-value {
+        color: rgba(255,255,255,0.92);
+      }
+
+      .process-line {
         font-family: "Cascadia Code";
-        margin-top: 40px;
+        font-size: 13px;
+        color: rgba(255,255,255,0.82);
       }
 
       .time {
         font-family: "Montserrat Medium";
-        font-size: 100px;
+        font-size: 62px;
+      }
+
+      .date {
+        font-size: 21px;
       }
     '';
 
@@ -381,7 +467,7 @@ in
         "hyprland.start"
         (lib.generators.mkLuaInline ''
           function()
-            hl.exec_cmd("eww daemon --config ~/.config/eww/sysmon && eww --config ~/.config/eww/sysmon open sysmon")
+            hl.exec_cmd("eww daemon --config ~/.config/eww/sysmon && eww --config ~/.config/eww/sysmon close sysmon; eww --config ~/.config/eww/sysmon open sysmon")
           end
         '')
       ];
