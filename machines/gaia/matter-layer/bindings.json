@@ -12,7 +12,7 @@
   "mbrBathroom.dehumidifier": { "label": "MBR Bathroom Right Outlet" },
   "mbrBathroom.mainPresence": { "label": "MBR Bathroom Main Presence" },
   "mbrBathroom.toiletPresence": { "label": "MBR Bathroom Toilet Presence" },
-  "mbrBathroom.showerPresence": { "label": "MBR Shower Presence" },
+  "mbrBathroom.showerPresence": { "label": "MBR Shower Presence", "unique_id": "FDA7C54944F246DB" },
   "mbrBathroom.door": { "label": "MBR Bathroom Door" },
   "mbr.bedLight": { "label": "MBR Bed Light" },
   "mbr.blindsRemote": { "label": "MBR Blinds Remote", "unique_id": "3961FF6525ED9E14" },
