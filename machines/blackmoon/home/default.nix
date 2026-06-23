@@ -192,7 +192,7 @@ in {
       {
         name = "endfield-launcher-center";
         match = {
-          class = "^(steam_app_0)$";
+          class = "^(steam_app_.*)$";
           title = "^(GRYPHLINK)$";
         };
         center = true;
@@ -306,16 +306,33 @@ in {
       socket="''${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/hypr/''${HYPRLAND_INSTANCE_SIGNATURE:?}/.socket2.sock"
 
       move_visible_launchers() {
-        hyprctl -j clients | jq -r '
+        clients="$(hyprctl -j clients)"
+        monitors="$(hyprctl -j monitors)"
+
+        jq -r --argjson monitors "$monitors" '
           .[]
-          | select(.class == "steam_app_0" and .title == "GRYPHLINK" and (.at[0] < 0 or .at[1] < 0))
+          | select((.class | startswith("steam_app_")) and .title == "GRYPHLINK")
+          | . as $client
+          | select(
+              [
+                $monitors[]
+                | select(.disabled == false)
+                | select(
+                    .x <= $client.at[0]
+                    and .y <= $client.at[1]
+                    and (.x + .width) >= ($client.at[0] + $client.size[0])
+                    and (.y + .height) >= ($client.at[1] + $client.size[1])
+                  )
+              ]
+              | length == 0
+            )
           | .address
-        ' | while read -r addr; do
+        ' <<<"$clients" | while read -r addr; do
           [ -n "$addr" ] || continue
           # The launcher re-applies stale geometry a few times after mapping, so
           # keep forcing it back to the visible area briefly.
           for _ in $(seq 1 30); do
-            hyprctl dispatch movewindowpixel exact 100 100,address:"$addr" >/dev/null
+            hyprctl dispatch "hl.dsp.window.move({x = 100, y = 100, relative = false, window = \"address:$addr\"})" >/dev/null
             sleep 0.1
           done
         done
@@ -345,7 +362,7 @@ in {
         hyprctl -j clients |
           jq -r '
             .[]
-            | select(.class == "steam_app_0" and .title == "GRYPHLINK")
+            | select((.class | startswith("steam_app_")) and .title == "GRYPHLINK")
             | .address
           ' |
           tail -n 1
@@ -357,7 +374,7 @@ in {
       fi
 
       for _ in $(seq 1 30); do
-        hyprctl dispatch movewindowpixel exact 100 100,address:"$addr" >/dev/null
+        hyprctl dispatch "hl.dsp.window.move({x = 100, y = 100, relative = false, window = \"address:$addr\"})" >/dev/null
         sleep 0.1
       done
     '';
