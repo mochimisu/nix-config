@@ -75,10 +75,10 @@ in {
     };
 
     Service = {
-      Type = "oneshot";
-      RemainAfterExit = true;
-      ExecStart = "${codexRemoteControl} start";
-      ExecStop = "${codexRemoteControl} stop";
+      Type = "simple";
+      ExecStart = "${codexRemoteControl}";
+      Restart = "always";
+      RestartSec = 5;
       WorkingDirectory = config.home.homeDirectory;
       Environment = [
         "HOME=${config.home.homeDirectory}"
