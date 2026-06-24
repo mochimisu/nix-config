@@ -8,6 +8,25 @@
   isLinux = pkgs.stdenv.isLinux;
   isGui = config.variables.isGui or true;
   isLinuxGui = isLinux && isGui;
+  codexRemoteControlPath = lib.makeBinPath [
+    pkgs.coreutils
+    pkgs.bash
+  ];
+  codexRemoteControlProfilePath = lib.concatStringsSep ":" [
+    "${config.home.homeDirectory}/.nix-profile/bin"
+    "/etc/profiles/per-user/${config.home.username}/bin"
+    "/run/current-system/sw/bin"
+    "/nix/var/nix/profiles/default/bin"
+  ];
+  codexRemoteControl = pkgs.writeShellScript "codex-remote-control" ''
+    set -euo pipefail
+
+    export HOME='${config.home.homeDirectory}'
+    export CODEX_HOME="''${CODEX_HOME:-${config.home.homeDirectory}/.codex}"
+    export PATH='${codexRemoteControlPath}:${codexRemoteControlProfilePath}'
+
+    exec codex remote-control "$@"
+  '';
 in {
   home.stateVersion = "24.11";
   catppuccin.autoEnable = false;
@@ -42,6 +61,33 @@ in {
   ];
 
   home.sessionPath = ["$HOME/bin"];
+
+  home.file.".codex/packages/standalone/current/codex" = lib.mkIf isLinux {
+    source = config.lib.file.mkOutOfStoreSymlink "/run/current-system/sw/bin/codex";
+    force = true;
+  };
+
+  systemd.user.services.codex-remote-control = lib.mkIf isLinux {
+    Unit = {
+      Description = "Codex remote-control daemon";
+      After = ["network-online.target"];
+      Wants = ["network-online.target"];
+    };
+
+    Service = {
+      Type = "simple";
+      ExecStart = "${codexRemoteControl}";
+      Restart = "always";
+      RestartSec = 5;
+      WorkingDirectory = config.home.homeDirectory;
+      Environment = [
+        "HOME=${config.home.homeDirectory}"
+        "CODEX_HOME=${config.home.homeDirectory}/.codex"
+      ];
+    };
+
+    Install.WantedBy = ["default.target"];
+  };
 
   programs = {
     git = {
