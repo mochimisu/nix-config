@@ -303,7 +303,30 @@ in {
       #!/usr/bin/env bash
       set -euo pipefail
 
-      socket="''${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/hypr/''${HYPRLAND_INSTANCE_SIGNATURE:?}/.socket2.sock"
+      move_launcher_to_visible_area() {
+        addr="$1"
+
+        for _ in $(seq 1 30); do
+          pos="$(
+            hyprctl -j clients |
+              jq -r --arg addr "$addr" '
+                .[]
+                | select(.address == $addr)
+                | "\(.at[0]) \(.at[1])"
+              ' |
+              tail -n 1
+          )"
+          [ -n "$pos" ] || return 0
+
+          read -r x y <<<"$pos"
+          dx=$((100 - x))
+          dy=$((100 - y))
+          if [ "$dx" != 0 ] || [ "$dy" != 0 ]; then
+            hyprctl dispatch "hl.dsp.window.move({x = $dx, y = $dy, relative = true, window = \"address:$addr\"})" >/dev/null
+          fi
+          sleep 0.1
+        done
+      }
 
       move_visible_launchers() {
         clients="$(hyprctl -j clients)"
@@ -331,24 +354,13 @@ in {
           [ -n "$addr" ] || continue
           # The launcher re-applies stale geometry a few times after mapping, so
           # keep forcing it back to the visible area briefly.
-          for _ in $(seq 1 30); do
-            hyprctl dispatch "hl.dsp.window.move({x = 100, y = 100, relative = false, window = \"address:$addr\"})" >/dev/null
-            sleep 0.1
-          done
+          move_launcher_to_visible_area "$addr"
         done
       }
 
-      move_visible_launchers
-
-      if ! command -v socat >/dev/null 2>&1; then
-        while true; do
-          move_visible_launchers
-          sleep 1
-        done
-      fi
-
-      socat -U - UNIX-CONNECT:"$socket" | while IFS= read -r _; do
+      while true; do
         move_visible_launchers
+        sleep 1
       done
     '';
   };
@@ -374,7 +386,23 @@ in {
       fi
 
       for _ in $(seq 1 30); do
-        hyprctl dispatch "hl.dsp.window.move({x = 100, y = 100, relative = false, window = \"address:$addr\"})" >/dev/null
+        pos="$(
+          hyprctl -j clients |
+            jq -r --arg addr "$addr" '
+              .[]
+              | select(.address == $addr)
+              | "\(.at[0]) \(.at[1])"
+            ' |
+            tail -n 1
+        )"
+        [ -n "$pos" ] || exit 0
+
+        read -r x y <<<"$pos"
+        dx=$((100 - x))
+        dy=$((100 - y))
+        if [ "$dx" != 0 ] || [ "$dy" != 0 ]; then
+          hyprctl dispatch "hl.dsp.window.move({x = $dx, y = $dy, relative = true, window = \"address:$addr\"})" >/dev/null
+        fi
         sleep 0.1
       done
     '';
