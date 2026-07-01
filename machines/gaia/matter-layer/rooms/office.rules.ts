@@ -7,5 +7,7 @@ export default defineRoomRules("office", ({ room, rule }) => {
   rule("lights", () => {
     room.main.auto(room.presence && room.dark);
     room.floorLamp.auto(room.presence);
+    room.deskLight1.auto(room.presence);
+    room.deskLight2.auto(room.presence);
   });
 });

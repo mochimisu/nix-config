@@ -28,7 +28,7 @@
       code_env = "MATTER_CODE_OFFICE_BLINDS_REMOTE";
       network_only = false;
       match = {
-        unique_id = "BCA41EC02DFE052E";
+        unique_id_env = "MATTER_UID_OFFICE_BLINDS_REMOTE";
       };
     }
 
@@ -78,7 +78,7 @@
       code_env = "MATTER_CODE_COUCH_LIGHT";
       network_only = false;
       match = {
-        unique_id = "6F870335EE62B994";
+        unique_id_env = "MATTER_UID_COUCH_LIGHT";
       };
     }
 
@@ -288,7 +288,7 @@
       code_env = "MATTER_CODE_NURSERY_BLINDS_REMOTE";
       network_only = false;
       match = {
-        unique_id = "9ADDE61E4ABE793F";
+        unique_id_env = "MATTER_UID_NURSERY_BLINDS_REMOTE";
       };
     }
 
@@ -318,7 +318,7 @@
       code_env = "MATTER_CODE_GUEST_BEDROOM_BLINDS_REMOTE";
       network_only = false;
       match = {
-        unique_id = "D5440C317DD1BD27";
+        unique_id_env = "MATTER_UID_GUEST_BEDROOM_BLINDS_REMOTE";
       };
     }
 
@@ -358,7 +358,7 @@
       code_env = "MATTER_CODE_MBR_BLINDS_REMOTE";
       network_only = false;
       match = {
-        unique_id = "3961FF6525ED9E14";
+        unique_id_env = "MATTER_UID_MBR_BLINDS_REMOTE";
       };
     }
 
@@ -368,7 +368,7 @@
       code_env = "MATTER_CODE_MBR_BLINDS_REMOTE_2";
       network_only = false;
       match = {
-        unique_id = "4A9D015733B18F5F";
+        unique_id_env = "MATTER_UID_MBR_BLINDS_REMOTE_2";
       };
     }
 
@@ -428,7 +428,7 @@
       code_env = "MATTER_CODE_MBR_BATHROOM_DOOR";
       network_only = false;
       match = {
-        unique_id = "12D2178EA809EC9C";
+        unique_id_env = "MATTER_UID_MBR_BATHROOM_DOOR";
       };
     }
 
@@ -478,7 +478,7 @@
       code_env = "MATTER_CODE_NURSERY_NIGHT_LIGHT";
       network_only = false;
       match = {
-        unique_id = "7D0DC80E23CEA6D9";
+        unique_id_env = "MATTER_UID_NURSERY_NIGHT_LIGHT";
       };
     }
 
@@ -488,7 +488,7 @@
     #   code_env = "MATTER_CODE_NURSERY_SENSOR";
     #   network_only = false;
     #   match = {
-    #     unique_id = "0123456789ABCDEF";
+    #     unique_id_env = "MATTER_UID_NURSERY_SENSOR";
     #   };
     # }
   ];
@@ -496,13 +496,13 @@
   # Keep device labels in this file too, so adding a device usually means
   # touching only pairings.nix.
   matterExtraNodeLabels = {
-    "unique_id:CE244175FB2EA90F" = "MBR Bed Left";
-    "unique_id:5243A6818ADDD056" = "MBR Bed Right";
+    "unique_id_env:MATTER_UID_MBR_BED_LEFT" = "MBR Bed Left";
+    "unique_id_env:MATTER_UID_MBR_BED_RIGHT" = "MBR Bed Right";
   };
 
   matterExtraNodeRooms = {
-    "unique_id:CE244175FB2EA90F" = "MBR";
-    "unique_id:5243A6818ADDD056" = "MBR";
+    "unique_id_env:MATTER_UID_MBR_BED_LEFT" = "MBR";
+    "unique_id_env:MATTER_UID_MBR_BED_RIGHT" = "MBR";
   };
 
   nodeLabelKeyFromMatch = match:

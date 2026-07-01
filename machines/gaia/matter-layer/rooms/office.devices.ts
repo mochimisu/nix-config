@@ -14,6 +14,8 @@ export default defineRoomDevices("office", ({ room }) => {
     on: { level: "15%" },
   });
   room.floorLamp = matterLight("office.floorLamp");
+  room.deskLight1 = matterLight("office.deskLight1");
+  room.deskLight2 = matterLight("office.deskLight2");
   room.blindsRemote = bilresa("office.blindsRemote");
   room.blinds = smartwingsGroup(["office.blinds"]);
   room.nearPresence = ms605Presence("office.presence");

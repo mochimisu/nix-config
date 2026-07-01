@@ -160,6 +160,7 @@ in {
         NET_ADMIN = true;
         NET_RAW = true;
       };
+      privileged = true;
       volumes = [
         "/earth/home-assistant:/config"
         "/run/dbus:/run/dbus:ro"
