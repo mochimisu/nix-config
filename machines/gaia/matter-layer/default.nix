@@ -13,11 +13,7 @@
   };
   matterLayerBindings = builtins.fromJSON (builtins.readFile ./bindings.json);
   moduleCompatibleBindings = lib.mapAttrs (_: binding: builtins.removeAttrs binding ["unique_id" "unique_id_env"]) matterLayerBindings;
-  matterLayerPackage = inputs.matter-layer.packages.${pkgs.stdenv.hostPlatform.system}.default.overrideAttrs (old: {
-    patches = (old.patches or []) ++ [
-      ./unique-id-env.patch
-    ];
-  });
+  matterLayerPackage = inputs.matter-layer.packages.${pkgs.stdenv.hostPlatform.system}.default;
   matterLayerStart = pkgs.writeShellScript "matter-layer-with-dev-live-lock" ''
     for _ in $(${pkgs.coreutils}/bin/seq 1 60); do
       if ${pkgs.bash}/bin/bash -c 'exec 3<>/dev/tcp/127.0.0.1/${matterWsPort}' 2>/dev/null; then
