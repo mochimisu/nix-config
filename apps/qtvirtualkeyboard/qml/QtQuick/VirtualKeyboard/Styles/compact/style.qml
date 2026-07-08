@@ -11,7 +11,7 @@ KeyboardStyle {
     readonly property bool compactSelectionList: [InputEngine.InputMode.Pinyin, InputEngine.InputMode.Cangjie, InputEngine.InputMode.Zhuyin].indexOf(InputContext.inputEngine.inputMode) !== -1
     readonly property string fontFamily: "Arial"
     readonly property real keyBackgroundMargin: Math.round(8 * scaleHint)
-    readonly property real keyContentMargin: Math.round(40 * scaleHint)
+    readonly property real keyContentMargin: Math.round(24 * scaleHint)
     readonly property real keyIconScale: scaleHint * 0.8
     readonly property string resourcePrefix: "qrc:/qt-project.org/imports/QtQuick/VirtualKeyboard/Styles/Builtin/default/"
 
@@ -60,8 +60,9 @@ KeyboardStyle {
         }
     }
 
-    keyboardDesignWidth: 2560
+    keyboardDesignWidth: 1920
     keyboardDesignHeight: 640
+    keyboardDesignMaximumHeight: 480
     keyboardRelativeLeftMargin: 6 / keyboardDesignWidth
     keyboardRelativeRightMargin: 6 / keyboardDesignWidth
     keyboardRelativeTopMargin: 6 / keyboardDesignHeight
@@ -171,7 +172,7 @@ KeyboardStyle {
             Image {
                 id: backspaceKeyIcon
                 anchors.centerIn: parent
-                sourceSize.height: 88 * keyIconScale
+                sourceSize.height: Math.min(parent.height * 0.55, 88 * keyIconScale)
                 smooth: false
                 source: resourcePrefix + "images/backspace-fff.svg"
             }
@@ -215,7 +216,7 @@ KeyboardStyle {
             Image {
                 id: languageKeyIcon
                 anchors.centerIn: parent
-                sourceSize.height: 127 * keyIconScale
+                sourceSize.height: Math.min(parent.height * 0.55, 127 * keyIconScale)
                 smooth: false
                 source: resourcePrefix + "images/globe-fff.svg"
             }
@@ -273,7 +274,7 @@ KeyboardStyle {
                         return Qt.size(211, 80)
                     }
                 }
-                sourceSize.height: enterKeyIconSize.height * keyIconScale
+                sourceSize.height: Math.min(parent.height * 0.55, enterKeyIconSize.height * keyIconScale)
                 smooth: false
                 source: {
                     switch (control.actionId) {
@@ -355,7 +356,7 @@ KeyboardStyle {
             Image {
                 id: hideKeyIcon
                 anchors.centerIn: parent
-                sourceSize.height: 127 * keyIconScale
+                sourceSize.height: Math.min(parent.height * 0.55, 127 * keyIconScale)
                 smooth: false
                 source: resourcePrefix + "images/hidekeyboard-fff.svg"
             }
@@ -399,7 +400,7 @@ KeyboardStyle {
             Image {
                 id: shiftKeyIcon
                 anchors.centerIn: parent
-                sourceSize.height: 134 * keyIconScale
+                sourceSize.height: Math.min(parent.height * 0.55, 134 * keyIconScale)
                 smooth: false
                 source: resourcePrefix + "images/shift-fff.svg"
             }
@@ -624,7 +625,7 @@ KeyboardStyle {
             Image {
                 id: hwrKeyIcon
                 anchors.centerIn: parent
-                sourceSize.height: 127 * keyIconScale
+                sourceSize.height: Math.min(parent.height * 0.55, 127 * keyIconScale)
                 smooth: false
                 source: resourcePrefix + (keyboard.handwritingMode ? "images/textmode-fff.svg" : "images/handwriting-fff.svg")
             }

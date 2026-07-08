@@ -8,10 +8,11 @@ import QtQuick.Layouts
 
 KeyboardLayout {
     inputMode: InputEngine.InputMode.Latin
-    keyWeight: 160
+    keyWeight: 72
 
     KeyboardRow {
-        Key { key: Qt.Key_Escape; text: "Esc" }
+        Layout.fillWidth: true
+        Key { key: Qt.Key_QuoteLeft; text: "`"; displayText: "~" }
         Key { key: Qt.Key_1; text: "1" }
         Key { key: Qt.Key_2; text: "2" }
         Key { key: Qt.Key_3; text: "3" }
@@ -24,12 +25,12 @@ KeyboardLayout {
         Key { key: Qt.Key_0; text: "0" }
         Key { key: Qt.Key_Minus; text: "-" }
         Key { key: Qt.Key_Equal; text: "=" }
-        Key { key: Qt.Key_QuoteLeft; text: "`" }
-        Key { key: Qt.Key_Backslash; text: "\\" }
+        Key { key: Qt.Key_Backspace; displayText: "Back"; repeat: true; weight: 108 }
     }
 
     KeyboardRow {
-        Key { key: Qt.Key_Tab; text: "Tab"; weight: 1.5 }
+        Layout.fillWidth: true
+        Key { key: Qt.Key_Tab; text: "Tab"; weight: 108 }
         Key { key: Qt.Key_Apostrophe; text: "'" }
         Key { key: Qt.Key_Comma; text: "," }
         Key { key: Qt.Key_Period; text: "." }
@@ -42,11 +43,12 @@ KeyboardLayout {
         Key { key: Qt.Key_L; text: "l" }
         Key { key: Qt.Key_Slash; text: "/" }
         Key { key: Qt.Key_Equal; text: "=" }
-        BackspaceKey { weight: 1.5 }
+        Key { key: Qt.Key_Backslash; text: "\\" }
     }
 
     KeyboardRow {
-        Key { key: Qt.Key_Control; text: "Ctrl"; weight: 1.5 }
+        Layout.fillWidth: true
+        Key { key: Qt.Key_CapsLock; displayText: "Caps"; weight: 126 }
         Key { key: Qt.Key_A; text: "a" }
         Key { key: Qt.Key_O; text: "o" }
         Key { key: Qt.Key_E; text: "e" }
@@ -58,11 +60,12 @@ KeyboardLayout {
         Key { key: Qt.Key_N; text: "n" }
         Key { key: Qt.Key_S; text: "s" }
         Key { key: Qt.Key_Minus; text: "-" }
-        EnterKey { weight: 1.5 }
+        Key { key: Qt.Key_Return; displayText: "Enter"; weight: 126 }
     }
 
     KeyboardRow {
-        ShiftKey { weight: 1.75 }
+        Layout.fillWidth: true
+        Key { key: Qt.Key_Shift; displayText: "Shift"; weight: 162 }
         Key { key: Qt.Key_Semicolon; text: ";" }
         Key { key: Qt.Key_Q; text: "q" }
         Key { key: Qt.Key_J; text: "j" }
@@ -73,19 +76,16 @@ KeyboardLayout {
         Key { key: Qt.Key_W; text: "w" }
         Key { key: Qt.Key_V; text: "v" }
         Key { key: Qt.Key_Z; text: "z" }
-        ShiftKey { weight: 1.75 }
+        Key { key: Qt.Key_Shift; displayText: "Shift"; weight: 162 }
     }
 
     KeyboardRow {
-        Key { key: Qt.Key_Control; text: "Ctrl" }
-        Key { key: Qt.Key_Meta; text: "Sup" }
-        Key { key: Qt.Key_Alt; text: "Alt" }
-        SpaceKey { weight: 6.0 }
-        SymbolModeKey { displayText: "Fn"; weight: 0.75 }
-        Key { key: Qt.Key_Meta; text: "Sup"; weight: 0.75 }
-        Key { key: Qt.Key_Left; text: "←"; weight: 0.75 }
-        Key { key: Qt.Key_Down; text: "↓"; weight: 0.75 }
-        Key { key: Qt.Key_Up; text: "↑"; weight: 0.75 }
-        Key { key: Qt.Key_Right; text: "→"; weight: 0.75 }
+        Layout.fillWidth: true
+        Key { key: Qt.Key_unknown; displayText: "Fn"; noKeyEvent: true }
+        Key { key: Qt.Key_Control; text: "Ctrl"; weight: 90 }
+        Key { key: Qt.Key_Alt; text: "Alt"; weight: 90 }
+        Key { key: Qt.Key_Space; text: " "; displayText: "Space"; weight: 612 }
+        Key { key: Qt.Key_Alt; text: "Alt"; weight: 90 }
+        Key { key: Qt.Key_Control; text: "Ctrl"; weight: 90 }
     }
 }

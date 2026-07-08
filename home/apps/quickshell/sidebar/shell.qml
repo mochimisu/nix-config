@@ -8,6 +8,7 @@ import Quickshell.Services.Notifications
 import Quickshell.Services.Pipewire
 import Quickshell.Services.SystemTray
 import Quickshell.Services.UPower
+import Quickshell.Hyprland
 import Quickshell.Wayland
 import Quickshell.Widgets
 
@@ -17,7 +18,6 @@ ShellRoot {
     // ----- Config injected from Nix -----
     property var sidebarScreens: @sidebarScreensJson@
     readonly property string hostName: "@hostName@"
-    readonly property string hyprctlBin: "@hyprctlBin@"
     readonly property bool pttEnabled: "@pttStateFile@" !== ""
 
     readonly property int iconSize: {
@@ -27,6 +27,14 @@ ShellRoot {
     readonly property int fontSizePx: {
         const parsed = parseInt("@fontSize@", 10);
         return isNaN(parsed) ? 13 : parsed;
+    }
+    readonly property int workspaceHeightPx: {
+        const parsed = parseInt("@workspaceHeight@", 10);
+        return isNaN(parsed) ? 18 : parsed;
+    }
+    readonly property int workspaceSpacingPx: {
+        const parsed = parseInt("@workspaceSpacing@", 10);
+        return isNaN(parsed) ? 2 : parsed;
     }
     // Keep panel width in sync with content scaling from icon/text size.
     readonly property int sidebarWidth: Math.max(20, Math.round(Math.max(iconSize * 1.35, fontSizePx * 1.5)))
@@ -150,7 +158,16 @@ ShellRoot {
             return;
         }
 
-        Quickshell.execDetached([hyprctlBin, "dispatch", "workspace", String(workspace.id)]);
+        const workspaceId = parseInt(workspace.id, 10);
+        if (isNaN(workspaceId)) {
+            return;
+        }
+
+        if (Hyprland.usingLua) {
+            Hyprland.dispatch("hl.dsp.focus({ workspace = " + workspaceId + " })");
+        } else {
+            Hyprland.dispatch("workspace " + workspaceId);
+        }
     }
 
     function isAudioSink(node) {
@@ -661,7 +678,7 @@ ShellRoot {
                     Column {
                         id: topSection
                         width: parent.width
-                        spacing: 2
+                        spacing: root.workspaceSpacingPx
 
                         Repeater {
                             model: contentRoot.monitorWorkspaces
@@ -673,7 +690,7 @@ ShellRoot {
                                 readonly property var workspace: modelData
 
                                 width: topSection.width
-                                height: 18
+                                height: root.workspaceHeightPx
 
                                 Rectangle {
                                     anchors.centerIn: parent

@@ -89,6 +89,10 @@ in {
   '';
   variables.ewwSidebarFontSize = "24px";
   variables.ewwSidebarIconSize = "32";
+  variables.quickshellSidebar = {
+    workspaceHeight = "38";
+    workspaceSpacing = "8";
+  };
   variables.ewwSidebarScreens = [
     "eDP-1"
     "DP-1"

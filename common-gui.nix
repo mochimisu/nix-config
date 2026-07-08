@@ -7,6 +7,7 @@
 }: let
   touchscreenVars = lib.attrByPath ["touchscreen"] {} config.variables;
   enableSddmKeyboard = touchscreenVars.sddmKeyboard or false;
+  sddmKeyboardMaxWidth = touchscreenVars.sddmKeyboardMaxWidth or 1440;
   useDvorakSddmKeyboard =
     (touchscreenVars.sddmKeyboardLayout or "")
     == "dvorak-custom"
@@ -18,6 +19,26 @@
     if useDvorakSddmKeyboard
     then ./apps/qtvirtualkeyboard/layouts/en_US/dvorak-custom.qml
     else ./apps/qtvirtualkeyboard/layouts/en_US/main.qml;
+  sddmKeyboardLayoutUrl = "file://${sddmKeyboardLayoutFile}";
+  patchedQtVirtualKeyboard = pkgs.qt6.qtvirtualkeyboard.overrideAttrs (old: {
+    postInstall =
+      (old.postInstall or "")
+      + ''
+        substituteInPlace "$out/lib/qt-6/qml/QtQuick/VirtualKeyboard/InputPanel.qml" \
+          --replace-fail '        anchors.left: parent.left' '        width: Math.min(parent.width, ${toString sddmKeyboardMaxWidth})' \
+          --replace-fail '        anchors.right: parent.right' '        anchors.horizontalCenter: parent.horizontalCenter'
+        perl -0pi -e 's/        anchors\.left: parent\.left\n        anchors\.right: parent\.right\n        anchors\.bottom: parent\.bottom/        width: Math.min(parent.width, ${toString sddmKeyboardMaxWidth})\n        anchors.horizontalCenter: parent.horizontalCenter\n        anchors.bottom: parent.bottom/' \
+          "$out/lib/qt-6/qml/QtQuick/VirtualKeyboard/Components/Keyboard.qml"
+        perl -0pi -e 's/(                anchors\.bottomMargin: Math\.round\(style\.keyboardRelativeBottomMargin \* parent\.height\)\n)/$1\n                Binding {\n                    target: keyboardLayoutLoader.item\n                    property: "width"\n                    value: keyboardLayoutLoader.width\n                    when: keyboardLayoutLoader.item !== null\n                    restoreMode: Binding.RestoreNone\n                }\n\n                Binding {\n                    target: keyboardLayoutLoader.item\n                    property: "height"\n                    value: keyboardLayoutLoader.height\n                    when: keyboardLayoutLoader.item !== null\n                    restoreMode: Binding.RestoreNone\n                }\n/' \
+          "$out/lib/qt-6/qml/QtQuick/VirtualKeyboard/Components/Keyboard.qml"
+        substituteInPlace "$out/lib/qt-6/qml/QtQuick/VirtualKeyboard/Components/BaseKey.qml" \
+          --replace-fail '    Layout.minimumWidth: keyPanel.implicitWidth' '    Layout.minimumWidth: 0'
+        perl -0pi -e 's|    function updateLayout\(\) \{\n        var newLayout\n        newLayout = findLayout\(locale, layoutType\)\n        if \(!newLayout\.length\) \{\n            newLayout = findLayout\(locale, "main"\)\n        \}\n        layout = newLayout\n        inputLocale = locale\n        updateInputMethod\(\)\n    \}|    function updateLayout() {\n        layout = "${sddmKeyboardLayoutUrl}"\n        console.warn("SDDM QtVK layout forced to " + layout)\n        inputLocale = "en_US"\n        updateInputMethod()\n    }|' \
+          "$out/lib/qt-6/qml/QtQuick/VirtualKeyboard/Components/Keyboard.qml"
+        find "$out/lib/qt-6/qml/QtQuick/VirtualKeyboard" -name qmldir -print0 \
+          | xargs -0 sed -i '/^prefer :\/qt-project\.org\/imports\/QtQuick\/VirtualKeyboard/d'
+      '';
+  });
   # pkgsPinned = import (builtins.fetchTarball {
   #   # walker broken on 2/13/2025, use a commit from 2/3/2025
   #   url = "https://github.com/NixOS/nixpkgs/archive/9d962cd4ad268f64d125aa8c5599a87a374af78a.tar.gz";
@@ -175,11 +196,11 @@ in {
       settings = {
         General = {
           InputMethod = "qtvirtualkeyboard";
-          GreeterEnvironment = "QT_VIRTUALKEYBOARD_STYLE=compact,QT_VIRTUALKEYBOARD_LAYOUT_PATH=/etc/xdg/qtvirtualkeyboard/layouts,QML2_IMPORT_PATH=/etc/xdg/qtvirtualkeyboard/qml";
+          GreeterEnvironment = "QT_VIRTUALKEYBOARD_STYLE=compact,QT_VIRTUALKEYBOARD_LAYOUT_PATH=/etc/xdg/qtvirtualkeyboard/layouts,QML2_IMPORT_PATH=/etc/xdg/qtvirtualkeyboard/qml,QML_DISABLE_DISK_CACHE=1";
         };
       };
-      extraPackages = with pkgs; [
-        qt6.qtvirtualkeyboard
+      extraPackages = [
+        patchedQtVirtualKeyboard
       ];
     };
 

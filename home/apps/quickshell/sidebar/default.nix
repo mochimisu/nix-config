@@ -18,6 +18,7 @@
     else ["0"];
 
   pttStateFile = variables.ewwPttStateFile or "";
+  quickshellSidebar = variables.quickshellSidebar or {};
 
   mkScript = name: path:
     "${pkgs.writeShellScriptBin name (builtins.readFile path)}/bin/${name}";
@@ -80,8 +81,9 @@ in {
         inherit hostName;
         fontSize = variables.ewwSidebarFontSize or "13px";
         iconSize = variables.ewwSidebarIconSize or "16";
+        workspaceHeight = quickshellSidebar.workspaceHeight or "18";
+        workspaceSpacing = quickshellSidebar.workspaceSpacing or "2";
         inherit pttStateFile;
-        inherit hyprctlBin;
 
         inherit workspacesBin windowsBin;
         inherit clockBin networkBin batteryBin;
