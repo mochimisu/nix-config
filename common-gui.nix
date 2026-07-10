@@ -8,15 +8,17 @@
   touchscreenVars = lib.attrByPath ["touchscreen"] {} config.variables;
   enableSddmKeyboard = touchscreenVars.sddmKeyboard or false;
   sddmKeyboardMaxWidth = touchscreenVars.sddmKeyboardMaxWidth or 1440;
-  useDvorakSddmKeyboard =
-    (touchscreenVars.sddmKeyboardLayout or "")
-    == "dvorak-custom"
-    || (
-      (config.services.xserver.xkb.layout or "") == "custom"
-      && (config.services.xserver.xkb.variant or "") == "dvorak-custom"
+  sddmKeyboardLayout =
+    touchscreenVars.sddmKeyboardLayout
+    or (
+      if
+        (config.services.xserver.xkb.layout or "") == "custom"
+        && (config.services.xserver.xkb.variant or "") == "dvorak-custom"
+      then "dvorak-custom"
+      else "qwerty"
     );
   sddmKeyboardLayoutFile =
-    if useDvorakSddmKeyboard
+    if sddmKeyboardLayout == "dvorak-custom"
     then ./apps/qtvirtualkeyboard/layouts/en_US/dvorak-custom.qml
     else ./apps/qtvirtualkeyboard/layouts/en_US/main.qml;
   sddmKeyboardLayoutUrl = "file://${sddmKeyboardLayoutFile}";

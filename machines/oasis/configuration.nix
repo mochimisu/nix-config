@@ -9,7 +9,10 @@
     enable = true;
     mobileAcGovernor = true;
   };
-  variables.touchscreen.sddmKeyboard = true;
+  variables.touchscreen = {
+    sddmKeyboard = true;
+    sddmKeyboardLayout = "qwerty";
+  };
   # mt7925 stability: prefer iwd and avoid legacy wext path.
   networking.networkmanager.wifi.backend = "iwd";
   networking.wireless.driver = "nl80211";
