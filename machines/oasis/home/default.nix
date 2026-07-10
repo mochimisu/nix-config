@@ -194,6 +194,7 @@ in {
       fi
 
       if [ "$((now - last_action))" -lt "$action_cooldown" ]; then
+        printf '0 %s\n' "$last_action" > "$STATE_FILE"
         exit 0
       fi
 

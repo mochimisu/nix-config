@@ -103,6 +103,15 @@ in {
     (import ./overlays/ha-bambulab.nix)
     (import ./overlays/wvkbd.nix)
     inputs.hyprgrass.overlays.default
+    (_: prev: {
+      hyprlandPlugins =
+        (prev.hyprlandPlugins or {})
+        // {
+          hyprgrass = prev.hyprlandPlugins.hyprgrass.overrideAttrs (old: {
+            patches = (old.patches or []) ++ [./overlays/hyprgrass-hyprland-0.55.patch];
+          });
+        };
+    })
   ];
 
   nixpkgs.config = {

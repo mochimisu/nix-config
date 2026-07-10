@@ -155,10 +155,32 @@ in {
           set -eu
 
           lock="''${XDG_RUNTIME_DIR:-/tmp}/wvkbd-mobintl.lock"
-          ${pkgs.util-linux}/bin/flock -n "$lock" sh -c '
-            ${pkgs.procps}/bin/pgrep -x wvkbd-mobintl >/dev/null && exit 0
-            exec ${pkgs.wvkbd}/bin/wvkbd-mobintl -H 600 -L 600
-          '
+          state_dir="''${XDG_STATE_HOME:-$HOME/.local/state}/wvkbd"
+          state_file="$state_dir/mobintl-layout"
+
+          ${pkgs.coreutils}/bin/mkdir -p "$state_dir"
+
+          exec 9>"$lock"
+          ${pkgs.util-linux}/bin/flock -n 9 || exit 0
+
+          ${pkgs.procps}/bin/pgrep -x wvkbd-mobintl >/dev/null && exit 0
+
+          layout="qwerty"
+          if [ -f "$state_file" ]; then
+            read -r layout < "$state_file" || layout="qwerty"
+          fi
+
+          case "$layout" in
+            dvorak)
+              set -- -l hhkbdvorak,hhkbdvorakfn,special --landscape-layers hhkbdvorak,hhkbdvorakfn,landscapespecial
+              ;;
+            *)
+              set -- -l full,hhkbfn,special --landscape-layers landscape,hhkbfn,landscapespecial
+              ;;
+          esac
+
+          export WVKBD_MOBINTL_LAYOUT_STATE="$state_file"
+          exec ${pkgs.wvkbd}/bin/wvkbd-mobintl -H 600 -L 600 "$@"
         '';
       };
 

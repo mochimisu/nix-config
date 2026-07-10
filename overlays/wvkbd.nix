@@ -5,6 +5,7 @@ _: super: {
       (old.patches or [])
       ++ [
         ./wvkbd-nodrag.patch
+        ./wvkbd-persist-mobintl-layout.patch
       ];
     postPatch =
       (old.postPatch or "")

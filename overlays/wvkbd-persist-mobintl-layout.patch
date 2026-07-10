@@ -1,0 +1,40 @@
+--- a/keyboard.c
++++ b/keyboard.c
+@@ -17,6 +17,29 @@
+     fprintf(stderr, __VA_ARGS__);                                              \
+     exit(1)
+ 
++static void
++kbd_persist_primary_layout(struct layout *l)
++{
++    const char *state_path = getenv("WVKBD_MOBINTL_LAYOUT_STATE");
++    const char *layout = NULL;
++
++    if (!state_path || !l || !l->name || !l->abc)
++        return;
++
++    if (strcmp(l->name, "hhkbdvorak") == 0)
++        layout = "dvorak";
++    else if (strcmp(l->name, "full") == 0 || strcmp(l->name, "landscape") == 0)
++        layout = "qwerty";
++    else
++        return;
++
++    FILE *f = fopen(state_path, "w");
++    if (f) {
++        fprintf(f, "%s\n", layout);
++        fclose(f);
++    }
++}
++
+ #ifndef KEYMAP
+ #error "make sure to define KEYMAP"
+ #endif
+@@ -41,6 +58,7 @@ kbd_switch_layout(struct kbd *kb, struct layout *l, size_t layer_index)
+         create_and_upload_keymap(kb, kb->layout->keymap_name, 0);
+     }
+     kbd_draw_layout(kb);
++    kbd_persist_primary_layout(kb->layout);
+ }
+ 
+ void
