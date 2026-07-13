@@ -3,7 +3,31 @@
   pkgs,
   lib,
   ...
-}: {
+}: let
+  mkGaiaSshfsService = {
+    remote,
+    mountPoint,
+  }: {
+    description = "Mount ${remote} at ${mountPoint}";
+    wants = ["network-online.target"];
+    after = ["network-online.target"];
+    wantedBy = ["default.target"];
+    unitConfig.ConditionUser = "brandon";
+    path = [
+      pkgs.fuse3
+      pkgs.openssh
+      pkgs.sshfs
+    ];
+    serviceConfig = {
+      Type = "exec";
+      ExecStart = "${pkgs.sshfs}/bin/sshfs -f -o reconnect -o ServerAliveInterval=15 -o ServerAliveCountMax=3 -o ConnectTimeout=10 -o ConnectionAttempts=3 ${remote} ${mountPoint}";
+      ExecStop = "${pkgs.fuse3}/bin/fusermount3 -uz ${mountPoint}";
+      Restart = "always";
+      RestartSec = "10s";
+      TimeoutStopSec = "15s";
+    };
+  };
+in {
   imports = [
     ../../nvidia.nix
     ./scanner.nix
@@ -24,6 +48,22 @@
       samba
       spacenavd
     ]);
+
+  users.users.brandon.extraGroups = ["fuse"];
+  systemd.user.services = {
+    gaia-earth-sshfs = mkGaiaSshfsService {
+      remote = "gaia:/earth";
+      mountPoint = "/home/brandon/earth";
+    };
+    gaia-stuff-sshfs = mkGaiaSshfsService {
+      remote = "gaia:/home/brandon/stuff";
+      mountPoint = "/home/brandon/gaia-stuff";
+    };
+  };
+  systemd.tmpfiles.rules = [
+    "d /home/brandon/earth 0755 brandon users - -"
+    "d /home/brandon/gaia-stuff 0755 brandon users - -"
+  ];
 
   services.hardware.bolt.enable = true;
 
