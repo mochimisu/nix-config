@@ -35,6 +35,12 @@ in {
   ];
 
   networking.hostName = "blackmoon";
+  # GeoClue has occasionally alternated between Los Angeles and New York while
+  # this stationary desktop is under load, making every local-time display jump
+  # by three hours. Keep location-based timezone changes for mobile hosts only.
+  services.automatic-timezoned.enable = false;
+  time.timeZone = "America/Los_Angeles";
+
   gaming.performance = {
     enable = true;
     desktopGovernor = true;
