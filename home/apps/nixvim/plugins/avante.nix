@@ -5,6 +5,11 @@
     ###########################################################################
     plugins.avante = {
       enable = true;
+      package = pkgs.vimPlugins.avante-nvim.overrideAttrs (_: {
+        # Several internal modules require runtime state or optional providers.
+        # Check the public entrypoint instead of loading every Lua file alone.
+        nvimRequireCheck = ["avante"];
+      });
 
       # Core behaviour -------------------------------------------------------
       settings = {
@@ -34,7 +39,6 @@
     # Avante & helper plugins in one place -----------------------------------
     extraPlugins = with pkgs.vimPlugins; [
       img-clip-nvim # Paste images from clipboard into the buffer
-      avante-nvim # Avante core plugin, kept on same revision as its dependencies
       plenary-nvim # Utility library of Lua functions used by many plugins
       nui-nvim # UI component library powering Neovim plugins
       dressing-nvim # Enhances Neovim's built-in UI for input and select dialogs
