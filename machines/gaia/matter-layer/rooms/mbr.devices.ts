@@ -1,6 +1,7 @@
 import { any, defineRoomDevices, pulse, signal } from "matter-layer/rules";
 import {
   bilresa,
+  matterLight,
   ms605Presence,
   myggbett,
   myggspray,
@@ -23,6 +24,26 @@ export default defineRoomDevices("mbr", ({ room }) => {
     openPosition: "70%",
   });
   room.blinds = smartwingsGroup([...room.doorBlinds.covers, room.windowBlinds]);
+  room.blindsStatus = matterLight("mbr.blindsStatus", {
+    vendor: "Brandon Wang",
+    product: "Custom LED",
+    color: {
+      cluster: 768,
+      endpoint: 1,
+      mode: "xy",
+      colors: {
+        // The handmade LED's red/green output channels are swapped.
+        purple: [14723, 21544],
+      },
+    },
+  });
+  const blindLayers = room.blinds.covers.map((blind) => blind.activeLayer());
+  room.blindsOverrideActive = signal(() =>
+    blindLayers.some((layer) => {
+      const active = layer.read();
+      return active?.layer === "override" || active?.layer === "webOverride";
+    }),
+  );
   room.door = myggbett("mbr.door");
   room.occupancy = ms605Presence("mbr.presence2");
   room.bedLeft = myggspray("mbr.bedLeft");

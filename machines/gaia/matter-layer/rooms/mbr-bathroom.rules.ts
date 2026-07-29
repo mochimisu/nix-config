@@ -20,10 +20,10 @@ export default defineRoomRules("mbrBathroom", ({ room, rule }) => {
   rule("dehumidifier", () => {
     const humidity = Number(room.environment.humidity ?? 0);
     const activeWindow = state.timeBetween("6:00", "23:30");
-    const humidityLowLongEnough = state.wasTrueFor(humidity < 45, "10m");
+    const humidityLowLongEnough = state.wasTrueFor(humidity < 50, "10m");
     const active = state.latch(
       "mbr-bathroom.dehumidifier.humidity",
-      activeWindow && humidity > 65,
+      activeWindow && humidity > 70,
       !activeWindow || humidityLowLongEnough,
     );
     room.dehumidifier.auto(active);

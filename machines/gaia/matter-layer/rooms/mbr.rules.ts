@@ -15,4 +15,9 @@ export default defineRoomRules("mbr", ({ room, rule }) => {
       room.blinds.close();
     }
   });
+  rule("blinds-status", () => {
+    room.blindsStatus.auto(room.blindsOverrideActive
+      ? { power: "on", color: "purple", level: "50%" }
+      : false);
+  });
 });
