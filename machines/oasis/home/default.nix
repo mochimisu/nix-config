@@ -185,27 +185,46 @@ in {
       now="$(${pkgs.coreutils}/bin/date +%s%3N)"
       min_delta=120
       max_delta=350
-      action_cooldown=500
-      last=0
+      coalesce_window=100
+      action_cooldown=150
+      last_tap=0
+      last_event=0
       last_action=0
 
       if [ -f "$STATE_FILE" ]; then
-        read -r last last_action < "$STATE_FILE" || true
+        line="$(${pkgs.coreutils}/bin/cat "$STATE_FILE" 2>/dev/null || true)"
+        set -- $line
+        case "$#" in
+          2)
+            last_tap="''${1:-0}"
+            last_action="''${2:-0}"
+            ;;
+          3)
+            last_tap="''${1:-0}"
+            last_event="''${2:-0}"
+            last_action="''${3:-0}"
+            ;;
+        esac
+      fi
+
+      if [ "$((now - last_event))" -lt "$coalesce_window" ]; then
+        printf '%s %s %s\n' "$last_tap" "$last_event" "$last_action" > "$STATE_FILE"
+        exit 0
       fi
 
       if [ "$((now - last_action))" -lt "$action_cooldown" ]; then
-        printf '0 %s\n' "$last_action" > "$STATE_FILE"
+        printf '0 %s %s\n' "$now" "$last_action" > "$STATE_FILE"
         exit 0
       fi
 
-      delta=$((now - last))
+      delta=$((now - last_tap))
       if [ "$delta" -ge "$min_delta" ] && [ "$delta" -le "$max_delta" ]; then
-        printf '0 %s\n' "$now" > "$STATE_FILE"
-        kitty >/dev/null 2>&1 &
+        printf '0 %s %s\n' "$now" "$now" > "$STATE_FILE"
+        ${pkgs.kitty}/bin/kitty >/dev/null 2>&1 &
         exit 0
       fi
 
-      printf '%s %s\n' "$now" "$last_action" > "$STATE_FILE"
+      printf '%s %s %s\n' "$now" "$now" "$last_action" > "$STATE_FILE"
     '';
   };
 }

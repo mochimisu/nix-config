@@ -44,3 +44,92 @@ index 777d9e1..b7f32f1 100644
          Vector2D{
              monitorPos.x + ev.pos.x * monitorSize.x,
              monitorPos.y + ev.pos.y * monitorSize.y,
+diff --git a/src/gestures/Actions.cpp b/src/gestures/Actions.cpp
+index 62c1259..5e9b165 100644
+--- a/src/gestures/Actions.cpp
++++ b/src/gestures/Actions.cpp
+@@ -1,4 +1,5 @@
+ #include "Actions.hpp"
++#include <algorithm>
+ #include <cmath>
+ #include <glm/geometric.hpp>
+ #include <glm/glm.hpp>
+@@ -56,13 +56,17 @@ MultiFingerTap::update_state(const wf::touch::gesture_state_t& state, const wf::
+     }
+ 
+     if (event.type == wf::touch::EVENT_TYPE_TOUCH_UP) {
+-        return wf::touch::ACTION_STATUS_COMPLETED;
++        return state.fingers.empty() ? wf::touch::ACTION_STATUS_COMPLETED : wf::touch::ACTION_STATUS_RUNNING;
++    }
++
++    if (event.type == wf::touch::EVENT_TYPE_TOUCH_DOWN) {
++        this->finger_count = std::max(this->finger_count, state.fingers.size());
+     }
+ 
+     if (event.type == wf::touch::EVENT_TYPE_MOTION) {
+         for (const auto& finger : state.fingers) {
+             const auto delta = finger.second.delta();
+-            if (delta.x * delta.x + delta.y + delta.y > this->base_threshold / *this->sensitivity) {
++            if (delta.x * delta.x + delta.y * delta.y > this->base_threshold / *this->sensitivity) {
+                 return wf::touch::ACTION_STATUS_CANCELLED;
+             }
+         }
+diff --git a/src/gestures/Actions.hpp b/src/gestures/Actions.hpp
+index 9e2fc8b..0210514 100644
+--- a/src/gestures/Actions.hpp
++++ b/src/gestures/Actions.hpp
+@@ -51,8 +51,15 @@ class MultiFingerTap : public wf::touch::gesture_action_t {
+     MultiFingerTap(double base_threshold, const float* sensitivity, const int64_t* timeout)
+         : base_threshold(base_threshold), sensitivity(sensitivity), timeout(timeout) {};
+ 
++    size_t finger_count = 0;
++
+     wf::touch::action_status_t
+     update_state(const wf::touch::gesture_state_t& state, const wf::touch::gesture_event_t& event) override;
++
++    void reset(uint32_t time) override {
++        gesture_action_t::reset(time);
++        finger_count = 0;
++    };
+ };
+ 
+ class LongPress : public wf::touch::gesture_action_t {
+diff --git a/src/gestures/Gestures.cpp b/src/gestures/Gestures.cpp
+index 2851413..2c79fef 100644
+--- a/src/gestures/Gestures.cpp
++++ b/src/gestures/Gestures.cpp
+@@ -221,15 +221,16 @@ void IGestureManager::addMultiFingerGesture(
+ 
+ void IGestureManager::addMultiFingerTap(double base_finger_slip, const float* sensitivity, const int64_t* timeout) {
+     auto tap = std::make_unique<MultiFingerTap>(base_finger_slip, sensitivity, timeout);
++    auto* tap_ptr = tap.get();
+ 
+     std::vector<std::unique_ptr<wf::touch::gesture_action_t>> tap_actions;
+     tap_actions.emplace_back(std::move(tap));
+ 
+-    auto ack = [this]() {
++    auto ack = [this, tap_ptr]() {
+         const auto gesture = CompletedGestureEvent{
+             .type         = GestureType::TAP,
+             .direction    = 0,
+-            .finger_count = static_cast<uint32_t>(this->m_sGestureState.fingers.size()),
++            .finger_count = static_cast<uint32_t>(tap_ptr->finger_count),
+         };
+         if (this->emitCompletedGesture(gesture)) {
+             this->cancelTouchEventsOnAllWindows();
+diff --git a/src/gestures/test/test.cpp b/src/gestures/test/test.cpp
+index 1d4abd0..58e1b97 100644
+--- a/src/gestures/test/test.cpp
++++ b/src/gestures/test/test.cpp
+@@ -221,7 +221,11 @@ TEST_CASE("Multi-finger Tap") {
+         Ev{wf::touch::EVENT_TYPE_TOUCH_DOWN, 110, 2, {550, 290}},
+         ExpectResult{ExpectResultType::NOT_SENT_WINDOW_CANCEL},
+         Ev{wf::touch::EVENT_TYPE_TOUCH_UP, 120, 2, {550, 290}},
++        ExpectResult{ExpectResultType::NOT_SENT_WINDOW_CANCEL},
++        Ev{wf::touch::EVENT_TYPE_TOUCH_UP, 125, 1, {500, 300}},
++        ExpectResult{ExpectResultType::NOT_SENT_WINDOW_CANCEL},
++        Ev{wf::touch::EVENT_TYPE_TOUCH_UP, 130, 0, {450, 290}},
+         ExpectResult{ExpectResultType::SENT_WINDOW_CANCEL},
+     };
+ 
+     ProcessEvents(gm, {.type = ExpectResultType::COMPLETED}, events);
