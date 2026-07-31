@@ -19,6 +19,7 @@
 - Store secrets (tokens, passwords, API keys) in `.AGENTS.LOCAL.md` only and keep it out of git.
 
 ### Host notes
+- Blackmoon is a stationary Los Angeles desktop and pins `time.timeZone = "America/Los_Angeles"` in `machines/blackmoon/configuration.nix`; do not re-enable `automatic-timezoned` there. GeoClue caused repeated New York/Los Angeles timezone flapping on 2026-07-25, which made all local-time displays jump by three hours even though their update loops were healthy.
 - Wikiskill system services in `common.nix` should run the Node entrypoints directly, not `npm run`, so systemd signals the process with the shutdown handler; the daily daemon is expected to stop promptly on SIGTERM.
 - Gaia runs Openclaw directly on the host from `machines/gaia/openclaw.nix` as the `openclaw` service user with state in `/var/lib/openclaw`; it no longer uses the old `gaiaclaw` NixOS container.
 - Gaia Matter declarative pairing reconcile lives at `machines/gaia/home-assistant/pairings.nix` and reads setup codes from `/etc/secret/matter-reconcile.env`.

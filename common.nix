@@ -166,7 +166,9 @@ in {
 
   # Locale
   i18n.defaultLocale = "en_US.UTF-8";
-  services.automatic-timezoned.enable = true;
+  # Mobile hosts may override this. Stationary hosts can disable it and pin a
+  # timezone without fighting an equal-priority shared definition.
+  services.automatic-timezoned.enable = lib.mkDefault true;
 
   # Networking
   networking.networkmanager.enable = true;
