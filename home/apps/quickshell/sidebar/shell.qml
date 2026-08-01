@@ -80,6 +80,9 @@ ShellRoot {
     property var toastNotifications: []
     property var notificationTimestamps: ({})
     property int notificationSerial: 0
+    property bool powerActionVisible: false
+    property string powerActionLabel: ""
+    property var pendingPowerCommand: []
     readonly property var notificationModel: []
     readonly property int notificationCount: 0
 
@@ -276,9 +279,23 @@ ShellRoot {
         Quickshell.execDetached(["hyprlock"]);
     }
 
-    function suspendSession() {
+    function beginPowerAction(label, command) {
         controlCenterPopup.visible = false;
-        Quickshell.execDetached(["sh", "-lc", "pidof hyprlock >/dev/null 2>&1 || hyprlock & sleep 0.3; systemctl suspend"]);
+        root.powerActionLabel = label;
+        root.pendingPowerCommand = command;
+        root.powerActionVisible = true;
+        powerActionCommandTimer.restart();
+    }
+
+    function suspendSession() {
+        beginPowerAction(
+            "Suspending...",
+            ["sh", "-lc", "sleep 0.8; pidof hyprlock >/dev/null 2>&1 || hyprlock & sleep 0.3; systemctl suspend"]
+        );
+    }
+
+    function shutdownSession() {
+        beginPowerAction("Shutting down...", ["systemctl", "poweroff"]);
     }
 
     function notificationSummary(notification) {
@@ -547,6 +564,18 @@ ShellRoot {
         interval: 1000
         repeat: true
         onTriggered: root.pruneToastNotifications()
+    }
+
+    Timer {
+        id: powerActionCommandTimer
+
+        interval: 150
+        repeat: false
+        onTriggered: {
+            if (root.pendingPowerCommand.length > 0) {
+                Quickshell.execDetached(root.pendingPowerCommand);
+            }
+        }
     }
 
     PwObjectTracker {
@@ -1385,7 +1414,7 @@ ShellRoot {
                                 spacing: 6
 
                                 Rectangle {
-                                    width: 92
+                                    width: 70
                                     height: parent.height
                                     radius: 4
                                     color: Networking.wifiEnabled ? "#22ffffff" : "#33f38ba8"
@@ -1405,7 +1434,7 @@ ShellRoot {
                                 }
 
                                 Rectangle {
-                                    width: 92
+                                    width: 70
                                     height: parent.height
                                     radius: 4
                                     color: "#22ffffff"
@@ -1425,7 +1454,7 @@ ShellRoot {
                                 }
 
                                 Rectangle {
-                                    width: 92
+                                    width: 70
                                     height: parent.height
                                     radius: 4
                                     color: "#22ffffff"
@@ -1441,6 +1470,26 @@ ShellRoot {
                                     MouseArea {
                                         anchors.fill: parent
                                         onClicked: root.suspendSession()
+                                    }
+                                }
+
+                                Rectangle {
+                                    width: 70
+                                    height: parent.height
+                                    radius: 4
+                                    color: "#33f38ba8"
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: "shutdown"
+                                        color: root.fgColor
+                                        font.family: root.baseFont
+                                        font.pixelSize: 10
+                                    }
+
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        onClicked: root.shutdownSession()
                                     }
                                 }
                             }
@@ -1560,6 +1609,86 @@ ShellRoot {
                                     font.family: root.baseFont
                                     font.pixelSize: 11
                                 }
+                            }
+                        }
+                    }
+                }
+
+                PopupWindow {
+                    id: powerActionPopup
+
+                    visible: root.powerActionVisible
+                    color: "transparent"
+                    implicitWidth: 360
+                    implicitHeight: 150
+
+                    anchor {
+                        window: panel
+                        rect.x: -powerActionPopup.implicitWidth - 12
+                        rect.y: Math.max(16, Math.round((panel.height - powerActionPopup.implicitHeight) / 2))
+                    }
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: 8
+                        color: "#ee050508"
+                        border.width: 1
+                        border.color: root.accentColor
+
+                        Column {
+                            anchors.centerIn: parent
+                            width: parent.width - 32
+                            spacing: 14
+
+                            Rectangle {
+                                id: powerActionSpinner
+
+                                width: 34
+                                height: 34
+                                radius: 17
+                                color: "transparent"
+                                border.width: 4
+                                border.color: root.accentColor
+                                anchors.horizontalCenter: parent.horizontalCenter
+
+                                Rectangle {
+                                    width: 14
+                                    height: 14
+                                    radius: 7
+                                    color: "#ee050508"
+                                    anchors.right: parent.right
+                                    anchors.top: parent.top
+                                }
+
+                                RotationAnimation on rotation {
+                                    running: root.powerActionVisible
+                                    loops: Animation.Infinite
+                                    from: 0
+                                    to: 360
+                                    duration: 900
+                                }
+                            }
+
+                            Text {
+                                width: parent.width
+                                text: root.powerActionLabel
+                                color: root.fgColor
+                                font.family: root.baseFont
+                                font.pixelSize: 22
+                                horizontalAlignment: Text.AlignHCenter
+                                wrapMode: Text.Wrap
+                                renderType: Text.NativeRendering
+                            }
+
+                            Text {
+                                width: parent.width
+                                text: "Waiting for system services to finish"
+                                color: root.mutedColor
+                                font.family: root.baseFont
+                                font.pixelSize: 12
+                                horizontalAlignment: Text.AlignHCenter
+                                wrapMode: Text.Wrap
+                                renderType: Text.NativeRendering
                             }
                         }
                     }

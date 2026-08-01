@@ -265,7 +265,7 @@ static struct key keys_full_wide[] = {
   {"→", "→", 1.0, Code, KEY_RIGHT, .scheme = 1},
   {"'", "\"", 1.0, Code, KEY_APOSTROPHE, &layouts[ComposeBracket] },
   {";", ":", 1.0, Code, KEY_SEMICOLON, &layouts[ComposePunctuation] },
-  {"/", ">", 1.0, Code, KEY_SLASH,  &layouts[ComposePunctuation] },
+  {"/", "?", 1.0, Code, KEY_SLASH,  &layouts[ComposePunctuation] },
   {"Tab", "Tab", 1.0, Code, KEY_TAB, .scheme = 1},
   {"", "", 0.0, EndRow},
 
@@ -323,7 +323,7 @@ static struct key keys_full_wide[] = {
   {"Cmp", "Cmp", 1.0, Compose, .scheme = 1},
   {",", "'", 1.0, Code, KEY_COMMA, &layouts[ComposeMath]},
   {"", "Tab", 4.0, Code, KEY_SPACE},
-  {".", "?", 1.0, Code, KEY_DOT, &layouts[ComposePunctuation]},
+  {".", ">", 1.0, Code, KEY_DOT, &layouts[ComposePunctuation]},
   {"Enter", "Enter", 1.5, Code, KEY_ENTER, .scheme = 1},
 
   /* end of layout */
@@ -369,7 +369,7 @@ static struct key keys_special[] = {
 
   {"⇧", "⇫", 2.0, Mod, Shift, .scheme = 1},
   {";", ":", 1.0, Code, KEY_SEMICOLON},
-  {"/", ">", 1.0, Code, KEY_SLASH},
+  {"/", "?", 1.0, Code, KEY_SLASH},
   {"<", "«", 1.0, Code, KEY_COMMA, 0, AltGr},
   {">", "»", 1.0, Code, KEY_DOT, 0, AltGr},
   {"¡", "¿", 1.0, Code, KEY_MENU},
@@ -380,9 +380,9 @@ static struct key keys_special[] = {
 
   {"Abc", "Abc", 1.0, BackLayer, .scheme = 1},
   {"⌨͕", "⌨͔", 1.0, NextLayer, .scheme = 1},
-  {",", "'", 1.0, Code, KEY_COMMA, &layouts[ComposeMath]},
+  {",", "<", 1.0, Code, KEY_COMMA, &layouts[ComposeMath]},
   {"", "Tab", 4.0, Code, KEY_SPACE},
-  {".", "?", 1.0, Code, KEY_DOT, &layouts[ComposePunctuation]},
+  {".", ">", 1.0, Code, KEY_DOT, &layouts[ComposePunctuation]},
   {"Enter", "Enter", 2.0, Code, KEY_ENTER, .scheme = 1},
 
   /* end of layout */
@@ -395,7 +395,7 @@ static struct key keys_specialpad[] = {
   {"⇈", "⇈", 1.0, Code, KEY_PAGEUP, .scheme = 1},
   {"`", "~", 1.0, Code, KEY_GRAVE},
   {"\\", "|", 1.0, Code, KEY_BACKSLASH},
-  {"/", ">", 1.0, Code, KEY_SLASH},
+  {"/", "?", 1.0, Code, KEY_SLASH},
   {"1", "!", 1.0, Code, KEY_1},
   {"2", "@", 1.0, Code, KEY_2},
   {"3", "#", 1.0, Code, KEY_3},
@@ -405,7 +405,7 @@ static struct key keys_specialpad[] = {
   {"←", "←", 1.0, Code, KEY_LEFT, .scheme = 1},
   {"", "↹", 1.0, Code, KEY_SPACE},
   {"→", "→", 1.0, Code, KEY_RIGHT, .scheme = 1},
-  {".", "?", 1.0, Code, KEY_DOT},
+  {".", ">", 1.0, Code, KEY_DOT},
   {"[", "{", 1.0, Code, KEY_LEFTBRACE},
   {"]", "}", 1.0, Code, KEY_RIGHTBRACE},
   {"4", "$", 1.0, Code, KEY_4},
@@ -482,9 +482,9 @@ static struct key keys_simple[] = {
   {"Cmp", "Cmp", 1.0, Compose, .scheme = 1},
   {"Ctr", "Ctr", 1.0, Mod, Ctrl, .scheme = 1},
   {"-", "_", 0.75, Code, KEY_MINUS, &layouts[ComposeMath]},
-  {",", "'", 0.75, Code, KEY_COMMA, &layouts[ComposeBracket]},
+  {",", "<", 0.75, Code, KEY_COMMA, &layouts[ComposeBracket]},
   {"", "Tab", 3.0, Code, KEY_SPACE},
-  {".", "?", 1.0, Code, KEY_DOT, &layouts[ComposePunctuation]},
+  {".", ">", 1.0, Code, KEY_DOT, &layouts[ComposePunctuation]},
   {"Enter", "Enter", 1.5, Code, KEY_ENTER, .scheme = 1},
 
   /* end of layout */
@@ -1452,7 +1452,7 @@ static struct key keys_landscape_special[] = {
   {"[", "{", 1.0, Code, KEY_LEFTBRACE},
   {"]", "}", 1.0, Code, KEY_RIGHTBRACE},
   {"\\", "|", 1.0, Code, KEY_BACKSLASH},
-  {"/", ">", 1.0, Code, KEY_SLASH},
+  {"/", "?", 1.0, Code, KEY_SLASH},
   {"Del", "Del", 1.0, Code, KEY_DELETE, .scheme = 1},
   {"", "", 0.0, EndRow},
 
@@ -1463,9 +1463,9 @@ static struct key keys_landscape_special[] = {
   {"<", "«", 1.0, Code, KEY_COMMA, 0, AltGr},
   {">", "»", 1.0, Code, KEY_DOT, 0, AltGr},
   {"¡", "¿", 1.0, Code, KEY_MENU},
-  {",", "'", 1.0, Code, KEY_COMMA, &layouts[ComposeMath]},
-  {".", "?", 1.0, Code, KEY_DOT, &layouts[ComposePunctuation]},
-  {"/", ">", 1.0, Code, KEY_SLASH},
+  {",", "<", 1.0, Code, KEY_COMMA, &layouts[ComposeMath]},
+  {".", ">", 1.0, Code, KEY_DOT, &layouts[ComposePunctuation]},
+  {"/", "?", 1.0, Code, KEY_SLASH},
   {"", "", 0.5, Pad, .scheme = 1},
   {"⌫", "⌫", 1.5, Code, KEY_BACKSPACE, .scheme = 1},
   {"", "", 0.0, EndRow},
@@ -1945,7 +1945,7 @@ static struct key keys_compose_punctuation[] = {
   {"⇧", "⇫", 1.5, Mod, Shift, .scheme = 1},
   {"", "", 3, Pad},
   {"!", "!", 1, Code, KEY_1, 0, Shift},
-  {"?", "?", 1, Code, KEY_DOT, 0, Shift},
+  {"?", "?", 1, Code, KEY_SLASH, 0, Shift},
   {"·", "·", 1, Copy, 0x2027, 0, 0x2027},
   {",", ",", 1, Code, KEY_COMMA},
   {"", "", 1.5, Pad},
@@ -1966,7 +1966,7 @@ static struct key keys_compose_bracket[] = {
   {"", "", 0, EndRow},
   {"⇧", "⇫", 1.5, Mod, Shift, .scheme = 1},
   {"<", "<", 1, Code, KEY_COMMA, 0, AltGr},
-  {">", ">", 1, Code, KEY_SLASH, 0, Shift},
+  {">", ">", 1, Code, KEY_DOT, 0, Shift},
   {"`", "`", 1, Code, KEY_GRAVE},
   {"\"", "\"", 1, Code, KEY_APOSTROPHE, 0, Shift},
   {"'", "'", 1, Code, KEY_APOSTROPHE},
