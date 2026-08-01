@@ -90,6 +90,12 @@ in {
 
   networking.hostName = "gaia";
 
+  # Gaia is a stationary home server. GeoClue can incorrectly move automatic
+  # timezone detection between Los Angeles and New York, shifting wall-clock
+  # automations such as bathroom day/night behavior and blind schedules.
+  services.automatic-timezoned.enable = false;
+  time.timeZone = "America/Los_Angeles";
+
   # Disable the GUI stack on this host by skipping the shared GUI module.
   services.xserver.enable = lib.mkForce false;
   services.pipewire.enable = lib.mkForce false;
@@ -132,6 +138,7 @@ in {
 
   services.immich = {
     enable = true;
+    package = inputs.immich-nixpkgs.legacyPackages.${pkgs.stdenv.hostPlatform.system}.immich;
     host = "0.0.0.0";
     port = 2283;
     openFirewall = true;

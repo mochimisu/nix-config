@@ -52,13 +52,15 @@
     set -euo pipefail
 
     ${pkgs.coreutils}/bin/chgrp users '${openclawHome}'
-    ${pkgs.coreutils}/bin/chgrp users '${openclawState}'
+    ${pkgs.coreutils}/bin/chown '${openclawRuntimeUser}':users '${openclawState}'
     ${pkgs.coreutils}/bin/chmod 0770 '${openclawHome}'
     ${pkgs.coreutils}/bin/chmod 0770 '${openclawState}'
     ${pkgs.coreutils}/bin/install -d -m 0700 -o '${openclawRuntimeUser}' -g users '${codexHome}'
     ${pkgs.coreutils}/bin/install -d -m 0770 -o '${openclawRuntimeUser}' -g users '${codexOpenclawHome}'
-    ${pkgs.findutils}/bin/find '${openclawState}' -xdev -type d -exec ${pkgs.coreutils}/bin/chgrp users {} +
-    ${pkgs.findutils}/bin/find '${openclawState}' -xdev -type f -exec ${pkgs.coreutils}/bin/chgrp users {} +
+    # Openclaw performs ownership-sensitive chmod operations during startup
+    # migrations, so group write access alone is not sufficient here.
+    ${pkgs.findutils}/bin/find '${openclawState}' -xdev -type d -exec ${pkgs.coreutils}/bin/chown '${openclawRuntimeUser}':users {} +
+    ${pkgs.findutils}/bin/find '${openclawState}' -xdev -type f -exec ${pkgs.coreutils}/bin/chown '${openclawRuntimeUser}':users {} +
     ${pkgs.findutils}/bin/find '${openclawState}' -xdev -type d -exec ${pkgs.coreutils}/bin/chmod 0770 {} +
     ${pkgs.findutils}/bin/find '${openclawState}' -xdev -type f -exec ${pkgs.coreutils}/bin/chmod 0660 {} +
     if [ -f '${codexHome}/auth.json' ]; then

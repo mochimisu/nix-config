@@ -9,7 +9,7 @@ export default defineRoomRules("mbr", ({ room, rule }) => {
     room.bedLight.auto(room.presence);
   });
   rule("blinds", () => {
-    if (time.minuteBetween("8:00", "20:00")) {
+    if (time.minuteBetween("8:00", "17:00")) {
       room.blinds.open();
     } else {
       room.blinds.close();
