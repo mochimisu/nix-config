@@ -52,6 +52,8 @@
     };
   in {
     packages.x86_64-linux = {
+      default = self.nixosConfigurations.oasis.config.system.build.toplevel;
+
       gaia-iso = let
         isoSystem = nixpkgs.lib.nixosSystem {
           specialArgs = {inherit inputs;};

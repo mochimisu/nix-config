@@ -102,6 +102,12 @@ in {
     enableHyprgrass = true;
     enableScroll = true;
     onScreenKeyboard = true;
+    hyprgrassConfig = {
+      sensitivity = 1.0;
+      long_press_delay = 700;
+      resize_on_border_long_press = true;
+      edge_margin = 10;
+    };
     hyprgrassBinds = [
       ",tap:3,exec,${config.home.homeDirectory}/.config/hypr/three-finger-double-tap.sh"
     ];
@@ -179,17 +185,23 @@ in {
 
       STATE_FILE="''${XDG_RUNTIME_DIR:-/tmp}/hyprgrass-3tap"
       LOCK_FILE="''${XDG_RUNTIME_DIR:-/tmp}/hyprgrass-3tap.lock"
+      LOG_FILE="''${XDG_STATE_HOME:-$HOME/.local/state}/hyprgrass-3tap.log"
       exec 9>"$LOCK_FILE"
       ${pkgs.util-linux}/bin/flock 9
 
       now="$(${pkgs.coreutils}/bin/date +%s%3N)"
       min_delta=120
-      max_delta=350
-      coalesce_window=100
-      action_cooldown=150
+      max_delta=800
+      coalesce_window=60
+      action_cooldown=500
       last_tap=0
       last_event=0
       last_action=0
+
+      log() {
+        ${pkgs.coreutils}/bin/mkdir -p "$(${pkgs.coreutils}/bin/dirname "$LOG_FILE")"
+        printf '%s %s\n' "$now" "$*" >> "$LOG_FILE"
+      }
 
       if [ -f "$STATE_FILE" ]; then
         line="$(${pkgs.coreutils}/bin/cat "$STATE_FILE" 2>/dev/null || true)"
@@ -208,22 +220,30 @@ in {
       fi
 
       if [ "$((now - last_event))" -lt "$coalesce_window" ]; then
+        log "coalesce last_tap=$last_tap last_event=$last_event last_action=$last_action"
         printf '%s %s %s\n' "$last_tap" "$last_event" "$last_action" > "$STATE_FILE"
         exit 0
       fi
 
       if [ "$((now - last_action))" -lt "$action_cooldown" ]; then
+        log "cooldown last_tap=$last_tap last_event=$last_event last_action=$last_action"
         printf '0 %s %s\n' "$now" "$last_action" > "$STATE_FILE"
         exit 0
       fi
 
       delta=$((now - last_tap))
       if [ "$delta" -ge "$min_delta" ] && [ "$delta" -le "$max_delta" ]; then
+        log "action delta=$delta"
         printf '0 %s %s\n' "$now" "$now" > "$STATE_FILE"
-        ${pkgs.kitty}/bin/kitty >/dev/null 2>&1 &
+        if output="$(${config.wayland.windowManager.hyprland.package}/bin/hyprctl eval ${lib.escapeShellArg "hl.dispatch(hl.dsp.exec_cmd(${builtins.toJSON "${pkgs.kitty}/bin/kitty"}))"} 2>&1)"; then
+          log "launch ok"
+        else
+          log "launch failed: $output"
+        fi
         exit 0
       fi
 
+      log "tap delta=$delta"
       printf '%s %s %s\n' "$now" "$now" "$last_action" > "$STATE_FILE"
     '';
   };

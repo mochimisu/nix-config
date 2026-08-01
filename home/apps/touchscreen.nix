@@ -29,10 +29,26 @@ let
   enableHyprgrassLuaConfig = enableHyprgrassBinds || enableHyprgrassBindm || enableHyprgrassWorkspaceGestures;
   hyprgrassPackage = pkgs.hyprlandPlugins.hyprgrass;
   hyprgrassPluginPath = "${hyprgrassPackage}/lib/libhyprgrass.so";
+  hyprgrassConfig = touchscreenVars.hyprgrassConfig or {
+    sensitivity = 4.0;
+    long_press_delay = 400;
+    resize_on_border_long_press = true;
+    edge_margin = 10;
+  };
+  hyprlandGesturesConfig = touchscreenVars.hyprlandGesturesConfig or {
+    workspace_swipe_touch = true;
+    workspace_swipe_cancel_ratio = 0.15;
+  };
   wvkbdStartScript = "${config.home.homeDirectory}/.config/hypr/wvkbd-mobintl-start.sh";
   wvkbdStopScript = "${config.home.homeDirectory}/.config/hypr/wvkbd-mobintl-stop.sh";
   splitCsv = value: lib.splitString "," value;
   luaString = builtins.toJSON;
+  luaValue = value:
+    if builtins.isString value || builtins.isBool value || builtins.isInt value || builtins.isFloat value
+    then luaString value
+    else throw "Unsupported Lua config value for touchscreen hyprgrass config";
+  luaTableFields = indent: attrs:
+    lib.concatStringsSep "\n" (lib.mapAttrsToList (name: value: "${indent}${name} = ${luaValue value},") attrs);
   hyprgrassDirectionToLua = direction:
     luaString ({
       l = "left";
@@ -103,6 +119,16 @@ let
   hyprgrassLuaConfig = ''
     -- Hyprgrass Lua API.
     hl.plugin.load(${luaString hyprgrassPluginPath})
+    hl.config({
+      plugin = {
+        hyprgrass = {
+    ${luaTableFields "      " hyprgrassConfig}
+        },
+      },
+      gestures = {
+    ${luaTableFields "      " hyprlandGesturesConfig}
+      },
+    })
 
     if hl.plugin and hl.plugin.hyprgrass and hl.plugin.hyprgrass.bind then
     ${lib.concatMapStrings hyprgrassBindToLua hyprgrassBinds}
