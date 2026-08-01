@@ -109,6 +109,12 @@ in {
         // {
           hyprgrass = prev.hyprlandPlugins.hyprgrass.overrideAttrs (old: {
             patches = (old.patches or []) ++ [./overlays/hyprgrass-tap-count.patch];
+            postPatch =
+              (old.postPatch or "")
+              + ''
+                substituteInPlace src/GestureManager.cpp \
+                  --replace-fail 'callLuaFnBind' 'callLuaFn'
+              '';
           });
         };
     })
