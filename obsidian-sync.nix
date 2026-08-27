@@ -62,6 +62,10 @@ in {
     };
   };
 
+  systemd.services.syncthing = lib.mkIf isGaia {
+    unitConfig.RequiresMountsFor = ["/earth"];
+  };
+
   systemd.tmpfiles.rules = lib.mkIf isGaia [
     "d /earth/syncthing 0775 brandon users - -"
     "d /earth/syncthing/.config 0775 brandon users - -"

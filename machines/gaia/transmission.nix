@@ -160,6 +160,8 @@ in {
     "/earth/transmission"
   ];
 
+  systemd.services.transmission.unitConfig.RequiresMountsFor = ["/earth"];
+
   systemd.services.transmission.preStart = lib.mkAfter ''
     SECRET_PATH='${secretPath}'
     SETTINGS_PATH='${settingsPath}'
