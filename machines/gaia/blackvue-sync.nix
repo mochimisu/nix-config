@@ -1,11 +1,30 @@
-{pkgs, ...}: let
-  blackvueAddress = "192.168.1.208";
-  blackvueDestination = "/earth/blackvue";
-  blackvueStatusFile = "/earth/blackvue/.blackvue-status.json";
+{
+  lib,
+  pkgs,
+  ...
+}: let
+  cameras = [
+    {
+      label = "Boxster";
+      address = "192.168.1.208";
+      destination = "/earth/blackvue/blackvue-boxster";
+      serviceName = "blackvuesync";
+      homeAssistantUniqueId = "gaia_blackvue_sync_status";
+    }
+    {
+      label = "Taycan";
+      address = "192.168.1.89";
+      destination = "/earth/blackvue/blackvue-taycan";
+      serviceName = "blackvuesync-taycan";
+      homeAssistantUniqueId = "gaia_blackvue_taycan_sync_status";
+    }
+  ];
+
+  statusFile = camera: "${camera.destination}/.blackvue-status.json";
 
   blackvuesyncScript = pkgs.fetchurl {
     url = "https://raw.githubusercontent.com/acolomba/blackvuesync/main/blackvuesync.py";
-    hash = "sha256-KmpGWXYkLhI/tLeUmNb+/LiNUFYdK7cwd2WJ9CQG0Zc=";
+    hash = "sha256-9e1JdIkz/wsvnVcieLqbfDi/ReNUafJTuDF0WglURZ8=";
   };
 
   blackvuesync = pkgs.writeShellApplication {
@@ -28,9 +47,15 @@
     text = ''
       set -euo pipefail
 
-      address='${blackvueAddress}'
-      destination='${blackvueDestination}'
-      status_file='${blackvueStatusFile}'
+      if [ "$#" -ne 4 ]; then
+        echo "usage: blackvuesync-with-status ADDRESS DESTINATION STATUS_FILE WORKER_SERVICE" >&2
+        exit 2
+      fi
+
+      address="$1"
+      destination="$2"
+      status_file="$3"
+      worker_service="$4"
       keep_days=90
 
       last_attempt="$(${pkgs.coreutils}/bin/date --iso-8601=seconds)"
@@ -207,53 +232,75 @@ PY
       }
 
       probe_dashcam_status() {
+        local api_format
         local vod_file
         vod_file="$(${pkgs.coreutils}/bin/mktemp)"
         trap '${pkgs.coreutils}/bin/rm -f "$vod_file"' RETURN
 
-        ${pkgs.curl}/bin/curl -fsS --max-time 10 "http://$address/blackvue_vod.cgi" > "$vod_file"
+        if ${pkgs.curl}/bin/curl -fsS --max-time 10 "http://$address/accessible" >/dev/null 2>&1; then
+          api_format="modern"
+          ${pkgs.curl}/bin/curl -fsS --max-time 10 "http://$address/vodList" > "$vod_file"
+        else
+          api_format="legacy"
+          ${pkgs.curl}/bin/curl -fsS --max-time 10 "http://$address/blackvue_vod.cgi" > "$vod_file"
+        fi
 
-        ${pkgs.python3}/bin/python3 - "$vod_file" "$destination" "$keep_days" <<'PY'
+        ${pkgs.python3}/bin/python3 - "$vod_file" "$destination" "$keep_days" "$api_format" <<'PY'
 import datetime as dt
+import json
 import os
 import re
 import sys
 
-vod_path, destination, keep_days = sys.argv[1], sys.argv[2], int(sys.argv[3])
+vod_path, destination, keep_days, api_format = (
+    sys.argv[1],
+    sys.argv[2],
+    int(sys.argv[3]),
+    sys.argv[4],
+)
 cutoff_date = dt.date.today() - dt.timedelta(days=keep_days)
 recording_re = re.compile(
-    r"^n:/Record/(?P<filename>(?P<base>\d{8}_\d{6})_[A-Z][A-Z][LS]?\.mp4),s:\d+$"
+    r"^(?P<filename>(?P<base>\d{8}_\d{6})_[A-Z][A-Z][LS]?\.mp4)$"
 )
 
 pending = 0
 earliest = None
 latest = None
-with open(vod_path, "r", encoding="utf-8") as f:
-    for raw_line in f:
-        line = raw_line.strip()
-        match = recording_re.match(line)
-        if match is None:
-          continue
+if api_format == "modern":
+    with open(vod_path, "r", encoding="utf-8") as f:
+        payload = json.load(f)
+    filenames = [entry["filename"] for entry in payload["filelist"]]
+else:
+    legacy_re = re.compile(r"^n:/Record/(?P<filename>.*\.mp4),s:\d+$")
+    filenames = []
+    with open(vod_path, "r", encoding="utf-8") as f:
+        for raw_line in f:
+            if match := legacy_re.match(raw_line.strip()):
+                filenames.append(match.group("filename"))
 
-        base = match.group("base")
-        if earliest is None or base < earliest:
-            earliest = base
-        if latest is None or base > latest:
-            latest = base
+for filename in filenames:
+    match = recording_re.match(filename)
+    if match is None:
+        continue
 
-        file_date = dt.date(
-            int(base[0:4]),
-            int(base[4:6]),
-            int(base[6:8]),
-        )
-        if file_date < cutoff_date:
-            continue
+    base = match.group("base")
+    if earliest is None or base < earliest:
+        earliest = base
+    if latest is None or base > latest:
+        latest = base
 
-        filename = match.group("filename")
-        group = f"{base[0:4]}-{base[4:6]}-{base[6:8]}"
-        local_path = os.path.join(destination, group, filename)
-        if not os.path.exists(local_path):
-            pending += 1
+    file_date = dt.date(
+        int(base[0:4]),
+        int(base[4:6]),
+        int(base[6:8]),
+    )
+    if file_date < cutoff_date:
+        continue
+
+    group = f"{base[0:4]}-{base[4:6]}-{base[6:8]}"
+    local_path = os.path.join(destination, group, filename)
+    if not os.path.exists(local_path):
+        pending += 1
 
 print(pending)
 print("" if earliest is None else f"{earliest[0:4]}-{earliest[4:6]}-{earliest[6:8]} to {latest[0:4]}-{latest[4:6]}-{latest[6:8]}")
@@ -316,7 +363,7 @@ PY
         (
           while true; do
             ${pkgs.coreutils}/bin/sleep 15
-            ingress_bytes="$(${pkgs.systemd}/bin/systemctl show --property=IPIngressBytes --value blackvuesync-worker.service 2>/dev/null || printf '0\n')"
+            ingress_bytes="$(${pkgs.systemd}/bin/systemctl show --property=IPIngressBytes --value "$worker_service" 2>/dev/null || printf '0\n')"
             current_epoch="$(${pkgs.coreutils}/bin/date +%s)"
             sync_speed_mib_s="$(compute_speed_mib_s "$ingress_bytes" "$sync_started_epoch" "$current_epoch")"
             write_status || true
@@ -459,7 +506,7 @@ summary = " | ".join(lines[-10:])
 print(summary[:4000])
 PY
 )"
-      ingress_bytes="$(${pkgs.systemd}/bin/systemctl show --property=IPIngressBytes --value blackvuesync-worker.service 2>/dev/null || printf '0\n')"
+      ingress_bytes="$(${pkgs.systemd}/bin/systemctl show --property=IPIngressBytes --value "$worker_service" 2>/dev/null || printf '0\n')"
       current_epoch="$(${pkgs.coreutils}/bin/date +%s)"
       sync_speed_mib_s="$(compute_speed_mib_s "$ingress_bytes" "$sync_started_epoch" "$current_epoch")"
       if normalized_error="$(normalize_offline_error "$last_error")" && [ "$normalized_error" = "offline" ]; then
@@ -473,80 +520,101 @@ PY
       exit "$rc"
     '';
   };
+
+  serviceEntries = lib.concatMap (camera: let
+    workerName = "${camera.serviceName}-worker";
+  in [
+    {
+      name = camera.serviceName;
+      value = {
+        description = "Sync ${camera.label} BlackVue recordings from dashcam";
+        restartIfChanged = false;
+        stopIfChanged = false;
+        unitConfig.X-OnlyManualStart = true;
+        after = ["network-online.target"];
+        wants = ["network-online.target"];
+        serviceConfig = {
+          Type = "oneshot";
+          User = "root";
+          Group = "root";
+          ExecStart = "${pkgs.systemd}/bin/systemctl start --no-block ${workerName}.service";
+        };
+      };
+    }
+    {
+      name = workerName;
+      value = {
+        description = "Run ${camera.label} BlackVue recordings sync from dashcam";
+        restartIfChanged = false;
+        stopIfChanged = false;
+        unitConfig.X-OnlyManualStart = true;
+        after = ["network-online.target"];
+        wants = ["network-online.target"];
+        serviceConfig = {
+          Type = "oneshot";
+          User = "root";
+          Group = "root";
+          WorkingDirectory = camera.destination;
+          Nice = 10;
+          ExecStart = let
+            args = lib.escapeShellArgs [
+              camera.address
+              camera.destination
+              (statusFile camera)
+              "${workerName}.service"
+            ];
+          in "${blackvuesyncWithStatus}/bin/blackvuesync-with-status ${args}";
+        };
+      };
+    }
+  ]) cameras;
+
+  timerEntries = map (camera: {
+    name = camera.serviceName;
+    value = {
+      enable = true;
+      wantedBy = ["timers.target"];
+      timerConfig = {
+        OnActiveSec = "15min";
+        OnUnitActiveSec = "15min";
+        Unit = "${camera.serviceName}.service";
+      };
+    };
+  }) cameras;
+
+  homeAssistantSensor = camera: {
+    sensor = {
+      name = "BlackVue ${camera.label} Sync Status";
+      unique_id = camera.homeAssistantUniqueId;
+      command = "if [ -f ${statusFile camera} ]; then ${pkgs.coreutils}/bin/cat ${statusFile camera}; else printf '%s\\n' '{\"connected\": false, \"sync_status\": \"unknown\", \"last_attempt\": null, \"last_success\": null, \"last_error\": null, \"pending_count\": -1, \"latest_synced_footage\": null, \"sync_speed_mib_s\": null}'; fi";
+      value_template = "{{ value_json.sync_status if value_json is defined else 'unknown' }}";
+      json_attributes = [
+        "connected"
+        "last_attempt"
+        "last_success"
+        "last_error"
+        "pending_count"
+        "latest_synced_footage"
+        "sync_speed_mib_s"
+        "local_recordings_range"
+        "dashcam_recordings_range"
+      ];
+      scan_interval = 60;
+    };
+  };
 in {
   environment.systemPackages = [
     blackvuesync
     blackvuesyncWithStatus
   ];
 
-  systemd.tmpfiles.rules = [
-    "d /earth/blackvue 0775 brandon users - -"
-  ];
+  systemd.tmpfiles.rules = map (camera: "d ${camera.destination} 0775 brandon users - -") cameras;
 
-  systemd.services.blackvuesync = {
-    description = "Sync BlackVue recordings from dashcam";
-    restartIfChanged = false;
-    stopIfChanged = false;
-    unitConfig.X-OnlyManualStart = true;
-    after = ["network-online.target"];
-    wants = ["network-online.target"];
-    serviceConfig = {
-      Type = "oneshot";
-      User = "root";
-      Group = "root";
-      ExecStart = "${pkgs.systemd}/bin/systemctl start --no-block blackvuesync-worker.service";
-    };
-  };
+  systemd.services = builtins.listToAttrs serviceEntries;
 
-  systemd.services.blackvuesync-worker = {
-    description = "Run BlackVue recordings sync from dashcam";
-    restartIfChanged = false;
-    stopIfChanged = false;
-    unitConfig.X-OnlyManualStart = true;
-    after = ["network-online.target"];
-    wants = ["network-online.target"];
-    serviceConfig = {
-      Type = "oneshot";
-      User = "root";
-      Group = "root";
-      WorkingDirectory = blackvueDestination;
-      Nice = 10;
-      ExecStart = "${blackvuesyncWithStatus}/bin/blackvuesync-with-status";
-    };
-  };
-
-  systemd.timers.blackvuesync = {
-    enable = true;
-    wantedBy = ["timers.target"];
-    timerConfig = {
-      OnActiveSec = "15min";
-      OnUnitActiveSec = "15min";
-      Unit = "blackvuesync.service";
-    };
-  };
+  systemd.timers = builtins.listToAttrs timerEntries;
 
   services.home-assistant.config = {
-    command_line = [
-      {
-        sensor = {
-          name = "BlackVue Sync Status";
-          unique_id = "gaia_blackvue_sync_status";
-          command = "if [ -f ${blackvueStatusFile} ]; then ${pkgs.coreutils}/bin/cat ${blackvueStatusFile}; else printf '%s\\n' '{\"connected\": false, \"sync_status\": \"unknown\", \"last_attempt\": null, \"last_success\": null, \"last_error\": null, \"pending_count\": -1, \"latest_synced_footage\": null, \"sync_speed_mib_s\": null}'; fi";
-          value_template = "{{ value_json.sync_status if value_json is defined else 'unknown' }}";
-          json_attributes = [
-            "connected"
-            "last_attempt"
-            "last_success"
-            "last_error"
-            "pending_count"
-            "latest_synced_footage"
-            "sync_speed_mib_s"
-            "local_recordings_range"
-            "dashcam_recordings_range"
-          ];
-          scan_interval = 60;
-        };
-      }
-    ];
+    command_line = map homeAssistantSensor cameras;
   };
 }

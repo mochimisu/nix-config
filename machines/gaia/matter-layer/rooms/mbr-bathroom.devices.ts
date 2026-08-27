@@ -29,6 +29,7 @@ export default defineRoomDevices("mbrBathroom", ({ room }) => {
   room.shower = ms605Presence("mbrBathroom.showerPresence");
   room.door = myggbett("mbrBathroom.door");
 
+  room.humidity = signal(() => room.environment.humidity ?? room.mainPresence.humidity);
   room.toiletPresence = signal(() => room.toilet.presence);
   room.showerPresence = signal(() => room.shower.presence);
   room.daytime = signal(() => state.timeBetween("6:00", "20:00"));

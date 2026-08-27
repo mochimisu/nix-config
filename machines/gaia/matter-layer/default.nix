@@ -44,9 +44,11 @@ in {
 
   systemd.services.matter-layer = {
     after = [
+      "podman-home-assistant.service"
       "podman-matter-server.service"
     ];
     wants = [
+      "podman-home-assistant.service"
       "podman-matter-server.service"
     ];
     serviceConfig = {
