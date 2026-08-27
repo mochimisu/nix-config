@@ -1,6 +1,6 @@
 --- a/keyboard.c	2026-02-06 17:38:49.764047206 -0800
 +++ b/keyboard.c	2026-02-06 17:39:01.131535693 -0800
-@@ -377,27 +377,11 @@
+@@ -380,27 +380,11 @@
  void
  kbd_motion_key(struct kbd *kb, uint32_t time, uint32_t x, uint32_t y)
  {
@@ -33,11 +33,11 @@
  }
  
  void
-@@ -618,22 +602,7 @@
-     drw_draw_text(kb->surf, scheme->text, k->x, k->y, k->w, k->h,
-                   KBD_KEY_BORDER, label, scheme->font_description);
+@@ -665,25 +649,7 @@
+     }
  
--    if (type == Press || type == Unpress) {
+ 
+-    if (kb->show_popup && (type == Press || type == Unpress)) {
 -        kbd_clear_last_popup(kb);
 -
 -        kb->last_popup_x = k->x;
@@ -48,9 +48,12 @@
 -        drw_fill_rectangle(kb->popup_surf, scheme->bg, k->x,
 -                           kb->last_popup_y, k->w, k->h, scheme->rounding);
 -        draw_inset(kb->popup_surf, k->x, kb->last_popup_y, k->w, k->h,
--                   KBD_KEY_BORDER, scheme->high, scheme->rounding);
--        drw_draw_text(kb->popup_surf, scheme->text, k->x, kb->last_popup_y,
--                      k->w, k->h, KBD_KEY_BORDER, label,
+-                   KBD_KEY_BORDER,
+-                   kb->show_highlight ? scheme->high : scheme->fg,
+-                   scheme->rounding);
+-        drw_draw_text(kb->popup_surf,
+-                      kb->show_highlight ? scheme->text_press : scheme->text,
+-                      k->x, kb->last_popup_y, k->w, k->h, KBD_KEY_BORDER, label,
 -                      scheme->font_description);
 -    }
 +    /* popups disabled */
