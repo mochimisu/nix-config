@@ -1,32 +1,20 @@
-{pkgs, ...}: let
-  appDir = "/home/brandon/stuff/blackvue-viewer";
-in {
-  systemd.services.blackvue-viewer = {
-    description = "BlackVue archive web viewer";
-    wantedBy = ["multi-user.target"];
-    after = ["network.target" "earth.mount"];
+{inputs, ...}: {
+  imports = [inputs.dashcam-viewer.nixosModules.default];
+
+  services.dashcam-viewer = {
+    enable = true;
+    videoRoot = "/earth/blackvue";
+    port = 3000;
+    openFirewall = true;
+
+    # Keep access aligned with the archive ingest jobs. In particular, Brandon
+    # is also in `media`, which owns the TeslaUSB archive.
+    user = "brandon";
+    group = "users";
+    createUser = false;
+    archiveWritable = true;
+
+    after = ["earth.mount"];
     requires = ["earth.mount"];
-
-    environment = {
-      PORT = "3000";
-      BLACKVUE_VIDEO_ROOT = "/earth/blackvue";
-    };
-
-    path = [pkgs.nodejs_22];
-
-    serviceConfig = {
-      Type = "simple";
-      User = "brandon";
-      Group = "users";
-      WorkingDirectory = appDir;
-      ExecStart = "${pkgs.nodejs_22}/bin/node server/index.js";
-      Restart = "on-failure";
-      RestartSec = "5s";
-      ReadOnlyPaths = [appDir "/earth/blackvue"];
-      NoNewPrivileges = true;
-      PrivateTmp = true;
-    };
   };
-
-  networking.firewall.allowedTCPPorts = [3000];
 }

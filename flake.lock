@@ -74,6 +74,26 @@
         "type": "github"
       }
     },
+    "dashcam-viewer": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1787985541,
+        "narHash": "sha256-Ei9yi4HNk/BqmFoOC7e4CvIF3mm9jVnQMgFXF8d1+oU=",
+        "owner": "mochimisu",
+        "repo": "dashcam-viewer",
+        "rev": "4536f3d1632585617561105e454e031893f6a087",
+        "type": "github"
+      },
+      "original": {
+        "owner": "mochimisu",
+        "repo": "dashcam-viewer",
+        "type": "github"
+      }
+    },
     "flake-compat": {
       "flake": false,
       "locked": {
@@ -931,6 +951,7 @@
       "inputs": {
         "catppuccin": "catppuccin",
         "codex-cli-nix": "codex-cli-nix",
+        "dashcam-viewer": "dashcam-viewer",
         "flatpaks": "flatpaks",
         "home-manager": "home-manager",
         "hyprgrass": "hyprgrass",
