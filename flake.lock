@@ -81,11 +81,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1787985541,
-        "narHash": "sha256-Ei9yi4HNk/BqmFoOC7e4CvIF3mm9jVnQMgFXF8d1+oU=",
+        "lastModified": 1787987714,
+        "narHash": "sha256-c1+hOW8FyljmxmCqsECtxPZTi/tSv9DFoe5UUrDpMVQ=",
         "owner": "mochimisu",
         "repo": "dashcam-viewer",
-        "rev": "4536f3d1632585617561105e454e031893f6a087",
+        "rev": "bfb4252ce71c9b7128069bd831987c2bb694b1e9",
         "type": "github"
       },
       "original": {
