@@ -79,6 +79,7 @@ in {
     ./ebooks.nix
     ./jellyfin.nix
     ./sops.nix
+    ./teslausb.nix
     ./transmission.nix
     ./home-assistant
     inputs.matter-layer.nixosModules.default

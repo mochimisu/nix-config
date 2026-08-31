@@ -1,10 +1,15 @@
 {...}: let
   matterEnvFile = ./secrets/matter-env.env;
+  teslaUsbSecretsFile = ./secrets/teslausb.yaml;
 in {
   assertions = [
     {
       assertion = builtins.readFile matterEnvFile != "";
       message = "machines/gaia/secrets/matter-env.env is empty; Matter client services need /run/secrets/matter-env.";
+    }
+    {
+      assertion = builtins.readFile teslaUsbSecretsFile != "";
+      message = "machines/gaia/secrets/teslausb.yaml is empty; TeslaUSB needs login and Samba credentials.";
     }
   ];
 
@@ -21,6 +26,22 @@ in {
       mode = "0400";
       owner = "root";
       group = "root";
+    };
+
+    secrets."teslausb-password" = {
+      sopsFile = teslaUsbSecretsFile;
+      format = "yaml";
+      key = "password";
+      mode = "0400";
+      owner = "root";
+      group = "root";
+    };
+
+    secrets."teslausb-password-hash" = {
+      sopsFile = teslaUsbSecretsFile;
+      format = "yaml";
+      key = "password_hash";
+      neededForUsers = true;
     };
   };
 }

@@ -221,7 +221,7 @@ in {
   services.openssh = {
     enable = true;
     extraConfig = ''
-      AllowUsers brandon
+      AllowUsers brandon${lib.optionalString isGaia " teslausb"}
     '';
     settings = {
       PermitRootLogin = "no";

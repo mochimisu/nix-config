@@ -13,7 +13,7 @@
     }
     {
       label = "Taycan";
-      address = "192.168.1.89";
+      address = "192.168.1.88";
       destination = "/earth/blackvue/blackvue-taycan";
       serviceName = "blackvuesync-taycan";
       homeAssistantUniqueId = "gaia_blackvue_taycan_sync_status";

@@ -116,9 +116,23 @@ in {
     createUser = false;
     archiveWritable = true;
 
+    environment = {
+      DASHCAM_TESLAUSB_STATUS_CONFIG = builtins.toJSON {
+        tesla-redbean = {
+          target = "root@192.168.1.161";
+          identityFile = "/run/credentials/dashcam-viewer.service/teslausb-status-key";
+        };
+      };
+      DASHCAM_TESLAUSB_STATUS_SSH_PATH = lib.getExe pkgs.openssh;
+    };
+
     after = ["earth.mount" "dashcam-viewer-archive-config.service"];
     requires = ["earth.mount" "dashcam-viewer-archive-config.service"];
   };
+
+  systemd.services.dashcam-viewer.serviceConfig.LoadCredential = [
+    "teslausb-status-key:/home/brandon/.ssh/id_ed25519_teslausb"
+  ];
 
   systemd.services.dashcam-viewer-archive-config = {
     description = "Install Dashcam Viewer vehicle metadata and artwork";
