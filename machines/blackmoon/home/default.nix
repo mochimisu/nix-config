@@ -130,8 +130,8 @@ in {
   systemd.user.services.blackmoon-cat-wallpaper = {
     Unit = {
       Description = "Blackmoon animated cat wallpaper";
-      After = ["hyprland-session.target"];
-      PartOf = ["hyprland-session.target"];
+      After = ["graphical-session.target"];
+      PartOf = ["graphical-session.target"];
     };
 
     Service = {
@@ -141,7 +141,7 @@ in {
       RestartSec = "2s";
     };
 
-    Install.WantedBy = ["hyprland-session.target"];
+    Install.WantedBy = ["graphical-session.target"];
   };
 
   home.shellAliases = {
