@@ -1,4 +1,5 @@
 {
+  config,
   inputs,
   lib,
   pkgs,
@@ -6,6 +7,8 @@
 }: let
   mountDocs = pkgs.writeShellScriptBin "mountdocs" ''
     set -euo pipefail
+    # gocryptfs must find the privileged NixOS FUSE helper before package binaries.
+    export PATH=${config.security.wrapperDir}:"$PATH"
 
     ENC_DIR=/earth/documents_enc
     MOUNT_DIR=/earth/documents
@@ -37,11 +40,7 @@
       exit 0
     fi
 
-    if command -v fusermount3 >/dev/null 2>&1; then
-      exec fusermount3 -u "$MOUNT_DIR"
-    else
-      exec ${pkgs.fuse}/bin/fusermount -u "$MOUNT_DIR"
-    fi
+    exec ${config.security.wrapperDir}/fusermount3 -u "$MOUNT_DIR"
   '';
 
   win11Restart = pkgs.writeShellScriptBin "win11-restart" ''
@@ -91,6 +90,9 @@ in {
 
   networking.hostName = "gaia";
 
+  # Installing fuse alone does not provide the setuid helpers for user mounts.
+  programs.fuse.enable = true;
+
   # Gaia is a stationary home server. GeoClue can incorrectly move automatic
   # timezone detection between Los Angeles and New York, shifting wall-clock
   # automations such as bathroom day/night behavior and blind schedules.
@@ -109,7 +111,6 @@ in {
   environment.systemPackages = [
     pkgs.kitty.terminfo
     pkgs.gocryptfs
-    pkgs.fuse
     mountDocs
     umountDocs
     win11Restart

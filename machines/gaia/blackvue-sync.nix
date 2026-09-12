@@ -6,7 +6,7 @@
   cameras = [
     {
       label = "Boxster";
-      address = "192.168.1.208";
+      address = "192.168.1.198";
       destination = "/earth/blackvue/blackvue-boxster";
       serviceName = "blackvuesync";
       homeAssistantUniqueId = "gaia_blackvue_sync_status";
