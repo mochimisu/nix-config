@@ -112,6 +112,10 @@ in {
             postPatch =
               (old.postPatch or "")
               + ''
+                while IFS= read -r sourceFile; do
+                  substituteInPlace "$sourceFile" \
+                    --replace-fail 'LOG(' 'Log::logger->log('
+                done < <(grep -rl 'LOG(' src)
                 if grep -q 'callLuaFnBind' src/GestureManager.cpp; then
                   substituteInPlace src/GestureManager.cpp \
                     --replace-fail 'callLuaFnBind' 'callLuaFn'

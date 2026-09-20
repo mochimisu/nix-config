@@ -208,13 +208,12 @@ in {
                 };
                 workspace = openclawWorkspace;
               };
-              list = [
-                {
-                  id = "main";
+              entries = {
+                main = {
                   default = true;
                   model = "codex/gpt-5.5";
-                }
-              ];
+                };
+              };
             };
 
             messages.groupChat.visibleReplies = "automatic";
