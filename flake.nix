@@ -2,13 +2,10 @@
   description = "my flake";
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    # Keep Immich on a revision whose 3.0.3 closure is available from the
-    # official binary cache.  The newer nixpkgs closure is uncached and makes
-    # Gaia build immich-pnpm-deps by repeatedly querying registry.npmjs.org.
-    immich-nixpkgs.url = "github:NixOS/nixpkgs/e2587caef70cea85dd97d7daab492899902dbf5d";
     hyprgrass = {
-      # Keep this input for the touchscreen module while Hyprland itself comes from nixpkgs.
-      url = "github:horriblename/hyprgrass";
+      # Upstream hyprpm.toml's supported pairing for nixpkgs Hyprland 0.56.2.
+      # Revisit with Hyprland upgrades; master targets newer compositor APIs.
+      url = "github:horriblename/hyprgrass/8e605468cbf429791d61ddbfaeb14ff5e08fec3e";
     };
     home-manager = {
       url = "github:nix-community/home-manager";

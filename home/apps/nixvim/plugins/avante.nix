@@ -5,11 +5,6 @@
     ###########################################################################
     plugins.avante = {
       enable = true;
-      package = pkgs.vimPlugins.avante-nvim.overrideAttrs (_: {
-        # Several internal modules require runtime state or optional providers.
-        # Check the public entrypoint instead of loading every Lua file alone.
-        nvimRequireCheck = ["avante"];
-      });
 
       # Core behaviour -------------------------------------------------------
       settings = {

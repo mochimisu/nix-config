@@ -140,7 +140,6 @@ in {
 
   services.immich = {
     enable = true;
-    package = inputs.immich-nixpkgs.legacyPackages.${pkgs.stdenv.hostPlatform.system}.immich;
     host = "0.0.0.0";
     port = 2283;
     openFirewall = true;

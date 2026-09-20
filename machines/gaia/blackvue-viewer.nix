@@ -15,7 +15,10 @@
       image = ./dashcam-viewer-assets/boxster.webp;
       metadata = {
         schemaVersion = 1;
-        archive.format = "blackvue";
+        archive = {
+          format = "blackvue";
+          browserCompatibility = "proxy";
+        };
         vehicle = {
           displayName = "Boxster";
           make = "Porsche";
@@ -36,7 +39,10 @@
       image = ./dashcam-viewer-assets/taycan.webp;
       metadata = {
         schemaVersion = 1;
-        archive.format = "blackvue";
+        archive = {
+          format = "blackvue";
+          browserCompatibility = "proxy";
+        };
         vehicle = {
           displayName = "Taycan";
           make = "Porsche";
@@ -115,6 +121,16 @@ in {
     group = "users";
     createUser = false;
     archiveWritable = true;
+
+    preprocessing = {
+      enable = true;
+      pruneBlackClips = true;
+      interval = "15min";
+      proxyMaxPerRun = 60;
+      blackClipMinAgeHours = 168;
+      blackClipMaxPerRun = 25;
+      quarantineDays = 14;
+    };
 
     environment = {
       DASHCAM_TESLAUSB_STATUS_CONFIG = builtins.toJSON {

@@ -7,13 +7,13 @@ in {
       bambu_lab = super.buildHomeAssistantComponent rec {
         owner = "greghesp";
         domain = "bambu_lab";
-        version = "2.2.21";
+        version = "2.2.26";
 
         src = super.fetchFromGitHub {
           inherit owner;
           repo = "ha-bambulab";
           rev = "v${version}";
-          hash = "sha256-56aAJAsmn+PzLZijFQ9DbTfHSrbeNk+OM/ibu32UHtg=";
+          hash = "sha256-9KsIzem7BjImUW+BTnAUYJ7CnU5bFpet7D2HhmOwTbA=";
         };
 
         dependencies = [

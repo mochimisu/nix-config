@@ -88,15 +88,6 @@ in {
   config = lib.mkIf cfg.enable {
     nixpkgs.overlays = [
       inputs.nix-openclaw.overlays.default
-      (final: prev: {
-        openclaw = prev.openclaw.overrideAttrs (old: {
-          env =
-            (old.env or {})
-            // {
-              OPENCLAW_GATEWAY_BIN = "${final.openclaw-gateway}/bin/openclaw";
-            };
-        });
-      })
     ];
 
     networking.firewall.allowedTCPPorts = [18789];
@@ -155,6 +146,8 @@ in {
         launchd.enable = false;
         systemd.enable = false;
         exposePluginPackages = false;
+        # These integrations are external runtime plugins as of Openclaw 2026.9.
+        runtimePlugins = ["codex" "discord"];
         workspace.bootstrapFiles = {
           agents = ./openclaw-documents/AGENTS.md;
           soul = ./openclaw-documents/SOUL.md;
@@ -204,17 +197,13 @@ in {
             agents = {
               defaults = {
                 model = {
-                  primary = "codex/gpt-5.5";
+                  primary = "codex/gpt-6-astra";
                 };
                 workspace = openclawWorkspace;
               };
-              list = [
-                {
-                  id = "main";
-                  default = true;
-                  model = "codex/gpt-5.5";
-                }
-              ];
+              entries.main = {
+                model = "codex/gpt-6-astra";
+              };
             };
 
             messages.groupChat.visibleReplies = "automatic";
@@ -306,6 +295,9 @@ in {
           "NODE_PATH=${openclawGateway}/lib/openclaw/node_modules"
         ];
         Restart = "always";
+        # Exit 78 requires operator repair (for example, doctor --fix for a
+        # state database migration); restarting cannot resolve it.
+        RestartPreventExitStatus = [78];
         RestartSec = "1s";
         StandardOutput = "append:${openclawLog}";
         StandardError = "append:${openclawLog}";

@@ -23,7 +23,7 @@
   statusFile = camera: "${camera.destination}/.blackvue-status.json";
 
   blackvuesyncScript = pkgs.fetchurl {
-    url = "https://raw.githubusercontent.com/acolomba/blackvuesync/main/blackvuesync.py";
+    url = "https://raw.githubusercontent.com/acolomba/blackvuesync/v2.2.0/blackvuesync.py";
     hash = "sha256-9e1JdIkz/wsvnVcieLqbfDi/ReNUafJTuDF0WglURZ8=";
   };
 

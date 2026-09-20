@@ -4,11 +4,6 @@
   config,
   ...
 }: let
-  waybarCava = pkgs.waybar.overrideAttrs (_: {
-    # Currently broken
-    # mesonFlags = (oldAttrs.mesonFlags or []) ++ [ "-Dcava=enabled" ];
-    # buildInputs = (oldAttrs.buildInputs or []) ++ [pkgs.libcava];
-  });
   toggleApp = pkgs.writeShellScriptBin "toggle-app" ''
     #!/usr/bin/env bash
 
@@ -34,7 +29,7 @@ in {
     ];
   programs.waybar = lib.mkIf pkgs.stdenv.isLinux {
     enable = true;
-    package = waybarCava;
+    package = pkgs.waybar;
 
     settings = {
       mainBar =

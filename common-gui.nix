@@ -41,11 +41,6 @@
           | xargs -0 sed -i '/^prefer :\/qt-project\.org\/imports\/QtQuick\/VirtualKeyboard/d'
       '';
   });
-  # pkgsPinned = import (builtins.fetchTarball {
-  #   # walker broken on 2/13/2025, use a commit from 2/3/2025
-  #   url = "https://github.com/NixOS/nixpkgs/archive/9d962cd4ad268f64d125aa8c5599a87a374af78a.tar.gz";
-  #   sha256 = "sha256:1a1917f9qvg5agx2vhlsrhj3yyjrznpcnlkwcqk4ampzdby6nzhi";
-  # }) { system = "x86_64-linux"; };
 in {
   imports = [
     ./keymap.nix

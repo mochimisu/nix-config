@@ -5,13 +5,13 @@ _: super: {
       ac_infinity = super.buildHomeAssistantComponent rec {
         owner = "dalinicus";
         domain = "ac_infinity";
-        version = "2.1.1";
+        version = "2.2.0";
 
         src = super.fetchFromGitHub {
           inherit owner;
           repo = "homeassistant-acinfinity";
           rev = version;
-          hash = "sha256-aF7LtxJ5ZzmdGS2NoS6hdZPzD+zb9Ee9jnrAiKHv7NI=";
+          hash = "sha256-TOXkNAxLXOSRV3H88EFXGAfeZ52QAGlzqdOWGS9WEG4=";
         };
 
         dependencies = [];
