@@ -112,8 +112,38 @@ in {
             postPatch =
               (old.postPatch or "")
               + ''
+                if grep -q 'callLuaFnBind' src/GestureManager.cpp; then
+                  substituteInPlace src/GestureManager.cpp \
+                    --replace-fail 'callLuaFnBind' 'callLuaFn'
+                fi
+                substituteInPlace src/GestureManager.hpp src/GestureManager.cpp src/main.cpp \
+                  --replace-fail 'hyprland/src/keybinds/Manager.hpp' 'hyprland/src/managers/KeybindManager.hpp'
+                substituteInPlace src/main.cpp \
+                  --replace-fail '#include <hyprland/src/keybinds/Resolver.hpp>' ""
                 substituteInPlace src/GestureManager.cpp \
-                  --replace-fail 'callLuaFnBind' 'callLuaFn'
+                  --replace-fail '#include <hyprland/src/desktop/view/window/WindowPresentation.hpp>' ""
+                sed -i '/^\/\/ compat adapter$/,/^};$/d' src/GestureManager.hpp
+                substituteInPlace src/GestureManager.cpp \
+                  --replace-fail '!real.containsPoint(touchPos) || w->presentation().isInCurvedCorner(touchPos.x, touchPos.y)' '!real.containsPoint(touchPos)' \
+                  --replace-fail 'w->isFloating()' 'w->m_isFloating'
+                sed -i '/^\/\/ Adapt new hyprland keybind type/,/^}/c\
+static std::vector<SP<SKeybind>> keybindsToSKeybinds() {\
+    return g_pKeybindManager->m_keybinds;\
+}\
+' src/GestureManager.cpp
+                substituteInPlace src/main.cpp \
+                  --replace-fail 'Keybinds::modMaskFromString(modStr)' 'g_pKeybindManager->stringToModMask(modStr)' \
+                  --replace-fail 'Input::ModifierMask modMask' 'uint32_t modMask' \
+                  --replace-fail 'Keybinds::modMaskFromString(std::string{maybeMod.value()})' 'g_pKeybindManager->stringToModMask(std::string{maybeMod.value()})' \
+                  --replace-fail 'Input::ModifierMask(0u)' '0u'
+                substituteInPlace src/main.cpp \
+                  --replace-fail '    HyprlandAPI::reloadConfig();
+
+    g_pGestureManager       = std::make_unique<GestureManager>();
+    g_pShimTrackpadGestures = std::make_unique<ShimTrackpadGestures>();' '    g_pGestureManager       = std::make_unique<GestureManager>();
+    g_pShimTrackpadGestures = std::make_unique<ShimTrackpadGestures>();
+
+    HyprlandAPI::reloadConfig();'
               '';
           });
         };

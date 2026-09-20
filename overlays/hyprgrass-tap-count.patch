@@ -8,7 +8,7 @@ index 62c1259..5e9b165 100644
  #include <cmath>
  #include <glm/geometric.hpp>
  #include <glm/glm.hpp>
-@@ -56,13 +57,17 @@ MultiFingerTap::update_state(const wf::touch::gesture_state_t& state, const wf::
+@@ -56,7 +57,11 @@ MultiFingerTap::update_state(const wf::touch::gesture_state_t& state, const wf::
      }
  
      if (event.type == wf::touch::EVENT_TYPE_TOUCH_UP) {
@@ -23,11 +23,6 @@ index 62c1259..5e9b165 100644
      if (event.type == wf::touch::EVENT_TYPE_MOTION) {
          for (const auto& finger : state.fingers) {
              const auto delta = finger.second.delta();
--            if (delta.x * delta.x + delta.y + delta.y > this->base_threshold / *this->sensitivity) {
-+            if (delta.x * delta.x + delta.y * delta.y > this->base_threshold / *this->sensitivity) {
-                 return wf::touch::ACTION_STATUS_CANCELLED;
-             }
-         }
 diff --git a/src/gestures/Actions.hpp b/src/gestures/Actions.hpp
 index 9e2fc8b..0210514 100644
 --- a/src/gestures/Actions.hpp
@@ -69,7 +64,7 @@ index 2851413..2c79fef 100644
 -            .finger_count = static_cast<uint32_t>(this->m_sGestureState.fingers.size()),
 +            .finger_count = static_cast<uint32_t>(tap_ptr->finger_count),
          };
-         if (this->emitCompletedGesture(gesture)) {
+         if (this->emitCompletedGesture(gesture) == FindGestureResult::FOUND) {
              this->cancelTouchEventsOnAllWindows();
 diff --git a/src/gestures/test/test.cpp b/src/gestures/test/test.cpp
 index 1d4abd0..58e1b97 100644
@@ -87,3 +82,14 @@ index 1d4abd0..58e1b97 100644
      };
  
      ProcessEvents(gm, {.type = ExpectResultType::COMPLETED}, events);
+@@ -313,6 +317,10 @@ TEST_CASE("Multi-finger Tap: non-consuming gesture does not send cancel to window
+         Ev{wf::touch::EVENT_TYPE_TOUCH_DOWN, 110, 2, {550, 290}},
+         ExpectResult{ExpectResultType::NOT_SENT_WINDOW_CANCEL},
+         Ev{wf::touch::EVENT_TYPE_TOUCH_UP, 120, 2, {550, 290}},
++        ExpectResult{ExpectResultType::NOT_SENT_WINDOW_CANCEL},
++        Ev{wf::touch::EVENT_TYPE_TOUCH_UP, 125, 1, {500, 300}},
++        ExpectResult{ExpectResultType::NOT_SENT_WINDOW_CANCEL},
++        Ev{wf::touch::EVENT_TYPE_TOUCH_UP, 130, 0, {450, 290}},
+     };
+     ProcessEvents(gm, {.type = ExpectResultType::COMPLETED_NON_CONSUMING}, events);
+ }
