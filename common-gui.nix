@@ -94,7 +94,6 @@ in {
     # Games
     mangohud
     inputs.nixos-xivlauncher-rb.packages.${pkgs.stdenv.hostPlatform.system}.default
-    parsec-bin
     itch
     wine
     gamescope

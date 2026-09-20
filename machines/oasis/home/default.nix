@@ -18,7 +18,7 @@
         local function main_on()
           hl.monitor({
             output = main_output,
-            mode = "2560x1600@180",
+            mode = "2560x1600@60",
             position = "0x0",
             scale = 1.25,
           })
@@ -112,57 +112,53 @@ in {
       ",tap:3,exec,${config.home.homeDirectory}/.config/hypr/three-finger-double-tap.sh"
     ];
   };
-  wayland.windowManager.hyprland.settings = {
-    monitor = [
-      {
-        output = "eDP-1";
-        mode = "2560x1600@180";
-        position = "0x0";
-        scale = 1.25;
-      }
-      {
-        output = "DP-1";
-        mode = "1920x1080@120";
-        # XReal glasses, 2048=2560/1.25
-        position = "2048x0";
-        scale = 1;
-      }
-    ];
+  wayland.windowManager.hyprland = {
+    systemd.enable = false;
+    settings = {
+      monitor = [
+        {
+          output = "eDP-1";
+          mode = "2560x1600@60";
+          position = "0x0";
+          scale = 1.25;
+        }
+      ];
 
-    bind = [
-      {
-        _args = [
-          (lib.generators.mkLuaInline "mod .. \" + F2\"")
-          (xrealLua "toggle")
-        ];
-      }
-    ];
+      bind = [
+        {
+          _args = [
+            (lib.generators.mkLuaInline "mod .. \" + F2\"")
+            (xrealLua "toggle")
+          ];
+        }
+      ];
 
-    on = [
-      {
-        _args = [
-          "hyprland.start"
-          (lib.generators.mkLuaInline ''
-            function()
-              hl.exec_cmd("steam -silent")
-              _G.oasis_xreal_glasses_only = false
-            end
-          '')
-        ];
-      }
-      {
-        _args = [
-          "monitor.added"
-          (xrealLua "sync")
-        ];
-      }
-      {
-        _args = [
-          "monitor.removed"
-          (xrealLua "sync")
-        ];
-      }
-    ];
+      on = [
+        {
+          _args = [
+            "hyprland.start"
+            (lib.generators.mkLuaInline ''
+              function()
+                hl.exec_cmd("steam -silent")
+                _G.oasis_xreal_glasses_only = false
+              end
+            '')
+          ];
+        }
+        {
+          _args = [
+            "monitor.added"
+            (xrealLua "sync")
+          ];
+        }
+        {
+          _args = [
+            "monitor.removed"
+            (xrealLua "sync")
+          ];
+        }
+      ];
+    };
   };
 
   imports = [

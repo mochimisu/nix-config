@@ -9,6 +9,24 @@
     enable = true;
     mobileAcGovernor = true;
   };
+  services.ananicy.extraRules = lib.mkAfter [
+    {
+      name = "sddm";
+      type = "IN_DIFF";
+    }
+    {
+      name = "sddm-helper";
+      type = "IN_DIFF";
+    }
+    {
+      name = "sddm-greeter-qt";
+      type = "IN_DIFF";
+    }
+    {
+      name = "sddm-greeter-qt6";
+      type = "IN_DIFF";
+    }
+  ];
   variables.touchscreen = {
     sddmKeyboard = true;
     sddmKeyboardLayout = "qwerty";
@@ -127,11 +145,6 @@
     };
   };
 
-  systemd.services.fprintd = {
-    wantedBy = ["multi-user.target"];
-    serviceConfig.Type = "simple";
-  };
-
   services.xserver.xkb = {
     layout = "custom";
     variant = "dvorak-custom";
@@ -150,8 +163,10 @@
     };
     displayManager.sddm = {
       wayland.enable = lib.mkForce false; # force X11
+      settings.General.GreeterEnvironment = lib.mkForce "QT_VIRTUALKEYBOARD_STYLE=compact,QT_VIRTUALKEYBOARD_LAYOUT_PATH=/etc/xdg/qtvirtualkeyboard/layouts,QML2_IMPORT_PATH=/etc/xdg/qtvirtualkeyboard/qml";
     };
     xserver.enable = lib.mkForce true; # force X11
+    xserver.videoDrivers = ["modesetting"];
   };
 
   users.users.brandon.extraGroups = lib.mkAfter ["input"];

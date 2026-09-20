@@ -4,7 +4,10 @@ let
   enable = touchscreenVars.enable or false;
   enableScroll = touchscreenVars.enableScroll or true;
   onScreenKeyboard = touchscreenVars.onScreenKeyboard or false;
-  enableHyprgrass = touchscreenVars.enableHyprgrass or onScreenKeyboard;
+  enableHyprgrass =
+    if builtins.hasAttr "enableHyprgrass" touchscreenVars
+    then touchscreenVars.enableHyprgrass
+    else onScreenKeyboard;
   enableHyprgrassWorkspaceSwipe = touchscreenVars.enableHyprgrassWorkspaceSwipe or true;
   lisgdDevice = touchscreenVars.device or "/dev/input/touchscreen";
   ydotoolSocket = touchscreenVars.ydotoolSocket or "/run/ydotoold.socket";
