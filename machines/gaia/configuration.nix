@@ -184,7 +184,11 @@ in {
     package = pkgs.postgresql_16;
   };
 
-  users.users.brandon.extraGroups = ["fuse"];
+  users.users.brandon = {
+    extraGroups = ["fuse"];
+    # Keep the user manager and Codex Remote alive after the final SSH logout.
+    linger = true;
+  };
 
   systemd.tmpfiles.rules = [
     "d /earth/documents 0770 brandon media - -"
