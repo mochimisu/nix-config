@@ -20,6 +20,21 @@
   codexHome = "${openclawRuntimeHome}/.codex";
   codexOpenclawHome = "${openclawState}/agents/main/agent/codex-home";
   openclawGateway = pkgs.openclaw-gateway;
+  runtimePluginIds = ["codex" "discord"];
+  runtimePluginManifest = pkgs.writeText "openclaw-nix-plugin-provenance.json" (builtins.toJSON (map (id: let
+    lock = import (inputs.nix-openclaw + "/nix/generated/openclaw-runtime-plugins/${id}.nix");
+  in {
+    inherit id;
+    source = lock.selectedSource;
+    spec = "${lock.packageName}@${lock.version}";
+    resolvedSpec = "${lock.packageName}@${lock.version}";
+    resolvedName = lock.packageName;
+    resolvedVersion = lock.version;
+    version = lock.version;
+    integrity = lock.npmIntegrity;
+    shasum = lock.npmShasum;
+    installPath = toString pkgs.openclawRuntimePlugins.${id};
+  }) runtimePluginIds));
 
   codexBase = inputs.codex-cli-nix.packages.${pkgs.stdenv.hostPlatform.system}.default;
   codexCli = pkgs.symlinkJoin {
@@ -46,7 +61,12 @@
     set -a
     . '${openclawEnv}'
     set +a
-    exec ${openclawGateway}/bin/openclaw gateway --port 18789
+    # The upstream Nix wrapper disables this registry, but Openclaw 2026.9.5
+    # requires official npm provenance for Codex and Discord's trusted APIs.
+    export OPENCLAW_DISABLE_PERSISTED_PLUGIN_REGISTRY=0
+    ${pkgs.nodejs_24}/bin/node ${./openclaw-register-plugins.mjs} \
+      ${openclawGateway}/lib/openclaw/dist ${runtimePluginManifest}
+    exec ${openclawGateway}/bin/openclaw gateway --port 18790
   '';
   openclawGatewayPreStart = pkgs.writeShellScript "openclaw-gateway-pre-start" ''
     set -euo pipefail
@@ -90,7 +110,7 @@ in {
       inputs.nix-openclaw.overlays.default
     ];
 
-    networking.firewall.allowedTCPPorts = [18789];
+    networking.firewall.allowedTCPPorts = [18790];
 
     users.users.${openclawConfigUser} = {
       isSystemUser = true;
@@ -123,6 +143,11 @@ in {
 
       programs.home-manager.enable = true;
 
+      # Runtime hardens agent directories to 0700 as Brandon. The config-only
+      # HM user must not write there; our explicit appServer.command already
+      # selects the Nix-wrapped Codex binary and Brandon's CODEX_HOME.
+      home.activation.openclawCodexRuntimeProfiles = lib.mkForce "";
+
       home.file = {
         ".openclaw/openclaw.json".force = true;
         ".openclaw/docs/reference/templates/AGENTS.md".source =
@@ -146,8 +171,10 @@ in {
         launchd.enable = false;
         systemd.enable = false;
         exposePluginPackages = false;
-        # These integrations are external runtime plugins as of Openclaw 2026.9.
-        runtimePlugins = ["codex" "discord"];
+        # Installed from the locked Nix packages via the runtime registry above.
+        # HM runtimePlugins adds load.paths (origin=config), which prevents the
+        # official Codex plugin from registering its reserved agent harness.
+        runtimePlugins = [];
         workspace.bootstrapFiles = {
           agents = ./openclaw-documents/AGENTS.md;
           soul = ./openclaw-documents/SOUL.md;
@@ -172,6 +199,8 @@ in {
           logPath = openclawLog;
           config = {
             gateway = {
+              # Port 18789 is used by the traffic.bwang.dev application.
+              port = 18790;
               mode = "local";
               bind = "lan";
               tls = {
@@ -179,14 +208,14 @@ in {
                 autoGenerate = true;
               };
               controlUi.allowedOrigins = [
-                "http://localhost:18789"
-                "http://127.0.0.1:18789"
-                "http://gaia:18789"
-                "http://192.168.1.35:18789"
-                "https://localhost:18789"
-                "https://127.0.0.1:18789"
-                "https://gaia:18789"
-                "https://192.168.1.35:18789"
+                "http://localhost:18790"
+                "http://127.0.0.1:18790"
+                "http://gaia:18790"
+                "http://192.168.1.35:18790"
+                "https://localhost:18790"
+                "https://127.0.0.1:18790"
+                "https://gaia:18790"
+                "https://192.168.1.35:18790"
               ];
               auth = {
                 mode = "token";
@@ -197,17 +226,22 @@ in {
             agents = {
               defaults = {
                 model = {
-                  primary = "codex/gpt-6-astra";
+                  primary = "openai/gpt-6-astra";
                 };
                 workspace = openclawWorkspace;
               };
               entries.main = {
-                model = "codex/gpt-6-astra";
+                model = "openai/gpt-6-astra";
               };
             };
 
+            # 2026.9.5 moved GPT model refs to openai/*; keep native Codex
+            # execution explicit so this cannot fall back to an API-key route.
+            models.providers.openai.agentRuntime.id = "codex";
+
             messages.groupChat.visibleReplies = "automatic";
 
+            plugins.entries.discord.enabled = true;
             plugins.entries.codex = {
               enabled = true;
               config = {

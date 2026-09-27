@@ -49,13 +49,17 @@
     sub_filter '`/api/' '`/matter-layer/api/';
     sub_filter 'host}/events' 'host}/matter-layer/events';
   '';
+  # Bump when response rewrites change: upstream asset hashes do not include them.
+  blackvueAssetPrefix = "/blackvue/proxy-v2/assets/";
   blackvueSubstitutions = ''
     sub_filter_once off;
     sub_filter_types text/html application/javascript text/javascript application/json;
-    sub_filter 'src="/assets/' 'src="/blackvue/assets/';
-    sub_filter 'href="/assets/' 'href="/blackvue/assets/';
-    sub_filter 'fetch("/api/' 'fetch("/blackvue/api/';
-    sub_filter '"/api/video/' '"/blackvue/api/video/';
+    sub_filter 'src="/assets/' 'src="${blackvueAssetPrefix}';
+    sub_filter 'href="/assets/' 'href="${blackvueAssetPrefix}';
+    # Cover JS string/template literals and all URL fields returned in JSON,
+    # including index, compatibility playback, thumbnails, and vehicle art.
+    sub_filter '"/api/' '"/blackvue/api/';
+    sub_filter '`/api/' '`/blackvue/api/';
   '';
   otbrWebListen = [
     { addr = "0.0.0.0"; port = otbrWebPort; }
@@ -862,8 +866,8 @@
                   <a class="service-card" href="/matterjs/" data-lan-href="http://${hostName}:${toString matterjsWebPort}/" data-lan-label="Port ${toString matterjsWebPort}" data-wan-href="/matterjs/" data-wan-label="/matterjs">
                     <span class="stock">/matterjs</span><span class="art"><span class="plate"><svg viewBox="0 0 24 24"><path d="M4 12h4"/><path d="M16 12h4"/><path d="M12 4v4"/><path d="M12 16v4"/><circle cx="12" cy="12" r="2.5"/><path d="M7 7l2 2"/><path d="M15 15l2 2"/><path d="M17 7l-2 2"/><path d="M9 15l-2 2"/></svg></span></span><span class="accent automation"></span><span class="service-name">Matter.js</span>
                   </a>
-                  <a class="service-card" href="https://${hostName}:18789/">
-                    <span class="stock">Port 18789</span><span class="art"><span class="plate"><svg viewBox="0 0 24 24"><rect x="5" y="7" width="14" height="10"/><path d="M9 7V4h6v3"/><path d="M9 12h.1M15 12h.1"/><path d="M10 16h4"/></svg></span></span><span class="accent agent"></span><span class="service-name">OpenClaw</span>
+                  <a class="service-card" href="https://${hostName}:18790/">
+                    <span class="stock">Port 18790</span><span class="art"><span class="plate"><svg viewBox="0 0 24 24"><rect x="5" y="7" width="14" height="10"/><path d="M9 7V4h6v3"/><path d="M9 12h.1M15 12h.1"/><path d="M10 16h4"/></svg></span></span><span class="accent agent"></span><span class="service-name">OpenClaw</span>
                   </a>
                   <a class="service-card" href="/otbr/" data-lan-href="http://${hostName}:${toString otbrWebPort}/" data-lan-label="Port ${toString otbrWebPort}" data-wan-href="/otbr/" data-wan-label="/otbr">
                     <span class="stock">/otbr</span><span class="art"><span class="plate"><svg viewBox="0 0 24 24"><path d="M12 5v4"/><path d="M12 15v4"/><path d="M5 12h4"/><path d="M15 12h4"/><circle cx="12" cy="12" r="3"/><path d="M6.5 6.5 9 9"/><path d="m15 15 2.5 2.5"/><path d="m17.5 6.5-2.5 2.5"/><path d="m9 15-2.5 2.5"/></svg></span></span><span class="accent sync"></span><span class="service-name">OpenThread BR</span>
@@ -876,6 +880,12 @@
                   </a>
                   <a class="service-card" href="/jellyfin/" data-lan-href="http://${hostName}:8096/" data-lan-label="Port 8096" data-wan-href="/jellyfin/" data-wan-label="/jellyfin">
                     <span class="stock">/jellyfin</span><span class="art"><span class="plate"><svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="1"/><path d="m10 10 5 2-5 2z"/><path d="M7 21h10"/><path d="M12 18v3"/></svg></span></span><span class="accent media"></span><span class="service-name">Jellyfin</span>
+                  </a>
+                  <a class="service-card" href="/seed-capital/">
+                    <span class="stock">/seed-capital</span><span class="art"><span class="plate"><svg viewBox="0 0 24 24"><path d="M4 20h16M6 16v-4m6 4V8m6 8V4"/><path d="m4 9 6-4 4 2 6-5"/></svg></span></span><span class="accent media"></span><span class="service-name">Seed Capital Lab</span>
+                  </a>
+                  <a class="service-card" href="/wikiskill/">
+                    <span class="stock">/wikiskill</span><span class="art"><span class="plate"><svg viewBox="0 0 24 24"><path d="M12 6v14"/><path d="M12 6C9 4 5 4 3 5v14c3-1 6-1 9 1 3-2 6-2 9-1V5c-2-1-6-1-9 1z"/></svg></span></span><span class="accent media"></span><span class="service-name">Wikiskill</span>
                   </a>
                   <a class="service-card" href="http://${hostName}:8083/">
                     <span class="stock">Port 8083</span><span class="art"><span class="plate"><svg viewBox="0 0 24 24"><path d="M5 5h11a3 3 0 0 1 3 3v11H8a3 3 0 0 1-3-3z"/><path d="M8 5v11a3 3 0 0 0 3 3"/><path d="M9 9h6"/><path d="M9 12h5"/></svg></span></span><span class="accent media"></span><span class="service-name">Kavita</span>
@@ -1147,6 +1157,14 @@ in {
         proxyPass = "http://127.0.0.1:3000/";
         extraConfig = (proxiedServiceHeaders "/blackvue") + blackvueSubstitutions;
       };
+      locations.${blackvueAssetPrefix} = {
+        proxyPass = "http://127.0.0.1:3000/assets/";
+        extraConfig = (proxiedServiceHeaders "/blackvue") + blackvueSubstitutions + ''
+          proxy_hide_header Cache-Control;
+          add_header Cache-Control "private, no-cache" always;
+          add_header X-Content-Type-Options nosniff;
+        '';
+      };
       locations."/blackvue/assets/" = {
         proxyPass = "http://127.0.0.1:3000/assets/";
         extraConfig = (proxiedServiceHeaders "/blackvue") + blackvueSubstitutions;
@@ -1154,6 +1172,52 @@ in {
       locations."/blackvue/api/" = {
         proxyPass = "http://127.0.0.1:3000/api/";
         extraConfig = (proxiedServiceHeaders "/blackvue") + blackvueSubstitutions;
+      };
+      locations."= /seed-capital" = {
+        return = "302 /seed-capital/";
+      };
+      locations."/seed-capital/" = {
+        proxyPass = "http://127.0.0.1:4317/";
+        extraConfig = ''
+          # The app natively supports this prefix; no fragile JS rewriting.
+          # Preserve the real Origin for the app's trusted-proxy checks.
+          proxy_set_header Host 127.0.0.1:4317;
+          proxy_set_header X-Forwarded-Host $host;
+          proxy_set_header X-Forwarded-Proto $scheme;
+          proxy_set_header X-Forwarded-Prefix /seed-capital;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header Authorization $http_authorization;
+          proxy_buffering off;
+          proxy_cache off;
+          proxy_redirect off;
+          client_max_body_size 64k;
+        '';
+      };
+      locations."= /wikiskill" = {
+        return = "302 /wikiskill/";
+      };
+      locations."/wikiskill/" = {
+        proxyPass = "http://127.0.0.1:4173/";
+        extraConfig = (proxiedServiceHeaders "/wikiskill") + ''
+          # Pages/assets use relative URLs; only live reload needs a prefix.
+          sub_filter_once off;
+          sub_filter_types application/javascript text/javascript;
+          sub_filter "'/__wiki_events'" "'/wikiskill/__wiki_events'";
+          add_header Cache-Control "private, no-cache" always;
+          add_header X-Content-Type-Options nosniff;
+        '';
+      };
+      locations."= /wikiskill/__wiki_events" = {
+        proxyPass = "http://127.0.0.1:4173/__wiki_events";
+        extraConfig = (proxiedServiceHeaders "/wikiskill") + ''
+          proxy_buffering off;
+          proxy_cache off;
+          proxy_read_timeout 1h;
+          add_header Cache-Control "no-store";
+          add_header X-Accel-Buffering no;
+          add_header X-Content-Type-Options nosniff;
+        '';
       };
       locations."= /jellyfin" = {
         return = "302 /jellyfin/";
@@ -1208,4 +1272,6 @@ in {
   };
 
   networking.firewall.allowedTCPPorts = [80 otbrWebPort];
+  # Direct agent access is LAN-only; the existing homepage also proxies it.
+  networking.firewall.interfaces.enp5s0.allowedTCPPorts = [4317];
 }
