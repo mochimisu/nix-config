@@ -1,0 +1,15 @@
+# Wikiskill Syncthing operations
+
+The `wikiskill` send/receive folder is shared only between existing Blackmoon and Gaia devices. Both use real local `/home/brandon/stuff/wikiskill` storage. `wikiskill-sync.nix` adds no device, port, authentication, or service. Obsidian remains unchanged.
+
+Changes are watched continuously with a ten-second settling delay and an hourly fallback scan, not a periodic rsync job. Excluded: Git/Codex/agent metadata, node_modules, generated wiki/dist, exports, automation run directories (including host-specific cursors/queues/results/logs), editor temporaries, and private config/environment directories. Recovery journals, leases and rsync baselines already live outside the corpus. Ordinary source markdown, indexes, source evidence, code and package manifests remain shared. No live database was found outside the excluded runtime directory. Do not put future live database files into shared source directories.
+
+Syncthing propagates deletions. Each receiving host retains up to one million old versions per file with no age expiry in `.stversions`; local edits need separate backups. Conflicts are retained without count limit and require semantic review. Do not ignore or discard sync-conflict files. Preserve both versions and provenance, reconcile into the intended article, check links, and only then resolve the duplicate deliberately. Versions and conflicts can consume disk space.
+
+Syncthing does not honor the wiki writer lease. The lease still serializes local automation; use atomic file replacement for canonical writes, avoid concurrent edits to the same article/index/log across hosts, and review conflicts. Multi-file edits are not distributed transactions. Pause this folder on both devices for a semantic migration or a legacy rsync recovery, never run both engines concurrently.
+
+Before activation: review generated folder settings for both hosts; confirm both live corpus copies and backups; deploy only the new Syncthing folder configuration. The existing Gaia Nix checkout must not be overwritten. A full NixOS switch may include unrelated pending changes and needs separate scope review. Gaia's existing Syncthing identity under /earth must remain intact. No Syncthing restart is needed for a scoped API folder update, but do not read API keys into output.
+
+Dot uses the installed personal skill to delegate searches and edits to connected Blackmoon. That is access to Blackmoon's local corpus, not a cloud filesystem replica or a new Syncthing device.
+
+Live activation on 2026-09-30 added only this folder through the existing local service interface; no restart was required and Obsidian settings remained identical. Gaia completed its scan. Blackmoon is blocked by the existing database minimum-free-space check (0.42% available, 1% required), also affecting Obsidian. Do not lower the safeguard. Free roughly 10.6 GB plus headroom with user-approved cleanup before verifying convergence. Gaia uses overrideFolders=true: a future Gaia rebuild can remove this live API addition until this Blackmoon declaration is safely deployed there.

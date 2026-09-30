@@ -69,3 +69,11 @@
 - Gaia Openclaw now uses HTTPS port 18790 (gateway config, launch flag, firewall, allowed origins, and homepage link). Port 18789 belongs to the traffic.bwang.dev application; do not put Openclaw back on it.
 
 - Gaia disables HM’s `openclawCodexRuntimeProfiles` activation entry: Openclaw hardens Brandon-owned agent directories to 0700, so the separate openclaw config user cannot create profiles there. The explicit app-server command and CODEX_HOME already provide the required Codex runtime. Override the whole HM DAG entry with `lib.mkForce ""`, not its `.data` field.
+
+- Blackmoon enables `programs.steam.remotePlay.openFirewall` in its host configuration. SteamVR’s `cap_sys_nice` setup warning is separate: Steam runs with `NoNewPrivs=1` and an empty capability bounding set in its Nix FHS sandbox, so a root service repeatedly applying setcap does not enable privileged scheduling. Do not add an automatic capability-repair daemon as a streaming fix.
+
+- Blackmoon follows `linuxPackages_xanmod_latest` (7.2.8 at the September 27 change), rather than the unqualified XanMod LTS package. The 7.2 kernel includes `rtw89_8852cu` for Steam Frame USB adapter `28de:2432`; 6.18 did not. Blackmoon overrides the shared NVIDIA beta selection with `nvidiaPackages.stable` (595.104.02): beta 595.45.04 failed on removed `linux/of_gpio.h`, while stable built successfully against XanMod 7.2.8.
+
+- Blackmoon Steam autostart uses `-silent -pipewire`. Its host Home Manager module registers SteamVR via `openxr/1/active_runtime.json` and enables the portal restore-token checkbox. Main monitor is DP-3 (Dell AW3423DW); DP-1 is the rotated secondary. If SteamVR restart hangs with namespace socket errno=98, inspect `/proc/PID/exe`: a surviving vrserver may display a vrwebhelper thread name and hold the socket after normal shutdown.
+
+- Wikiskill folder sharing is declared in `wikiskill-sync.nix` only for Blackmoon/Gaia, using existing Syncthing devices and real local wiki roots. Runtime ingest state stays host-local; do not run legacy rsync apply on an active Syncthing folder. See `docs/wikiskill-sync.md` for conflicts, versions and scoped activation.

@@ -60,6 +60,7 @@
 in {
   imports = [
     ./obsidian-sync.nix
+    ./wikiskill-sync.nix
   ];
 
   # Nix

@@ -67,9 +67,13 @@
       fi
       unavailable_count=0
 
+      # Kitty is transparent, so keep the video visible behind fullscreen terminals.
       fullscreen_on_dp3=0
       if ${config.wayland.windowManager.hyprland.package}/bin/hyprctl -j clients | ${pkgs.jq}/bin/jq -e --argjson monitor "$dp3_id" '
-        any(.[]; .mapped == true and .monitor == $monitor and ((.fullscreen // 0) != 0))
+        any(.[]; .mapped == true and .monitor == $monitor
+          and ((.fullscreen // 0) != 0)
+          and ((.class // "" | ascii_downcase) != "kitty")
+          and ((.initialClass // "" | ascii_downcase) != "kitty"))
       ' >/dev/null; then
         fullscreen_on_dp3=1
       fi
@@ -121,11 +125,19 @@ in {
 
     Service = {
       Type = "exec";
-      ExecStart = "/run/current-system/sw/bin/steam -silent";
+      ExecStart = "/run/current-system/sw/bin/steam -silent -pipewire";
     };
 
     Install.WantedBy = ["graphical-session.target"];
   };
+
+  # Let the portal remember the explicitly approved monitor for Remote Play.
+  wayland.windowManager.hyprland.xdph.settings.screencopy.allow_token_by_default = true;
+
+  # SteamVR's runtime-selection button can fail to create this registration.
+  xdg.configFile."openxr/1/active_runtime.json".source =
+    config.lib.file.mkOutOfStoreSymlink
+    "${config.home.homeDirectory}/.local/share/Steam/steamapps/common/SteamVR/steamxr_linux64.json";
 
   systemd.user.services.blackmoon-cat-wallpaper = {
     Unit = {

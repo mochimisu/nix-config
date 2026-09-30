@@ -35,6 +35,7 @@ in {
   ];
 
   networking.hostName = "blackmoon";
+  programs.steam.remotePlay.openFirewall = true;
   # GeoClue has occasionally alternated between Los Angeles and New York while
   # this stationary desktop is under load, making every local-time display jump
   # by three hours. Keep location-based timezone changes for mobile hosts only.
@@ -45,7 +46,11 @@ in {
     enable = true;
     desktopGovernor = true;
   };
-  boot.kernelPackages = lib.mkForce pkgs.linuxPackages_xanmod;
+  # Follow XanMod main; the unqualified package selects LTS and lacks the
+  # Steam Frame adapter driver on 6.18.
+  boot.kernelPackages = lib.mkForce pkgs.linuxPackages_xanmod_latest;
+  # The shared beta driver (595.45.04) fails against Linux 7.2 headers.
+  hardware.nvidia.package = lib.mkForce config.boot.kernelPackages.nvidiaPackages.stable;
   environment.systemPackages =
     (with pkgs; [
       bolt

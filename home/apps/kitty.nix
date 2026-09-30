@@ -13,6 +13,8 @@ in {
       size = 10;
     };
     settings = {
+      # Let the window manager place new terminals without restoring maximization.
+      remember_window_size = false;
       background_opacity = 0.6;
       # Show a brief trail when the cursor moves to a new location
       cursor_trail = 1;
