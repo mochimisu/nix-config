@@ -30,7 +30,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     catppuccin.url = "github:catppuccin/nix";
-    nix-openclaw.url = "github:openclaw/nix-openclaw";
     matter-layer = {
       url = "github:mochimisu/matter-layer";
       inputs.nixpkgs.follows = "nixpkgs";

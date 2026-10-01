@@ -866,9 +866,6 @@
                   <a class="service-card" href="/matterjs/" data-lan-href="http://${hostName}:${toString matterjsWebPort}/" data-lan-label="Port ${toString matterjsWebPort}" data-wan-href="/matterjs/" data-wan-label="/matterjs">
                     <span class="stock">/matterjs</span><span class="art"><span class="plate"><svg viewBox="0 0 24 24"><path d="M4 12h4"/><path d="M16 12h4"/><path d="M12 4v4"/><path d="M12 16v4"/><circle cx="12" cy="12" r="2.5"/><path d="M7 7l2 2"/><path d="M15 15l2 2"/><path d="M17 7l-2 2"/><path d="M9 15l-2 2"/></svg></span></span><span class="accent automation"></span><span class="service-name">Matter.js</span>
                   </a>
-                  <a class="service-card" href="https://${hostName}:18790/">
-                    <span class="stock">Port 18790</span><span class="art"><span class="plate"><svg viewBox="0 0 24 24"><rect x="5" y="7" width="14" height="10"/><path d="M9 7V4h6v3"/><path d="M9 12h.1M15 12h.1"/><path d="M10 16h4"/></svg></span></span><span class="accent agent"></span><span class="service-name">OpenClaw</span>
-                  </a>
                   <a class="service-card" href="/otbr/" data-lan-href="http://${hostName}:${toString otbrWebPort}/" data-lan-label="Port ${toString otbrWebPort}" data-wan-href="/otbr/" data-wan-label="/otbr">
                     <span class="stock">/otbr</span><span class="art"><span class="plate"><svg viewBox="0 0 24 24"><path d="M12 5v4"/><path d="M12 15v4"/><path d="M5 12h4"/><path d="M15 12h4"/><circle cx="12" cy="12" r="3"/><path d="M6.5 6.5 9 9"/><path d="m15 15 2.5 2.5"/><path d="m17.5 6.5-2.5 2.5"/><path d="m9 15-2.5 2.5"/></svg></span></span><span class="accent sync"></span><span class="service-name">OpenThread BR</span>
                   </a>

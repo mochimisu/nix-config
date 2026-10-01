@@ -86,7 +86,6 @@ in {
     inputs.matter-layer.nixosModules.default
     ./matter-layer
     ./homepage.nix
-    ./openclaw.nix
     ./win11-vfio.nix
   ];
 
@@ -158,8 +157,6 @@ in {
     mediaLocation = "/earth/immich-app";
     accelerationDevices = null;
   };
-
-  services.gaiaOpenclaw.enable = true;
 
   virtualisation.win11Vfio = {
     enable = true;
