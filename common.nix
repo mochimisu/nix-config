@@ -61,6 +61,7 @@ in {
   imports = [
     ./obsidian-sync.nix
     ./wikiskill-sync.nix
+    ./wikiskill-drive.nix
   ];
 
   # Nix
