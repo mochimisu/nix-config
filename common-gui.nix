@@ -76,6 +76,7 @@ in {
     pulseaudio
 
     # Apps
+    (pkgs.callPackage ./pkgs/chatgpt/package.nix {})
     # discord-canary
     # High CPU usage
     # vesktop

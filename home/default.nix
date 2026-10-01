@@ -8,6 +8,7 @@
   isLinux = pkgs.stdenv.isLinux;
   isGui = config.variables.isGui or true;
   isLinuxGui = isLinux && isGui;
+  chatgptUpdater = pkgs.callPackage ../pkgs/chatgpt/update.nix {};
 in {
   home.stateVersion = "24.11";
   catppuccin.autoEnable = false;
@@ -60,7 +61,7 @@ in {
   home.shellAliases = {
     "nix-rs" = "nh os switch ${configsDir}";
     "nix-rsf" = "nh os switch ${configsDir} -- --fast";
-    "nix-up" = "cd ${configsDir} && nix flake update && cd -";
+    "nix-up" = "(cd ${lib.escapeShellArg configsDir} && nix flake update && ${lib.getExe chatgptUpdater})";
     "nixpkgs" = "nix search nixpkgs";
     "nixdir" = "cd ${configsDir}";
     "steam" = "mangohud steam";

@@ -58,6 +58,8 @@
   in {
     packages.x86_64-linux = {
       default = self.nixosConfigurations.oasis.config.system.build.toplevel;
+      chatgpt = pkgsX86Linux.callPackage ./pkgs/chatgpt/package.nix {};
+      update-chatgpt = pkgsX86Linux.callPackage ./pkgs/chatgpt/update.nix {};
 
       gaia-iso = let
         isoSystem = nixpkgs.lib.nixosSystem {
