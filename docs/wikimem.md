@@ -10,9 +10,9 @@ Home activation reconciles only `[mcp_servers.wikimem]` in the mutable Codex con
 
 ## Credentials
 
-Gaia and Blackmoon have separate SOPS-encrypted account keys at `secrets/wikimem-<host>.enc`. Gaia reuses its existing named key; Blackmoon has a separately revocable “Blackmoon Codex (Nix)” key. Each is encrypted to the host's registered SSH-derived age recipient and the existing recovery recipient. Activation decrypts only to `/run/secrets/wikimem`, owned by brandon with mode 0400. Plaintext keys are never evaluated by Nix or copied into the store.
+Gaia, Blackmoon and Oasis have separate SOPS-encrypted account keys at `secrets/wikimem-<host>.enc`. Gaia reuses its existing named key; Blackmoon and Oasis have separately revocable “Blackmoon Codex (Nix)” and “Oasis Codex (Nix)” keys. Oasis was enrolled on 2026-10-04 UTC with read/write scope and expiry 2027-10-04 UTC; recovery-key decryption and authenticated shared-memory reads passed on Gaia, while host decryption awaits its rebuild. Each is encrypted to the host's registered SSH-derived age recipient and the existing recovery recipient. Activation decrypts only to `/run/secrets/wikimem`, owned by brandon with mode 0400. Plaintext keys are never evaluated by Nix or copied into the store.
 
-Glasscastle, Espresso and Oasis have client configuration prepared but still need their own credential enrollment. Their default key path is `~/.config/wikimem/codex.key` until a per-host encrypted file exists. Do not reuse Gaia's or Blackmoon's key. To make enrollment declarative:
+Glasscastle and Espresso have client configuration prepared but still need their own credential enrollment. Their default key path is `~/.config/wikimem/codex.key` until a per-host encrypted file exists. Do not reuse Gaia's or Blackmoon's key. To make enrollment declarative:
 
 1. Create a named read/write key for that computer in Wikimem's authenticated Account → Manage access keys page.
 2. Determine the computer's trusted SSH-host age recipient using `ssh-to-age` on its `/etc/ssh/ssh_host_ed25519_key.pub`. Add a `.sops.yaml` rule for `secrets/wikimem-HOST.enc` with that recipient and the existing recovery recipient.
