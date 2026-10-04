@@ -1,6 +1,10 @@
 {
   description = "my flake";
   inputs = {
+    wikimem-skill = {
+      url = "github:mochimisu/wikimem-skill";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     hyprgrass = {
       # Upstream hyprpm.toml's supported pairing for nixpkgs Hyprland 0.56.2.
@@ -100,6 +104,7 @@
 
     homeModules.home = {
       imports = [
+        inputs.wikimem-skill.homeManagerModules.default
         inputs.nixvim.homeModules.nixvim
         ./home
       ];

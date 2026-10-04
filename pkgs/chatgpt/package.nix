@@ -9,17 +9,17 @@ let
   sources = {
     x86_64-linux = {
       arch = "amd64";
-      hash = "sha256-xGNyfx7V3O14M4yOKmXYib0VMnb/Nz/XdpjMua8y0YE=";
+      hash = "sha256-7nhUFFVUcY1yOdAeo31E9roeC6SpP0esCX1uD5ZNpHw=";
     };
     aarch64-linux = {
       arch = "arm64";
-      hash = "sha256-s8Pzfe38V9ty6BCh3FvnsiWG8LmbfUh1hosGvdhVuoY=";
+      hash = "sha256-pOdoU7AA76nWwyky3dGZc7SimDxx070UTl8rkVHLsWs=";
     };
   };
   source = sources.${stdenv.hostPlatform.system};
 in stdenv.mkDerivation rec {
   pname = "chatgpt";
-  version = "26.928.31416";
+  version = "26.930.41038";
 
   src = fetchurl {
     url = "https://persistent.oaistatic.com/codex-app-prod/linux/deb/pool/main/c/chatgpt/chatgpt_${version}_${source.arch}.deb";

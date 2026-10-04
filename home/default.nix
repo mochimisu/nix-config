@@ -21,6 +21,7 @@ in {
   ];
 
   imports = [
+    ./wikimem.nix
     ../vars.nix
     ./apps/tmux.nix
     ./apps/nixvim

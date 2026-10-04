@@ -134,6 +134,7 @@ in {
       "d /home/brandon/.config/wikiskill 0700 brandon users - -"
       "C /home/brandon/.config/wikiskill/hosts.json 0600 brandon users - ${registry}"
       "d /home/brandon/.agents/skills 0755 brandon users - -"
+    ] ++ lib.optionals (!(config.services.wikimemClient.enable or false)) [
       "L /home/brandon/.agents/skills/wikiskill - brandon users - /home/brandon/plugins/wikiskill/skills/wikiskill"
     ];
     # Compatibility with the current nixpkgs; upstream sops-nix still uses Go 1.25.

@@ -62,6 +62,7 @@ in {
     ./obsidian-sync.nix
     ./wikiskill-sync.nix
     ./wikiskill-drive.nix
+    ./wikimem-client.nix
   ];
 
   # Nix
@@ -250,32 +251,7 @@ in {
       };
     };
 
-    wikiskill-daily-daemon = {
-      description = "wikiskill wiki:daily-daemon";
-      wantedBy = ["multi-user.target"];
-      after = ["network.target"];
-      unitConfig.ConditionPathIsDirectory = wikiskillDir;
-      path = with pkgs; [
-        bash
-        nodejs
-        git
-        coreutils
-      ];
-      serviceConfig = {
-        Type = "simple";
-        User = "brandon";
-        Group = "users";
-        WorkingDirectory = wikiskillDir;
-        ExecStart = "${pkgs.nodejs}/bin/node ${wikiskillDir}/scripts/wiki-daily-daemon.mjs";
-        Restart = "always";
-        RestartSec = 5;
-        SuccessExitStatus = [130 143];
-        TimeoutStopSec = "10s";
-        Environment = [
-          "HOME=/home/brandon"
-        ];
-      };
-    };
+
   };
 
   boot = {
