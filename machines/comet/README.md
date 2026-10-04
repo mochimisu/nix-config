@@ -70,30 +70,60 @@ those services. No accounts, tokens, keys or saved app data are copied.
   `previous-generation`, `rollback-generation`, file manifests and a package list
   preserve the prior state. Earlier SteamOS shell backups also remain below.
 
-## Future updates
+## Checkout and future updates
 
-Activation used a temporary source bundle. GitHub access still needs a Comet
-identity key: its SSH directory had only `authorized_keys`, no `.pub` identity.
-No key was created or GitHub authorization configured. Once access is configured,
-clone the repository to `/home/steamos/stuff/nix-config`, then as steamos run:
+The durable checkout is `/home/steamos/stuff/nix-config`. It was cloned from a
+Blackmoon Git bundle containing the unpushed integration commit, with the actual
+remote preserved as `git@github.com:mochimisu/nix-config.git`. No GitHub push was
+performed. Follow-on Comet-only changes can be transferred by bundle and fast-forwarded
+without rewriting the remote or requiring credentials on Blackmoon.
+
+As steamos, in a login shell, run:
 
 ```sh
 home-manager switch --flake '/home/steamos/stuff/nix-config#steamos@comet'
 ```
 
-For an explicit build/review from that checkout:
+Non-login automation must first put the installer binaries on PATH:
 
 ```sh
-nix build '.#homeConfigurations."steamos@comet".activationPackage' --out-link result-comet
-HOME_MANAGER_BACKUP_EXT=comet-shared-before ./result-comet/activate
+export PATH=/nix/var/nix/profiles/default/bin:$PATH
 ```
 
-Use a fresh backup suffix if a previous backup already exists. Do not use sudo,
-`nixos-rebuild` or `nh os switch` on Comet. The local Blackmoon commit is not pushed
-automatically, so the remote repository may not yet include this target.
-GUI rendering, GPU acceleration, VR app sharing, reboot persistence and OS-update
-survival remain untested. No VPN/network configuration, credentials or system
-security settings were changed.
+Do not use sudo, `nixos-rebuild` or `nh os switch` on Comet. GitHub access is a
+separate setup step: the user-created `~/.ssh/id_ed25519_github` is passphrase
+protected, no agent was available to the SSH automation, and GitHub's host key
+was not yet in Comet's known_hosts. Unlock the key privately with ssh-agent/ssh-add;
+never provide the passphrase in chat. Compare GitHub's host fingerprint with its
+[official documentation](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/githubs-ssh-key-fingerprints)
+before accepting the first connection. No persistent authentication configuration
+was changed by the agent.
+
+## Temporary caffeine command
+
+Comet installs `caffeine` as a small Home Manager package. Existing nixpkgs
+`caffeine-ng` is ARM-compatible but its desktop screensaver/session interfaces
+were absent in Frame's session; it does not use logind. The alternative
+[wlinhibit](https://github.com/einetuer/wlinhibit) is explicitly marked broken by
+its upstream author. Neither was installed just to provide a misleading indicator.
+
+The package wraps the host's existing `/usr/bin/systemd-inhibit`; it does not
+replace systemd, start a service, or change power/security policy:
+
+```sh
+caffeine                    # keep a terminal open; Ctrl-C stops it
+caffeine sleep 3600          # release automatically after one hour
+caffeine nix build .#...     # release when the command exits
+```
+
+It requests only `idle` inhibition, verified to be permitted as steamos without
+sudo. Combined `idle:sleep` inhibition returned `Interactive authentication required`
+and is deliberately not used. The lock ends with the command/process. This blocks
+logind idle handling; it does not promise coverage of Valve's headset auto-suspend,
+manual suspend, low-battery/thermal actions or power-button behavior. A three-second `caffeine sleep 3` test visibly acquired an `idle`/`block` lock
+for steamos and released it when the command exited. No persistent
+inhibitor is left running after verification. GUI rendering, VR app sharing,
+reboot persistence and OS-update survival remain untested.
 
 ## Existing backups and rollback
 
