@@ -28,6 +28,10 @@ in {
   xdg.configFile."obsidian/obsidian.json".force = lib.mkForce false;
   home.packages = shared.sharedApps ++ shared.fonts ++ [caffeine];
   fonts.fontconfig.enable = true;
+  # SteamOS does not add the Nix profile to ncurses lookup paths. The empty
+  # fallback preserves ncurses defaults alongside installed Kitty terminfo.
+  home.sessionVariables.TERMINFO_DIRS =
+    "${config.home.profileDirectory}/share/terminfo:\${TERMINFO_DIRS:-}";
   home.stateVersion = lib.mkForce "26.05";
   programs.tmux.shell = lib.mkForce "${pkgs.zsh}/bin/zsh";
   home.activation.cloneRepo = lib.mkForce (lib.hm.dag.entryAfter ["writeBoundary"] "");
