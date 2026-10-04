@@ -881,8 +881,8 @@
                   <a class="service-card" href="/seed-capital/">
                     <span class="stock">/seed-capital</span><span class="art"><span class="plate"><svg viewBox="0 0 24 24"><path d="M4 20h16M6 16v-4m6 4V8m6 8V4"/><path d="m4 9 6-4 4 2 6-5"/></svg></span></span><span class="accent media"></span><span class="service-name">Seed Capital Lab</span>
                   </a>
-                  <a class="service-card" href="/wikiskill/">
-                    <span class="stock">/wikiskill</span><span class="art"><span class="plate"><svg viewBox="0 0 24 24"><path d="M12 6v14"/><path d="M12 6C9 4 5 4 3 5v14c3-1 6-1 9 1 3-2 6-2 9-1V5c-2-1-6-1-9 1z"/></svg></span></span><span class="accent media"></span><span class="service-name">Wikiskill</span>
+                  <a class="service-card" href="https://wikimem.bwang.dev/">
+                    <span class="stock">wikimem.bwang.dev</span><span class="art"><span class="plate"><svg viewBox="0 0 24 24"><path d="M12 6v14"/><path d="M12 6C9 4 5 4 3 5v14c3-1 6-1 9 1 3-2 6-2 9-1V5c-2-1-6-1-9 1z"/></svg></span></span><span class="accent media"></span><span class="service-name">Wikimem</span>
                   </a>
                   <a class="service-card" href="http://${hostName}:8083/">
                     <span class="stock">Port 8083</span><span class="art"><span class="plate"><svg viewBox="0 0 24 24"><path d="M5 5h11a3 3 0 0 1 3 3v11H8a3 3 0 0 1-3-3z"/><path d="M8 5v11a3 3 0 0 0 3 3"/><path d="M9 9h6"/><path d="M9 12h5"/></svg></span></span><span class="accent media"></span><span class="service-name">Kavita</span>
@@ -1189,31 +1189,6 @@ in {
           proxy_cache off;
           proxy_redirect off;
           client_max_body_size 64k;
-        '';
-      };
-      locations."= /wikiskill" = {
-        return = "302 /wikiskill/";
-      };
-      locations."/wikiskill/" = {
-        proxyPass = "http://127.0.0.1:4173/";
-        extraConfig = (proxiedServiceHeaders "/wikiskill") + ''
-          # Pages/assets use relative URLs; only live reload needs a prefix.
-          sub_filter_once off;
-          sub_filter_types application/javascript text/javascript;
-          sub_filter "'/__wiki_events'" "'/wikiskill/__wiki_events'";
-          add_header Cache-Control "private, no-cache" always;
-          add_header X-Content-Type-Options nosniff;
-        '';
-      };
-      locations."= /wikiskill/__wiki_events" = {
-        proxyPass = "http://127.0.0.1:4173/__wiki_events";
-        extraConfig = (proxiedServiceHeaders "/wikiskill") + ''
-          proxy_buffering off;
-          proxy_cache off;
-          proxy_read_timeout 1h;
-          add_header Cache-Control "no-store";
-          add_header X-Accel-Buffering no;
-          add_header X-Content-Type-Options nosniff;
         '';
       };
       locations."= /jellyfin" = {

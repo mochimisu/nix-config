@@ -72,7 +72,6 @@
     ${pkgs.libvirt}/bin/virsh -c "$uri" start "$name"
   '';
 in {
-  services.wikiskillDrive.enable = true;
 
   imports = [
     ./blackvue-sync.nix

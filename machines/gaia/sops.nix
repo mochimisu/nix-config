@@ -1,8 +1,4 @@
-{
-  inputs,
-  pkgs,
-  ...
-}: let
+{...}: let
   matterEnvFile = ./secrets/matter-env.env;
   teslaUsbSecretsFile = ./secrets/teslausb.yaml;
 in {
@@ -18,12 +14,6 @@ in {
   ];
 
   sops = {
-    # sops-nix's installer still requests Go 1.25, removed by current nixpkgs.
-    # Keep the upstream source, but build it with nixpkgs' supported Go version.
-    package = (import inputs.sops-nix {
-      pkgs = pkgs.extend (_: _: {buildGo125Module = pkgs.buildGoModule;});
-    }).sops-install-secrets;
-
     # Generate once on host:
     #   sudo install -d -m 0700 /var/lib/sops-nix
     #   sudo cp ~/.config/sops/age/keys.txt /var/lib/sops-nix/key.txt

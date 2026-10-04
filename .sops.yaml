@@ -3,14 +3,6 @@ creation_rules:
     key_groups:
       - age:
           - age1frvu2rns8l8ekq64hhej4twvqgu54lcepu2vgw89ggpp4t8tfpkqnmn4eq
-  # Shared Drive grant. Add client age/SSH recipients here, then sops updatekeys.
-  - path_regex: ^secrets/wikiskill-drive\.enc$
-    key_groups:
-      - age:
-          - age1frvu2rns8l8ekq64hhej4twvqgu54lcepu2vgw89ggpp4t8tfpkqnmn4eq
-          - age1rrl7ln5q304rka3y9rwqvxc7yjxcwzgdsv4gzfvqcuysk5xkn96q89muec # blackmoon SSH host key
-          - age1g94ghgrt9wslamjwv6kqd2wnu6d7chtd2d50fva86j80psx4hgpqydmhcr # gaia SSH host key
-
   - path_regex: ^secrets/wikimem-gaia\.enc$
     key_groups:
       - age:

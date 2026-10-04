@@ -46,19 +46,36 @@ in {
         else {
           gaia = devices.gaia;
         };
-      folders.obsidian = {
-        id = "obsidian";
-        label = "Obsidian";
-        path =
-          if isGaia
-          then "/earth/syncthing/obsidian"
-          else "/home/brandon/Obsidian Vault";
-        devices =
-          if isGaia
-          then knownNixosClientNames ++ ["Z Flip 7"]
-          else ["gaia"];
-        inherit ignorePatterns versioning;
-      };
+      # Retain paused migration tombstones so unmanaged legacy folders cannot
+      # resume on clients. Wikimem owns memory; only Obsidian still syncs.
+      folders =
+        lib.optionalAttrs (builtins.elem hostName ["blackmoon" "gaia"]) {
+          wikiskill = {
+            id = "wikiskill";
+            path = "/home/brandon/stuff/wikiskill";
+            paused = true;
+          };
+          wikiskill-plugin = {
+            id = "wikiskill-plugin";
+            path = "/home/brandon/plugins/wikiskill";
+            paused = true;
+          };
+        }
+        // {
+          obsidian = {
+            id = "obsidian";
+            label = "Obsidian";
+            path =
+              if isGaia
+              then "/earth/syncthing/obsidian"
+              else "/home/brandon/Obsidian Vault";
+            devices =
+              if isGaia
+              then knownNixosClientNames ++ ["Z Flip 7"]
+              else ["gaia"];
+            inherit ignorePatterns versioning;
+          };
+        };
     };
   };
 

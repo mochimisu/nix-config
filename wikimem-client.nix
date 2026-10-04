@@ -1,4 +1,4 @@
-{ config, lib, pkgs, inputs, ... }:
+{ config, lib, inputs, ... }:
 let
   cfg = config.services.wikimemClient;
   host = config.networking.hostName;
@@ -24,9 +24,6 @@ in {
         hostNames = [ "gaia" ];
         publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBwbEIcM4xLTzLVcAzy2LDWh/j4u0G7WixFJqwlH2dyb";
       };
-      sops.package = lib.mkDefault (import inputs.sops-nix {
-        pkgs = pkgs.extend (_: _: { buildGo125Module = pkgs.buildGoModule; });
-      }).sops-install-secrets;
       # Upkeep belongs to the service deployment; never restart the legacy local runner.
       systemd.services.wikiskill-daily-daemon.enable = lib.mkForce false;
     }

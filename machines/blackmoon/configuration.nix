@@ -28,7 +28,6 @@
     };
   };
 in {
-  services.wikiskillDrive.enable = true;
 
   imports = [
     ../../nvidia.nix

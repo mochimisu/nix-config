@@ -27,12 +27,7 @@
     ln -s ${pythonEnv}/bin/python3 "$out/bin/python3"
     ln -s ${pythonEnv}/bin/python3 "$out/bin/python"
   '';
-  wikiskillDir = "/home/brandon/stuff/wikiskill";
   isGaia = config.networking.hostName == "gaia";
-  enableWikiskillServices = builtins.elem config.networking.hostName [
-    "gaia"
-    "blackmoon"
-  ];
   gaiaNixCachePublicKey = lib.strings.trim (builtins.readFile ./machines/gaia/nix-cache-pub-key.pem);
   uploadToGaiaNixCacheHook = pkgs.writeShellScript "upload-to-gaia-nix-cache" ''
     set -efu
@@ -60,10 +55,14 @@
 in {
   imports = [
     ./obsidian-sync.nix
-    ./wikiskill-sync.nix
-    ./wikiskill-drive.nix
     ./wikimem-client.nix
   ];
+
+  # sops-nix still requests Go 1.25, removed by current nixpkgs.
+  # Define the compatibility package once for all secret consumers.
+  sops.package = lib.mkDefault (import inputs.sops-nix {
+    pkgs = pkgs.extend (_: _: {buildGo125Module = pkgs.buildGoModule;});
+  }).sops-install-secrets;
 
   # Nix
   nix = {
@@ -222,36 +221,6 @@ in {
     settings = {
       PermitRootLogin = "no";
     };
-  };
-
-  systemd.services = lib.mkIf enableWikiskillServices {
-    wikiskill-dev = {
-      description = "wikiskill wiki:dev";
-      wantedBy = ["multi-user.target"];
-      after = ["network.target"];
-      unitConfig.ConditionPathIsDirectory = wikiskillDir;
-      path = with pkgs; [
-        bash
-        nodejs
-        git
-        coreutils
-      ];
-      serviceConfig = {
-        Type = "simple";
-        User = "brandon";
-        Group = "users";
-        WorkingDirectory = wikiskillDir;
-        ExecStart = "${pkgs.nodejs}/bin/node ${wikiskillDir}/wiki/build.mjs --dev";
-        Restart = "always";
-        RestartSec = 5;
-        TimeoutStopSec = "10s";
-        Environment = [
-          "HOME=/home/brandon"
-        ];
-      };
-    };
-
-
   };
 
   boot = {
