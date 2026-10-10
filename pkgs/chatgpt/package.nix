@@ -3,30 +3,30 @@
 , libgbm, libGL, libnotify, libpulseaudio, libsecret, libusb1, libxcb
 , libxkbcommon, libx11, libxcomposite, libxdamage, libxext, libxfixes, libxrandr
 , nspr, nss, openssl, pango, systemdLibs, tpm2-tss, qt5, qt6
-, vulkan-loader, wayland, xdg-utils, bubblewrap
+, vulkan-loader, wayland, xdg-utils, bubblewrap, python3, nodejs
 }:
 let
   sources = {
     x86_64-linux = {
       arch = "amd64";
-      hash = "sha256-7nhUFFVUcY1yOdAeo31E9roeC6SpP0esCX1uD5ZNpHw=";
+      hash = "sha256-lJjkFxMaJ4vONb//YnXSUsDTMvF6/AMT4LeCdJ9NNIo=";
     };
     aarch64-linux = {
       arch = "arm64";
-      hash = "sha256-pOdoU7AA76nWwyky3dGZc7SimDxx070UTl8rkVHLsWs=";
+      hash = "sha256-6Tger3kzedDwAlAChvxuggrQ+8Jz/5WCaKhJzVAOb/k=";
     };
   };
   source = sources.${stdenv.hostPlatform.system};
 in stdenv.mkDerivation rec {
   pname = "chatgpt";
-  version = "26.930.41038";
+  version = "26.1002.52244";
 
   src = fetchurl {
     url = "https://persistent.oaistatic.com/codex-app-prod/linux/deb/pool/main/c/chatgpt/chatgpt_${version}_${source.arch}.deb";
     inherit (source) hash;
   };
 
-  nativeBuildInputs = [ dpkg autoPatchelfHook makeWrapper wrapGAppsHook3 ];
+  nativeBuildInputs = [ dpkg autoPatchelfHook makeWrapper wrapGAppsHook3 python3 nodejs ];
   buildInputs = [
     alsa-lib at-spi2-core cairo cups dbus expat gdk-pixbuf glib gtk3
     libgbm libGL libnotify libpulseaudio libsecret libusb1 libxcb
@@ -53,6 +53,11 @@ in stdenv.mkDerivation rec {
   installPhase = ''
     runHook preInstall
     mkdir -p "$out/lib" "$out/bin" "$out/share"
+    # Nix-store assets are read-only. Normalize only fresh runtime copies and
+    # the data files the app customizes, preserving executable permissions.
+    node ${./test-bundled-copy.cjs} ${./prepare-bundled-copy.cjs}
+    python ${./patch-bundled-copy.py} \
+      usr/lib/chatgpt/resources/app.asar ${./prepare-bundled-copy.cjs}
     cp -a usr/lib/chatgpt "$out/lib/"
     cp -a usr/share/applications usr/share/pixmaps usr/share/metainfo "$out/share/"
 

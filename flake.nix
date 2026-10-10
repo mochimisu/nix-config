@@ -1,6 +1,8 @@
 {
   description = "my flake";
   inputs = {
+    # Local authoring checkout; pin its content without publishing a repository.
+    gaia-file-dispatch.url = "path:/home/brandon/stuff/gaia-file-dispatch";
     wikimem-skill = {
       url = "github:mochimisu/wikimem-skill";
       inputs.nixpkgs.follows = "nixpkgs";
