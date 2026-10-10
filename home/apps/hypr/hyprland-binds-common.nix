@@ -1,4 +1,4 @@
-{lib, ...}: let
+{lib, config, ...}: let
   lua = lib.generators.mkLuaInline;
 in {
   wayland.windowManager.hyprland.settings = {
@@ -47,7 +47,7 @@ in {
       {_args = [(lua "mod .. \" + f\"") (lua "hl.dsp.window.float({ action = \"toggle\" })")];}
 
       #lock
-      {_args = [(lua "mod .. \" + L\"") (lua "hl.dsp.exec_cmd(\"hyprlock\")")];}
+      {_args = [(lua "mod .. \" + L\"") (lua (if config.variables.nestedDesktop or false then "hl.dsp.exec_cmd(\"true\")" else "hl.dsp.exec_cmd(\"hyprlock\")"))];}
 
       # launcher
       {_args = [(lua "mod .. \" + space\"") (lua "hl.dsp.exec_cmd(menu)")];}

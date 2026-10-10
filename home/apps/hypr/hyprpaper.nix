@@ -32,6 +32,12 @@ in
       monitor = HDMI-A-1
       path = ${config.home.homeDirectory}/.config/hypr/turquoiseTree.jpg
     }
+    ${pkgs.lib.optionalString (config.variables.nestedDesktop or false) ''
+    wallpaper {
+      monitor =
+      path = ${config.home.homeDirectory}/.config/hypr/dusk.jpg
+    }
+    ''}
     ${variables.hyprpaper-config or ""}
     '';
 }

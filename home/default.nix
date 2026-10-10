@@ -5,9 +5,6 @@
   ...
 }: let
   configsDir = "${config.home.homeDirectory}/stuff/nix-config";
-  isLinux = pkgs.stdenv.isLinux;
-  isGui = config.variables.isGui or true;
-  isLinuxGui = isLinux && isGui;
   chatgptUpdater = pkgs.callPackage ../pkgs/chatgpt/update.nix {};
 in {
   home.stateVersion = "24.11";
@@ -28,16 +25,6 @@ in {
     ./apps/zsh
     ./apps/kitty.nix
 
-    # status bar, choose one
-    # ./apps/hyprpanel.nix # customization not as deep as id like
-    # ./apps/waybar # horizontal only
-    ./apps/quickshell
-
-    # notification manager
-    # (don't need with hyprpanel)
-    # ./apps/dunst.nix
-    ./apps/mako.nix
-
     # Application launcher, choose one
     ./apps/rofi.nix
     # ./apps/walker.nix # daemon mode broken, too slow otherwise
@@ -49,7 +36,7 @@ in {
     git = {
       enable = true;
       signing.format = "openpgp";
-      settings = {
+      settings = lib.mkIf (config.variables.gitIdentity or true) {
         user.name = "mochimisu";
         user.email = "brandonwang@me.com";
       };
@@ -68,59 +55,6 @@ in {
     "steam" = "mangohud steam";
   };
 
-  xdg.mimeApps = lib.mkIf isLinuxGui {
-    enable = true;
-    defaultApplications = {
-      "x-scheme-handler/http" = "chromium.desktop";
-      "x-scheme-handler/https" = "chromium.desktop";
-      "text/html" = "chromium.desktop";
-    };
-  };
-
-  # Dark mode
-  dconf.settings = lib.mkIf isLinuxGui {
-    "org/gnome/desktop/interface" = {
-      color-scheme = "prefer-dark";
-    };
-  };
-
-  gtk = lib.mkIf isLinuxGui {
-    enable = true;
-    gtk4.theme = config.gtk.theme;
-    gtk3.extraConfig = {
-      "gtk-application-prefer-dark-theme" = "1";
-    };
-
-    gtk4.extraConfig = {
-      "gtk-application-prefer-dark-theme" = "1";
-    };
-  };
-
-  # per-app translucency
-  xdg.configFile."gtk-3.0/gtk.css" = lib.mkIf isLinuxGui {
-    source = builtins.toFile "gtk.css" ''
-      .thunar .sidebar .view {
-        background-color: rgba(0,0,0,0.3);
-      }
-      .thunar .standard-view .view {
-        background-color: rgba(0,0,0,0.2);
-      }
-      .thunar toolbar {
-        background-color: rgba(0,0,0,0.1);
-      }
-      .thunar,
-      .thunar menubar,
-      .thunar .shortcuts-pane
-      {
-        background-color: rgba(0,0,0,0.5);
-      }
-      .thunar toolbar > * > * > * > *
-      {
-        background-color: rgba(0,0,0,0.3);
-      }
-    '';
-  };
-
   home.activation = {
     cloneRepo = lib.hm.dag.entryAfter ["writeBoundary"] ''
       set -e
@@ -130,16 +64,5 @@ in {
         ${pkgs.git}/bin/git clone https://github.com/mochimisu/nix-config.git ${configsDir} || true
       fi
     '';
-  };
-
-  xdg.desktopEntries = lib.mkIf isLinuxGui {
-    "xivlauncher-rb" = {
-      name = "XIVLauncher-RB";
-      icon = "xivlauncher";
-      exec = "sh -c \"SDL_VIDEODRIVER=wayland XIVLauncher.Core\"";
-      terminal = false;
-      type = "Application";
-      categories = ["Game"];
-    };
   };
 }

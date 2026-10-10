@@ -85,6 +85,7 @@ in {
     inputs.matter-layer.nixosModules.default
     ./matter-layer
     ./homepage.nix
+    ./file-dispatch.nix
     ./win11-vfio.nix
   ];
 

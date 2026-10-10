@@ -5,28 +5,6 @@
   lib,
   ...
 }: let
-  codexBase = inputs.codex-cli-nix.packages.${pkgs.stdenv.hostPlatform.system}.default;
-  codexCli = pkgs.symlinkJoin {
-    name = "codex-cli-with-zlib";
-    paths = [codexBase];
-    nativeBuildInputs = [pkgs.makeWrapper];
-    postBuild = ''
-      if [ -f "$out/bin/codex" ]; then
-        wrapProgram "$out/bin/codex" --prefix LD_LIBRARY_PATH : ${pkgs.zlib}/lib
-      fi
-      if [ -f "$out/bin/codex-raw" ]; then
-        wrapProgram "$out/bin/codex-raw" --prefix LD_LIBRARY_PATH : ${pkgs.zlib}/lib
-      fi
-    '';
-  };
-  pythonEnv = pkgs.python3.withPackages (ps: [
-    ps.websockets
-  ]);
-  pythonCli = pkgs.runCommand "python-cli" {} ''
-    mkdir -p "$out/bin"
-    ln -s ${pythonEnv}/bin/python3 "$out/bin/python3"
-    ln -s ${pythonEnv}/bin/python3 "$out/bin/python"
-  '';
   isGaia = config.networking.hostName == "gaia";
   gaiaNixCachePublicKey = lib.strings.trim (builtins.readFile ./machines/gaia/nix-cache-pub-key.pem);
   uploadToGaiaNixCacheHook = pkgs.writeShellScript "upload-to-gaia-nix-cache" ''
@@ -120,39 +98,7 @@ in {
   };
 
   # Packages
-  environment.systemPackages = with pkgs; [
-    dhcpcd
-    networkmanager
-    tailscale
-    cloudflare-warp
-    neovim
-    ripgrep
-    wget
-    git
-    fastfetch
-
-    fzf
-    nodejs
-    pythonCli
-    openssh
-    lm_sensors
-    jq
-    rclone
-    sops
-    proton-pass-cli
-
-    fx
-    unzip
-    unrar
-    zlib
-    sshfs
-    lf
-
-    pulsemixer
-    spotify-player
-    # Codex CLI needs zlib at runtime for libz.so.1.
-    codexCli
-  ];
+  environment.systemPackages = (import ./common-packages.nix {inherit pkgs inputs;}).base;
 
   programs = {
     git.enable = true;

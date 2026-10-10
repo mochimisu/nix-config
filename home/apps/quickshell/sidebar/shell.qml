@@ -16,6 +16,7 @@ ShellRoot {
     id: root
 
     // ----- Config injected from Nix -----
+    readonly property bool sessionControlsEnabled: @sessionControlsEnabled@
     property var sidebarScreens: @sidebarScreensJson@
     readonly property string hostName: "@hostName@"
     readonly property bool pttEnabled: "@pttStateFile@" !== ""
@@ -244,6 +245,7 @@ ShellRoot {
     }
 
     function setPowerProfile(profile) {
+        if (!sessionControlsEnabled) return;
         if (profile === PowerProfile.Performance && !PowerProfiles.hasPerformanceProfile) {
             return;
         }
@@ -262,11 +264,13 @@ ShellRoot {
     }
 
     function adjustBrightness(delta) {
+        if (!sessionControlsEnabled) return;
         const op = delta > 0 ? "5%+" : "5%-";
         Quickshell.execDetached(["brightnessctl", "set", op]);
     }
 
     function toggleWifi() {
+        if (!sessionControlsEnabled) return;
         if (!Networking.wifiHardwareEnabled) {
             return;
         }
@@ -275,11 +279,13 @@ ShellRoot {
     }
 
     function lockSession() {
+        if (!sessionControlsEnabled) return;
         controlCenterPopup.visible = false;
         Quickshell.execDetached(["hyprlock"]);
     }
 
     function beginPowerAction(label, command) {
+        if (!sessionControlsEnabled) return;
         controlCenterPopup.visible = false;
         root.powerActionLabel = label;
         root.pendingPowerCommand = command;
@@ -1344,7 +1350,8 @@ ShellRoot {
 
                             Row {
                                 width: parent.width
-                                height: 28
+                                visible: root.sessionControlsEnabled
+                                height: visible ? 28 : 0
                                 spacing: 6
 
                                 Rectangle {
@@ -1410,7 +1417,8 @@ ShellRoot {
 
                             Row {
                                 width: parent.width
-                                height: 28
+                                visible: root.sessionControlsEnabled
+                                height: visible ? 28 : 0
                                 spacing: 6
 
                                 Rectangle {

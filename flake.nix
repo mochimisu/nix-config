@@ -1,6 +1,8 @@
 {
   description = "my flake";
   inputs = {
+    # Local authoring checkout; pin its content without publishing a repository.
+    gaia-file-dispatch.url = "path:/home/brandon/stuff/gaia-file-dispatch";
     wikimem-skill = {
       url = "github:mochimisu/wikimem-skill";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -111,11 +113,25 @@
     };
 
     homeConfigurations = {
+      "steamos@comet" = home-manager.lib.homeManagerConfiguration {
+        pkgs = import nixpkgs {
+          system = "aarch64-linux";
+          config.allowUnfree = true;
+        };
+        extraSpecialArgs = {inherit inputs;};
+        modules = [
+          inputs.catppuccin.homeModules.catppuccin
+          self.homeModules.home
+          ./machines/comet/home.nix
+        ];
+      };
+
       brandon = home-manager.lib.homeManagerConfiguration {
         pkgs = pkgsX86Linux;
         modules = [
           inputs.catppuccin.homeModules.catppuccin
           self.homeModules.home
+          ./home/desktop.nix
           {
             home.username = "brandon";
             home.homeDirectory = "/home/brandon";
@@ -139,6 +155,7 @@
                 inputs.catppuccin.homeModules.catppuccin
                 ./machines/oai-dev/home
                 self.homeModules.home
+                ./home/desktop.nix
               ];
             };
           }
@@ -157,6 +174,7 @@
           ./boot-efi.nix
           ./common.nix
           ./common-gui.nix
+          ./desktop.nix
           ./common-gaming.nix
           home-manager.nixosModules.home-manager
           {
@@ -167,6 +185,7 @@
                 inputs.catppuccin.homeModules.catppuccin
                 ./machines/glasscastle/home.nix
                 self.homeModules.home
+                ./home/desktop.nix
               ];
             };
           }
@@ -182,6 +201,7 @@
           ./boot-efi.nix
           ./common.nix
           ./common-gui.nix
+          ./desktop.nix
           ./common-gaming.nix
           home-manager.nixosModules.home-manager
           {
@@ -192,6 +212,7 @@
                 inputs.catppuccin.homeModules.catppuccin
                 ./machines/espresso/home.nix
                 self.homeModules.home
+                ./home/desktop.nix
               ];
             };
           }
@@ -207,6 +228,7 @@
           ./boot-efi.nix
           ./common.nix
           ./common-gui.nix
+          ./desktop.nix
           ./common-gaming.nix
           home-manager.nixosModules.home-manager
           {
@@ -217,6 +239,7 @@
                 inputs.catppuccin.homeModules.catppuccin
                 ./machines/blackmoon/home
                 self.homeModules.home
+                ./home/desktop.nix
               ];
             };
           }
@@ -232,6 +255,7 @@
           ./boot-efi.nix
           ./common.nix
           ./common-gui.nix
+          ./desktop.nix
           ./common-gaming.nix
           home-manager.nixosModules.home-manager
           {
@@ -242,6 +266,7 @@
                 inputs.catppuccin.homeModules.catppuccin
                 ./machines/oasis/home
                 self.homeModules.home
+                ./home/desktop.nix
               ];
             };
           }
@@ -266,6 +291,7 @@
                 inputs.catppuccin.homeModules.catppuccin
                 ./machines/gaia/home
                 self.homeModules.home
+                ./home/desktop.nix
               ];
             };
           }

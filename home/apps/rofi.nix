@@ -188,6 +188,10 @@ in {
     packages = with pkgs; [
       (writeShellScriptBin "rofi-toggle" ''
         #!/usr/bin/env bash
+        ${lib.optionalString (variables.nestedDesktop or false) ''
+          # Never toggle/kill a launcher belonging to the outer desktop.
+          exec rofi-touch "$@"
+        ''}
         if pgrep -x rofi > /dev/null; then
           pkill rofi
         else

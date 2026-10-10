@@ -878,6 +878,11 @@
                   <a class="service-card" href="/jellyfin/" data-lan-href="http://${hostName}:8096/" data-lan-label="Port 8096" data-wan-href="/jellyfin/" data-wan-label="/jellyfin">
                     <span class="stock">/jellyfin</span><span class="art"><span class="plate"><svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="1"/><path d="m10 10 5 2-5 2z"/><path d="M7 21h10"/><path d="M12 18v3"/></svg></span></span><span class="accent media"></span><span class="service-name">Jellyfin</span>
                   </a>
+                  ${lib.optionalString config.services.gaiaMedia.enable ''
+                  <a class="service-card" href="https://gaia.bwang.dev/media/">
+                    <span class="stock">/media · private</span><span class="art"><span class="plate"><svg viewBox="0 0 24 24"><path d="M3 7h7l2 2h9v11H3z"/><path d="M12 11v6m-3-3 3 3 3-3"/></svg></span></span><span class="accent transfer"></span><span class="service-name">File Dispatch</span>
+                  </a>
+                  ''}
                   <a class="service-card" href="/seed-capital/">
                     <span class="stock">/seed-capital</span><span class="art"><span class="plate"><svg viewBox="0 0 24 24"><path d="M4 20h16M6 16v-4m6 4V8m6 8V4"/><path d="m4 9 6-4 4 2 6-5"/></svg></span></span><span class="accent media"></span><span class="service-name">Seed Capital Lab</span>
                   </a>

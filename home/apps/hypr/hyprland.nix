@@ -1,4 +1,5 @@
-{lib, ...}: let
+{lib, config, ...}: let
+  nestedDesktop = config.variables.nestedDesktop or false;
   lua = lib.generators.mkLuaInline;
 in {
   wayland.windowManager.hyprland = {
@@ -15,8 +16,8 @@ in {
             "hyprland.start"
             (lua ''
               function()
+                ${lib.optionalString (!nestedDesktop) ''
                 hl.exec_cmd("gnome-keyring-daemon --start --components=pkcs11,secrets,ssh,gpg")
-                hl.exec_cmd("hyprpaper")
                 hl.exec_cmd("nm-applet")
                 hl.exec_cmd("sleep 2 && blueman-applet")
                 hl.exec_cmd("sleep 2 && blueman-tray")
@@ -24,6 +25,8 @@ in {
                 hl.exec_cmd("walker --gapplication-service")
                 hl.exec_cmd("wl-paste --type text --watch cliphist store")
                 hl.exec_cmd("wl-paste --type image --watch cliphist store")
+                ''}
+                hl.exec_cmd("hyprpaper")
               end
             '')
           ];
