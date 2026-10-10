@@ -13,19 +13,19 @@ import tempfile
 
 # Match this complete upstream helper, including its final .mcp.json write.
 # Never replace the similar cp calls used by other plugin installation paths.
-EXECUTOR_COPY = "await v.default.cp(n.cwd,e,{recursive:!0})"
+EXECUTOR_COPY = "await x.default.cp(n.cwd,e,{recursive:!0})"
 EXECUTOR_HELPER = (
-    "async function Gc({executorPluginRoot:e,resourcesPath:t}){"
-    "let n=await qc({useWsl:!1,resourcesPath:t});return n==null?null:("
+    "async function Zc({executorPluginRoot:e,resourcesPath:t}){"
+    "let n=await $c({useWsl:!1,resourcesPath:t});return n==null?null:("
     + EXECUTOR_COPY +
-    ",process.platform!==`win32`&&(n.command=b.default.join(e,"
-    "b.default.relative(n.cwd,n.command))),n.cwd=e,n.enabled=!0,"
-    "n.env={...n.env,CODEX_APP_TOOLS_CALLER_HOST_ID:r.En},"
-    "await v.default.writeFile(b.default.join(e,`.mcp.json`),"
+    ",process.platform!==`win32`&&(n.command=C.default.join(e,"
+    "C.default.relative(n.cwd,n.command))),n.cwd=e,n.enabled=!0,"
+    "n.env={...n.env,CODEX_APP_TOOLS_CALLER_HOST_ID:r.ki},"
+    "await x.default.writeFile(C.default.join(e,`.mcp.json`),"
     "`${JSON.stringify({mcpServers:{codex_app:n}},null,2)}\\n`,`utf8`),e)}"
 )
 EXECUTOR_REPLACEMENT = (
-    "await codexNixCopyExecutorPlugin({fs:v.default,path:b.default,"
+    "await codexNixCopyExecutorPlugin({fs:x.default,path:C.default,"
     "sourceRoot:n.cwd,pluginRoot:e})"
 )
 
@@ -76,11 +76,11 @@ def main(archive, helper):
     if any(helper_text.count("async function " + name + "(") != 1 for name in (
             "codexNixPrepareBundledCopy", "codexNixCopyExecutorPlugin")):
         raise ValueError("Expected both permission helper definitions exactly once")
-    copy_call = "await kne(n,r),await nne({"
-    replacement = ("await kne(n,r),await codexNixPrepareBundledCopy({"
-                   "fs:v.default,path:b,pluginRoot:r,pluginName:t.name,"
-                   "computerUseAudioEnabled:t.name===`computer-use`&&Eo()}),await nne({")
-    definition = "async function nne(e){"
+    copy_call = "await Qne(n,r),await Tne({"
+    replacement = ("await Qne(n,r),await codexNixPrepareBundledCopy({"
+                   "fs:x.default,path:C,pluginRoot:r,pluginName:t.name,"
+                   "computerUseAudioEnabled:t.name===`computer-use`&&jo()}),await Tne({")
+    definition = "async function Tne(e){"
     with archive.open("rb") as src:
         index, body_start = header(src)
         candidates = [(p, e) for p, e in entries(index)
@@ -125,16 +125,16 @@ def main(archive, helper):
         if text.count(copy_call) != 1 or text.count(definition) != 1:
             raise ValueError("Upstream copy/customization code changed; review patch")
         if (text.count(EXECUTOR_HELPER) != 1 or
-                text.count("async function Gc(") != 1):
+                text.count("async function Zc(") != 1):
             raise ValueError("Upstream executor copy helper changed; review patch")
         # Guard the narrow mutation paths that determine the writable-file list.
         expected = [
-            'e.pluginName===`computer-use`&&Eo()',
+            'e.pluginName===`computer-use`&&jo()',
             'e.pluginName===`visualize`',
             '(e.pluginRoot,`skills`,`computer-use`,`SKILL.md`)',
             '(e.pluginRoot,`.codex-plugin`,`plugin.json`)',
         ]
-        customization = text.split(definition, 1)[1].split("var Do=", 1)[0]
+        customization = text.split(definition, 1)[1].split("var Mo=", 1)[0]
         if any(fragment not in customization for fragment in expected):
             raise ValueError("Upstream customization targets changed; review patch")
         patched = text.replace(copy_call, replacement).replace(
