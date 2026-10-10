@@ -11,6 +11,8 @@ _: {
             bind u join-pane -s !
             set -g default-terminal "tmux-256color"
             set -ga terminal-overrides ",xterm-kitty:RGB"
+            # Forward application OSC 52 copies through SSH to the client clipboard.
+            set -s set-clipboard on
 
       # status bar (powerline style)
             set -g status-bg colour236

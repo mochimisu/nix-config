@@ -18,3 +18,8 @@ creation_rules:
       - age:
           - age1frvu2rns8l8ekq64hhej4twvqgu54lcepu2vgw89ggpp4t8tfpkqnmn4eq
           - age1n692uq0djn9n6ppth7ey5jplxqgk0u3num9a95xskezguaj2uqjslsyj03
+  - path_regex: ^secrets/wikimem-oasis\.enc$
+    key_groups:
+      - age:
+          - age1frvu2rns8l8ekq64hhej4twvqgu54lcepu2vgw89ggpp4t8tfpkqnmn4eq
+          - age1mpn7ea5yh0wcf9datjn6rvnfywqhd9drzpfthns4pql6wfnt4desfzvrmd
