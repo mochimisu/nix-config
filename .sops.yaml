@@ -13,3 +13,8 @@ creation_rules:
       - age:
           - age1frvu2rns8l8ekq64hhej4twvqgu54lcepu2vgw89ggpp4t8tfpkqnmn4eq
           - age1rrl7ln5q304rka3y9rwqvxc7yjxcwzgdsv4gzfvqcuysk5xkn96q89muec
+  - path_regex: ^secrets/wikimem-comet\.enc$
+    key_groups:
+      - age:
+          - age1frvu2rns8l8ekq64hhej4twvqgu54lcepu2vgw89ggpp4t8tfpkqnmn4eq
+          - age1n692uq0djn9n6ppth7ey5jplxqgk0u3num9a95xskezguaj2uqjslsyj03

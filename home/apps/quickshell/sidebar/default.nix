@@ -6,6 +6,7 @@
   ...
 }: let
   variables = config.variables or {};
+  nestedDesktop = variables.nestedDesktop or false;
   isLinuxGui = pkgs.stdenv.isLinux && (variables.isGui or true);
   hostName =
     if osConfig != null
@@ -62,6 +63,10 @@
       sleep 0.1
     done
 
+    ${lib.optionalString nestedDesktop ''
+      # Nix Qt's EGL stack is incompatible with Valve's driver on Frame.
+      export QT_QPA_PLATFORM=wayland QT_QUICK_BACKEND=software
+    ''}
     exec ${pkgs.quickshell}/bin/qs -n -d -c sidebar
   '';
   startupCommand = "${startupScript}";
@@ -79,6 +84,7 @@ in {
       ".config/quickshell/sidebar/shell.qml".source = pkgs.replaceVars ./shell.qml {
         sidebarScreensJson = builtins.toJSON sidebarScreens;
         inherit hostName;
+        sessionControlsEnabled = if nestedDesktop then "false" else "true";
         fontSize = variables.ewwSidebarFontSize or "13px";
         iconSize = variables.ewwSidebarIconSize or "16";
         workspaceHeight = quickshellSidebar.workspaceHeight or "18";

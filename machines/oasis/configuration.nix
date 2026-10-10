@@ -4,6 +4,7 @@
   pkgs,
   ...
 }: {
+  imports = [./steam-frame-network.nix];
   networking.hostName = "oasis";
   gaming.performance = {
     enable = true;

@@ -5,12 +5,15 @@ let
   # `palette` now equals the colour set for your chosen flavour
   palette = (lib.importJSON "${sources.palette}/palette.json").${flavor}.colors;
   variables = config.variables or {};
+  nestedDesktop = variables.nestedDesktop or false;
   isLinuxGui = pkgs.stdenv.isLinux && (variables.isGui or true);
 in
 {
 
   services.mako = lib.mkIf isLinuxGui {
     enable = true;
+    # Private nested sessions start Mako directly, without global D-Bus activation.
+    package = lib.mkIf nestedDesktop null;
     
     settings =  {
       "anchor" = "top-right";
@@ -35,6 +38,14 @@ in
       };
     };
   };
+
+  home.packages = lib.mkIf (isLinuxGui && nestedDesktop) [pkgs.mako];
+  xdg.configFile."mako/config".onChange = lib.mkIf nestedDesktop (lib.mkForce "");
+  wayland.windowManager.hyprland.settings.on = lib.mkIf (isLinuxGui && nestedDesktop) (lib.mkAfter [
+    { _args = ["hyprland.start" (lib.generators.mkLuaInline ''
+      function() hl.exec_cmd("${pkgs.mako}/bin/mako") end
+    '')]; }
+  ]);
 
   # Mako owns the notification server; Quickshell only provides the sidebar.
 }

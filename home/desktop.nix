@@ -1,5 +1,6 @@
 # Home Manager desktop/session settings, separate from shared applications.
 {config, pkgs, lib, ...}: let
+  nestedDesktop = config.variables.nestedDesktop or false;
   isLinuxGui = pkgs.stdenv.isLinux && (config.variables.isGui or true);
 in {
   imports = [
@@ -7,12 +8,12 @@ in {
     ./apps/mako.nix
   ];
 
-  programs.zsh.sessionVariables = {
+  programs.zsh.sessionVariables = lib.mkIf (!nestedDesktop) {
     SDL_VIDEODRIVER = "wayland";
     SSH_AUTH_SOCK = lib.optionalString pkgs.stdenv.isLinux "/run/user/$(id -u)/gcr/ssh";
   };
 
-  xdg.mimeApps = lib.mkIf isLinuxGui {
+  xdg.mimeApps = lib.mkIf (isLinuxGui && !nestedDesktop) {
     enable = true;
     defaultApplications = {
       "x-scheme-handler/http" = "chromium.desktop";
@@ -22,7 +23,7 @@ in {
   };
 
   # Dark mode
-  dconf.settings = lib.mkIf isLinuxGui {
+  dconf.settings = lib.mkIf (isLinuxGui && !nestedDesktop) {
     "org/gnome/desktop/interface" = {
       color-scheme = "prefer-dark";
     };
