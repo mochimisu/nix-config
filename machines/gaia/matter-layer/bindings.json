@@ -8,7 +8,7 @@
   "mbrBathroom.toiletLight": { "label": "MBR Bathroom Toilet Light" },
   "mbrBathroom.toiletFan": { "label": "MBR Bathroom Toilet Fan" },
   "mbrBathroom.fan": { "label": "MBR Bathroom Fan" },
-  "mbrBathroom.shower": { "label": "MBR Shower" },
+  "mbrBathroom.shower": { "label": "MBR Shower", "unique_id_env": "MATTER_UID_MBR_SHOWER" },
   "mbrBathroom.dehumidifier": { "label": "MBR Bathroom Right Outlet" },
   "mbrBathroom.mainPresence": { "label": "MBR Bathroom Main Presence" },
   "mbrBathroom.toiletPresence": { "label": "MBR Bathroom Toilet Presence" },
