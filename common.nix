@@ -36,12 +36,6 @@ in {
     ./wikimem-client.nix
   ];
 
-  # sops-nix still requests Go 1.25, removed by current nixpkgs.
-  # Define the compatibility package once for all secret consumers.
-  sops.package = lib.mkDefault (import inputs.sops-nix {
-    pkgs = pkgs.extend (_: _: {buildGo125Module = pkgs.buildGoModule;});
-  }).sops-install-secrets;
-
   # Nix
   nix = {
     package = pkgs.nixVersions.stable;
