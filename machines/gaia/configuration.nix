@@ -5,42 +5,65 @@
   pkgs,
   ...
 }: let
+  # Query the kernel table without resolving paths through a possibly dead FUSE mount.
+  docsMountState = ''
+    MOUNT_DIR=/earth/documents
+    if mount_type="$(${pkgs.util-linux}/bin/findmnt --kernel=mountinfo --nocanonicalize --raw --noheadings --mountpoint "$MOUNT_DIR" --output FSTYPE)"; then
+      if [ "$mount_type" != fuse.gocryptfs ]; then
+        echo "Unexpected filesystem at $MOUNT_DIR; inspect findmnt before proceeding." >&2
+        exit 1
+      fi
+    else
+      status=$?
+      if [ "$status" -ne 1 ]; then
+        echo "Cannot read mount state for $MOUNT_DIR; inspect findmnt before proceeding." >&2
+        exit 1
+      fi
+      mount_type=
+    fi
+  '';
+
   mountDocs = pkgs.writeShellScriptBin "mountdocs" ''
     set -euo pipefail
     # gocryptfs must find the privileged NixOS FUSE helper before package binaries.
     export PATH=${config.security.wrapperDir}:"$PATH"
+    ${docsMountState}
 
-    ENC_DIR=/earth/documents_enc
-    MOUNT_DIR=/earth/documents
-
-    if ! [ -d "$ENC_DIR" ]; then
-      echo "Encrypted directory $ENC_DIR does not exist." >&2
+    if [ -n "$mount_type" ]; then
+      if ${pkgs.coreutils}/bin/timeout --kill-after=1s 5s ${pkgs.coreutils}/bin/stat -L -- "$MOUNT_DIR/." >/dev/null 2>&1; then
+        echo "$MOUNT_DIR is already mounted and responding."
+        exit 0
+      fi
+      echo "$MOUNT_DIR is mounted but unavailable or stale. Close users of the mount, run umountdocs, then retry mountdocs. No mount was changed." >&2
       exit 1
     fi
 
+    ENC_DIR=/earth/documents_enc
+    if ! [ -d "$ENC_DIR" ]; then
+      echo "Encrypted directory $ENC_DIR does not exist or is inaccessible." >&2
+      exit 1
+    fi
     if ! [ -d "$MOUNT_DIR" ]; then
       ${pkgs.coreutils}/bin/install -d -m 0770 "$MOUNT_DIR"
     fi
-
-    if ${pkgs.util-linux}/bin/mountpoint -q "$MOUNT_DIR"; then
-      echo "$MOUNT_DIR is already mounted."
-      exit 0
-    fi
-
     exec ${pkgs.gocryptfs}/bin/gocryptfs "$ENC_DIR" "$MOUNT_DIR" "$@"
   '';
 
   umountDocs = pkgs.writeShellScriptBin "umountdocs" ''
     set -euo pipefail
+    ${docsMountState}
 
-    MOUNT_DIR=/earth/documents
-
-    if ! ${pkgs.util-linux}/bin/mountpoint -q "$MOUNT_DIR"; then
+    if [ -z "$mount_type" ]; then
       echo "$MOUNT_DIR is not currently mounted."
       exit 0
     fi
-
-    exec ${config.security.wrapperDir}/fusermount3 -u "$MOUNT_DIR"
+    if ! ${pkgs.coreutils}/bin/timeout --kill-after=1s 5s ${pkgs.coreutils}/bin/stat -L -- "$MOUNT_DIR/." >/dev/null 2>&1; then
+      echo "$MOUNT_DIR is unavailable or stale; attempting a normal unmount." >&2
+    fi
+    if ! ${config.security.wrapperDir}/fusermount3 -u "$MOUNT_DIR"; then
+      echo "Normal unmount failed. Close processes using $MOUNT_DIR, inspect findmnt, and retry umountdocs. No forced or lazy unmount was attempted." >&2
+      exit 1
+    fi
   '';
 
   win11Restart = pkgs.writeShellScriptBin "win11-restart" ''
