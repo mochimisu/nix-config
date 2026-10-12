@@ -4,7 +4,7 @@ let
   palette = (lib.importJSON "${sources.palette}/palette.json").${flavor}.colors;
 in
 {
-  services.dunst = lib.mkIf pkgs.stdenv.isLinux {
+  services.dunst = lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
     enable = true;
     settings = {
       global = {

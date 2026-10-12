@@ -28,7 +28,7 @@ in {
     text = "";
   };
 
-  xdg.configFile."obsidian/obsidian.json" = lib.mkIf pkgs.stdenv.isLinux {
+  xdg.configFile."obsidian/obsidian.json" = lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
     force = true;
     text = builtins.toJSON {
       vaults.vault = {

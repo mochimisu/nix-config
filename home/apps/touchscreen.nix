@@ -152,7 +152,7 @@ let
   lisgdScrollDown = "1,UD,*,*,P,${lisgdScrollCmd} 1";
   lisgdCommand = "${pkgs.lisgd}/bin/lisgd -d ${lisgdDevice} -t 60 -T 20 -m 1200 -r 20 -g \"${lisgdScrollUp}\" -g \"${lisgdScrollDown}\"";
 in {
-  config = lib.mkIf (pkgs.stdenv.isLinux && enable) (lib.mkMerge [
+  config = lib.mkIf (pkgs.stdenv.hostPlatform.isLinux && enable) (lib.mkMerge [
     {
       home.sessionVariables = lib.mkIf enableScroll {
         YDOTOOL_SOCKET = ydotoolSocket;

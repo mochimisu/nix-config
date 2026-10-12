@@ -6,7 +6,7 @@ let
   palette = (lib.importJSON "${sources.palette}/palette.json").${flavor}.colors;
   variables = config.variables or {};
   nestedDesktop = variables.nestedDesktop or false;
-  isLinuxGui = pkgs.stdenv.isLinux && (variables.isGui or true);
+  isLinuxGui = pkgs.stdenv.hostPlatform.isLinux && (variables.isGui or true);
 in
 {
 
