@@ -81,6 +81,7 @@ in {
     ./sops.nix
     ./teslausb.nix
     ./transmission.nix
+    ./samba.nix
     ./home-assistant
     inputs.matter-layer.nixosModules.default
     ./matter-layer
@@ -126,28 +127,6 @@ in {
     umountDocs
     win11Restart
   ];
-
-  services.samba = {
-    enable = true;
-    openFirewall = true;
-    settings = {
-      global = {
-        "server string" = "gaia samba server";
-        "workgroup" = "WORKGROUP";
-        "map to guest" = "Bad User";
-      };
-      gaia = {
-        path = "/earth";
-        browseable = "yes";
-        "read only" = "no";
-        "guest ok" = "no";
-        "valid users" = "brandon";
-        "force group" = "media";
-        "create mask" = "0664";
-        "directory mask" = "0775";
-      };
-    };
-  };
 
   services.immich = {
     enable = true;

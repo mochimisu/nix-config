@@ -166,14 +166,18 @@
     },
     "gaia-file-dispatch": {
       "locked": {
-        "lastModified": 1791170213,
-        "narHash": "sha256-0rqyuVS2LDZKOfKU9KY/gBrrBcr+Cf/mflDlB/0UFmE=",
-        "path": "/home/brandon/stuff/gaia-file-dispatch",
-        "type": "path"
+        "lastModified": 1791764171,
+        "narHash": "sha256-F4ylZQG5Rg7idvOc3G+nAS2wQmtk+U04U+CUVowITcE=",
+        "owner": "mochimisu",
+        "repo": "file-dispatch",
+        "rev": "ad0637c65b5d6d880040c01046c4c0db97e91e10",
+        "type": "github"
       },
       "original": {
-        "path": "/home/brandon/stuff/gaia-file-dispatch",
-        "type": "path"
+        "owner": "mochimisu",
+        "repo": "file-dispatch",
+        "rev": "ad0637c65b5d6d880040c01046c4c0db97e91e10",
+        "type": "github"
       }
     },
     "home-manager": {

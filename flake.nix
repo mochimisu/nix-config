@@ -1,8 +1,8 @@
 {
   description = "my flake";
   inputs = {
-    # Local authoring checkout; pin its content without publishing a repository.
-    gaia-file-dispatch.url = "path:/home/brandon/stuff/gaia-file-dispatch";
+    # Published File Dispatch source, pinned to the reviewed revision.
+    gaia-file-dispatch.url = "github:mochimisu/file-dispatch/ad0637c65b5d6d880040c01046c4c0db97e91e10";
     wikimem-skill = {
       url = "github:mochimisu/wikimem-skill";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -113,6 +113,16 @@
     };
 
     homeConfigurations = {
+      "deck@cove" = home-manager.lib.homeManagerConfiguration {
+        pkgs = pkgsX86Linux;
+        extraSpecialArgs = {inherit inputs;};
+        modules = [
+          inputs.catppuccin.homeModules.catppuccin
+          self.homeModules.home
+          ./machines/cove/home.nix
+        ];
+      };
+
       "steamos@comet" = home-manager.lib.homeManagerConfiguration {
         pkgs = import nixpkgs {
           system = "aarch64-linux";

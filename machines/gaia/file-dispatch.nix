@@ -1,9 +1,9 @@
 { inputs, ... }:
 {
   imports = [ inputs.gaia-file-dispatch.nixosModules.default ];
-  # Prepared only. Security-sensitive service/proxy/folder activation awaits approval.
+  # Approved media picker, authenticated proxy, and scoped send-only folders.
   services.gaiaMedia = {
-    enable = false;
+    enable = true;
     deviceIds = {
       gaia = "XQIBVXP-GOKDEV5-SZ2JD43-VQTHAFK-XWEQW6R-JZUP7W3-OPG5OJ3-PCEO5AH";
       comet = "JM4ZRHI-OHZXM4I-UPEBQQQ-WNYIN2A-S4HWWMJ-5TXHZGN-YS5NGWN-7FD6KQA";
