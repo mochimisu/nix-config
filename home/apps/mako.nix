@@ -40,7 +40,9 @@ in
   };
 
   home.packages = lib.mkIf (isLinuxGui && nestedDesktop) [pkgs.mako];
-  xdg.configFile."mako/config".onChange = lib.mkIf nestedDesktop (lib.mkForce "");
+  xdg.configFile = lib.mkIf (isLinuxGui && nestedDesktop) {
+    "mako/config".onChange = lib.mkForce "";
+  };
   wayland.windowManager.hyprland.settings.on = lib.mkIf (isLinuxGui && nestedDesktop) (lib.mkAfter [
     { _args = ["hyprland.start" (lib.generators.mkLuaInline ''
       function() hl.exec_cmd("${pkgs.mako}/bin/mako") end
