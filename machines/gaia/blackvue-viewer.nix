@@ -5,6 +5,19 @@
   ...
 }: let
   archiveRoot = "/earth/blackvue";
+  cacheRoot = "/earth/dashcam-viewer-cache";
+  cacheService = {
+    bindsTo = ["earth.mount"];
+    after = ["earth.mount"];
+    unitConfig = {
+      RequiresMountsFor = cacheRoot;
+      AssertPathIsMountPoint = "/earth";
+    };
+    serviceConfig = {
+      CacheDirectory = lib.mkForce [];
+      ReadWritePaths = [cacheRoot];
+    };
+  };
   json = pkgs.formats.json {};
   vehicles = [
     {
@@ -146,9 +159,25 @@ in {
     requires = ["earth.mount" "dashcam-viewer-archive-config.service"];
   };
 
-  systemd.services.dashcam-viewer.serviceConfig.LoadCredential = [
-    "teslausb-status-key:/home/brandon/.ssh/id_ed25519_teslausb"
-  ];
+  # This directory is provisioned by the verified cache migration. Requiring
+  # the mount and existing writable directory prevents fallback onto root.
+  systemd.services.dashcam-viewer = lib.mkMerge [cacheService {
+    environment = {
+      DASHCAM_PROXY_CACHE_ROOT = lib.mkForce "${cacheRoot}/compatible-video";
+      DASHCAM_THUMBNAIL_CACHE_ROOT = lib.mkForce "${cacheRoot}/thumbnails";
+      DASHCAM_BLACK_VIDEO_CACHE_ROOT = lib.mkForce "${cacheRoot}/black-video-analysis";
+    };
+    serviceConfig.LoadCredential = [
+      "teslausb-status-key:/home/brandon/.ssh/id_ed25519_teslausb"
+    ];
+  }];
+  systemd.services.dashcam-viewer-preprocess = lib.mkMerge [cacheService {
+    environment = {
+      DASHCAM_PROXY_CACHE_ROOT = lib.mkForce "${cacheRoot}/compatible-video";
+      DASHCAM_PREPROCESS_PROBE_CACHE_ROOT = lib.mkForce "${cacheRoot}/video-probes";
+      DASHCAM_BLACK_VIDEO_CACHE_ROOT = lib.mkForce "${cacheRoot}/black-video-analysis";
+    };
+  }];
 
   systemd.services.dashcam-viewer-archive-config = {
     description = "Install Dashcam Viewer vehicle metadata and artwork";
