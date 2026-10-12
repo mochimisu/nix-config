@@ -212,7 +212,8 @@ in {
       };
       cmd = [
         "--radio-url"
-        "spinel+hdlc+uart:///dev/ttyACM0?uart-baudrate=460800"
+        # Match Home Assistant's ZBT-2 Thread setup: 460800 baud with RTS/CTS.
+        "spinel+hdlc+uart:///dev/ttyACM0?uart-baudrate=460800&uart-flow-control"
       ];
       volumes = [
         "/earth/home-assistant/otbr:/data"
