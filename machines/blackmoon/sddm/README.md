@@ -1,10 +1,11 @@
 # Blackmoon greeter and media cards
 
 This branch opts Blackmoon into `sekai-blackmoon`, a small Qt 6 SDDM theme.
-It reuses the desktop's pinned `dusk.jpg` fallback through a store path, so it
-is available before the user's home/session opens. No new wallpaper download
-or animated-login dependency is introduced. The palette comes from
-`home/theme/sekai-palette.json`.
+The background is wallpaper-free: a cream surface, two quiet pastel corner
+circles and a subtle separator are drawn directly in QML. The login card and
+outlined mint clock establish the hierarchy. No image asset, wallpaper setting
+or Home Manager wallpaper dependency is included in the SDDM theme. The palette
+comes from `home/theme/sekai-palette.json`.
 
 The existing SDDM 0.21.0 Qt 6 package and X11 display-server selection remain.
 Only the theme selection/package changes: PAM, account policy, autologin,
@@ -38,6 +39,10 @@ cream/pastel surfaces, 32px icons, bold headings and padded rounded corners.
 The OSD includes local outlined SVG icons and Mako's supported value fill;
 Mako does not implement entry animation or the sidebar's nested inset border.
 No notification-stack replacement is included.
+
+The wallpaper-free refinement changes only background geometry and clock/card
+colors. Session/login handlers, control sizing and keyboard navigation remain
+unchanged. Actual SDDM test-mode previews were repeated at both sizes.
 
 ## Validation and deployment
 

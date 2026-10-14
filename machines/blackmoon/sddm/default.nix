@@ -1,10 +1,7 @@
-{config, lib, pkgs, ...}: let
+{lib, pkgs, ...}: let
   p = lib.importJSON ../../../home/theme/sekai-palette.json;
-  # Reuse the desktop's pinned static fallback; accessible before user login.
-  wallpaper = config.home-manager.users.brandon.home.file.".config/hypr/dusk.jpg".source;
   settings = pkgs.writeText "sekai-sddm.conf" (lib.generators.toINI {} {
     General = {
-      Background = toString wallpaper;
       Font = "Montserrat";
       Ink = p.ink; Muted = p.muted; Surface = p.surface;
       Mint = p.mint; Lavender = p.lavender; Pink = p.pink; Urgent = p.urgent;

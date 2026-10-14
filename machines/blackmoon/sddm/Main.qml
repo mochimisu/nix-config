@@ -6,7 +6,7 @@ import QtQuick.Layouts
 Rectangle {
     id: root
     width: 1280; height: 800
-    color: config.Ink
+    color: config.Surface
     property date now: new Date()
     property bool busy: false
     property string message: ""
@@ -37,8 +37,27 @@ Rectangle {
         function onLoginSucceeded() { root.message = qsTr("Starting your session…"); }
         function onInformationMessage(message) { root.message = message; }
     }
-    Image { anchors.fill: parent; source: config.Background; fillMode: Image.PreserveAspectCrop; mipmap: true }
-    Rectangle { anchors.fill: parent; color: "#3828585c" }
+    // Quiet native geometry: no image asset, network request or wallpaper dependency.
+    Item {
+        anchors.fill: parent
+        clip: true
+        Rectangle {
+            width: Math.min(root.width * 0.55, 680); height: width; radius: width / 2
+            x: root.width - width * 0.58; y: -height * 0.58
+            color: config.Lavender; opacity: 0.55
+        }
+        Rectangle {
+            width: Math.min(root.width * 0.62, 760); height: width; radius: width / 2
+            x: -width * 0.5; y: root.height - height * 0.3
+            color: config.Mint; opacity: 0.35
+        }
+        Rectangle {
+            visible: !root.compact
+            x: root.width * 0.46; y: root.height * 0.32
+            width: 1; height: root.height * 0.36
+            color: config.Ink; opacity: 0.12
+        }
+    }
 
     component Card: Rectangle {
         color: config.Surface; radius: 24; border.width: 2; border.color: config.Ink
@@ -104,11 +123,11 @@ Rectangle {
             ColumnLayout {
                 Layout.fillWidth: true; Layout.alignment: Qt.AlignVCenter
                 spacing: 10
-                Label { text: "BLACKMOON"; font.bold: true; font.letterSpacing: 5; color: "white" }
+                Label { text: "BLACKMOON"; font.bold: true; font.letterSpacing: 5; color: config.Ink }
                 Text {
                     text: Qt.formatTime(root.now, "hh:mm")
                     font.family: config.Font; font.pixelSize: root.compact ? 64 : Math.min(132, root.width / 11)
-                    font.bold: true; color: config.Surface; style: Text.Outline; styleColor: config.Ink
+                    font.bold: true; color: config.Mint; style: Text.Outline; styleColor: config.Ink
                     renderType: Text.CurveRendering
                 }
                 Card {
@@ -117,6 +136,7 @@ Rectangle {
                 }
             }
             Card {
+                color: "#fcfdfb"
                 Layout.preferredWidth: 420; Layout.maximumWidth: 460
                 Layout.fillWidth: true; Layout.alignment: Qt.AlignHCenter
                 implicitHeight: form.implicitHeight + 48
