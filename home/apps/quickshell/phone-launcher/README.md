@@ -39,3 +39,12 @@ Offscreen validation covers transformed pointer selection as well as search,
 keyboard navigation and launch signals. Actual compositor focus and output
 placement still require a live trial. The animation preview uses offscreen
 icons, which can fall back to initials when platform icon themes are unavailable.
+
+The revised presentation leans the opposite way (+22° around Y, +5° around Z),
+with a matching reversed entrance. A stepped rear chassis, highlighted rim,
+inset screen border and seven faint shadow silhouettes add thickness using
+ordinary QtQuick rectangles. Flat mode also removes these depth layers.
+Exit scaling now shares the 180ms rotation timing to keep the shadow inside
+its panel. Sixty nonempty captured frames across normal and compact entrance/
+exit sequences passed pixel-bound checks; transformed clicks and keyboard
+regressions passed, including flat-mode clicking.

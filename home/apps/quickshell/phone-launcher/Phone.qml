@@ -6,6 +6,7 @@ FocusScope {
     id: phone
     signal dismissed()
     signal launchRequested(var app)
+    property bool depth: true
     property alias query: search.text
     readonly property var results: DesktopEntries.applications.values.filter(app => {
         const terms = search.text.trim().toLowerCase().split(/\s+/);
@@ -29,18 +30,59 @@ FocusScope {
     }
     Keys.onEscapePressed: dismissed()
 
+    // Layered low-opacity silhouettes soften the shadow without a blur pass.
+    Repeater {
+        model: phone.depth ? 7 : 0
+        Rectangle {
+            required property int index
+            x: 10 - index * 2
+            y: 15 - index * 2
+            width: phone.width - 4 + index * 4
+            height: phone.height - 8 + index * 4
+            radius: 37 + index * 2
+            color: "#183b42"
+            opacity: 0.025
+        }
+    }
+    // The offset rear shell and stepped rim expose a restrained side wall.
+    Rectangle {
+        visible: phone.depth
+        x: 14; y: 11
+        width: phone.width - 12; height: phone.height - 12
+        radius: 36
+        color: "#183d43"
+        border.color: "#123139"
+        border.width: 1
+        Rectangle {
+            x: parent.width - 3; y: 120
+            width: 3; height: 45; radius: 1.5
+            color: "#658d8e"
+        }
+    }
+    Rectangle {
+        visible: phone.depth
+        x: 10; y: 8
+        width: phone.width - 12; height: phone.height - 12
+        radius: 36
+        color: "#47767a"
+        border.color: "#91b4b3"
+        border.width: 1
+    }
+
     Rectangle {
         anchors.fill: parent
         anchors.margins: 6
         radius: 36
         color: phone.ink
+        border.width: phone.depth ? 1 : 0
+        border.color: "#b7d9d4"
         Rectangle {
             anchors.fill: parent
-            anchors.margins: 5
+            anchors.margins: phone.depth ? 6 : 5
             radius: 31
             color: "#f8fcfa"
             border.width: 2
-            border.color: phone.mint
+            border.color: phone.depth ? "#86b8b2" : phone.mint
         }
         Rectangle {
             width: 92; height: 17; radius: 9

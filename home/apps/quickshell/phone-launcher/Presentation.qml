@@ -31,6 +31,7 @@ Item {
     Phone {
         id: phone
         objectName: "phone"
+        depth: !stage.flat
         width: Math.min(392, stage.width - 100)
         height: Math.min(640, stage.height - 100)
         anchors.centerIn: parent
@@ -41,18 +42,18 @@ Item {
             Rotation {
                 origin.x: phone.width / 2; origin.y: phone.height / 2
                 axis { x: 0; y: 1; z: 0 }
-                angle: stage.flat ? 0 : (stage.opened ? -22 : -64)
+                angle: stage.flat ? 0 : (stage.opened ? 22 : 64)
                 Behavior on angle { NumberAnimation { duration: stage.closing ? 180 : 420; easing.type: Easing.OutCubic } }
             },
             Rotation {
                 origin.x: phone.width / 2; origin.y: phone.height / 2
                 axis { x: 0; y: 0; z: 1 }
-                angle: stage.flat ? 0 : (stage.opened ? -5 : 13)
+                angle: stage.flat ? 0 : (stage.opened ? 5 : -13)
                 Behavior on angle { NumberAnimation { duration: stage.closing ? 180 : 420; easing.type: Easing.OutCubic } }
             }
         ]
         Behavior on opacity { NumberAnimation { duration: stage.flat ? 0 : 180 } }
-        Behavior on scale { NumberAnimation { duration: stage.flat ? 0 : 420; easing.type: Easing.OutCubic } }
+        Behavior on scale { NumberAnimation { duration: stage.flat ? 0 : (stage.closing ? 180 : 420); easing.type: Easing.OutCubic } }
         onDismissed: stage.finish(null)
         onLaunchRequested: app => stage.finish(app)
     }
