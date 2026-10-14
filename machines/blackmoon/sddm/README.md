@@ -20,6 +20,33 @@ when the greeter reports them available. It uses keyboard-focus outlines,
 accessible names and 40px+ controls; compact screens scroll focused controls
 into view. The password always remains masked.
 
+## Account selection and test mode
+
+The theme uses SDDM's `userModel` instead of a hardcoded account: choose the
+remembered name when available, otherwise `lastIndex` (or the first listed
+account). Start with the account summary and password focus; “Change” opens
+the account list, and “Other user…” permits a manual/directory account. With
+no listed users, manual username entry remains available. A remembered account
+not in the visible list is preserved. Account changes clear any entered password.
+
+SDDM 0.21.0's test mode uses the real local account model, not dummy users.
+`lastUser` comes from the SDDM account's `state.conf`; the ordinary-user preview
+cannot traverse this host's protected `/var/lib/sddm` directory, so its remembered
+name is empty. The previous theme used only that string and thus showed a blank
+username. The normal greeter can use its own remembered state. The new model
+fallback also makes an unremembered/first-run preview useful. `RememberLastUser`
+remains at SDDM's existing default (true); no config override, autologin or
+permission change is made.
+
+Verified against installed Catppuccin/Maldives initialization and upstream
+[0.21.0 UserModel](https://github.com/sddm/sddm/blob/v0.21.0/src/greeter/UserModel.cpp),
+[GreeterApp](https://github.com/sddm/sddm/blob/v0.21.0/src/greeter/GreeterApp.cpp), and
+[configuration defaults](https://github.com/sddm/sddm/blob/v0.21.0/src/common/Configuration.h).
+Tests cover first listed user, remembered second user, switching accounts,
+empty model/manual input, remembered unlisted account, failed login clearing,
+and password focus at normal/compact sizes. Test-mode previews have no daemon
+socket and do not authenticate a real session.
+
 ## Media cards
 
 `home/theme/media-osd` is a short-lived client of the existing Mako server,

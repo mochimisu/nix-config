@@ -10,6 +10,35 @@ Rectangle {
     property date now: new Date()
     property bool busy: false
     property string message: ""
+    property bool manualUser: false
+    property bool choosingUser: false
+    readonly property string loginUser: manualUser ? username.text.trim() : userChoice.currentText
+    // SDDM supplies the real account model; test mode may have no readable last-user state.
+    function initializeUser() {
+        const remembered = String(userModel.lastUser || "");
+        const rememberedIndex = remembered === "" ? -1 : userChoice.find(remembered);
+        if (rememberedIndex >= 0) {
+            userChoice.currentIndex = rememberedIndex;
+            manualUser = false;
+        } else if (remembered !== "") {
+            // A remembered directory/hidden account may not be in the visible list.
+            username.text = remembered;
+            manualUser = true;
+        } else if (userChoice.count > 0) {
+            const index = userModel.lastIndex;
+            userChoice.currentIndex = index >= 0 && index < userChoice.count ? index : 0;
+            manualUser = false;
+        } else {
+            username.text = "";
+            manualUser = true;
+        }
+        choosingUser = loginUser === "";
+        Qt.callLater(function() {
+            if (root.loginUser === "") username.forceActiveFocus();
+            else password.forceActiveFocus();
+        });
+    }
+    Component.onCompleted: Qt.callLater(initializeUser)
     readonly property bool compact: width < 900 || height < 680
     // The greeter supplies userModel, sessionModel, keyboard and sddm.
     function reveal(item) {
@@ -22,10 +51,10 @@ Rectangle {
         });
     }
     function login() {
-        if (busy || username.text.trim() === "" || sessions.currentIndex < 0) return;
+        if (busy || loginUser === "" || sessions.currentIndex < 0) return;
         busy = true;
         message = "";
-        sddm.login(username.text, password.text, sessions.currentIndex);
+        sddm.login(loginUser, password.text, sessions.currentIndex);
     }
     Timer { interval: 1000; running: true; repeat: true; onTriggered: root.now = new Date() }
     Connections {
@@ -222,12 +251,58 @@ Rectangle {
                         Rectangle { width: parent.width / 3; height: 8; color: config.Lavender }
                         Rectangle { width: parent.width / 3; height: 8; color: config.Pink }
                     }
-                    Label { text: qsTr("Username"); font.bold: true }
+                    Label { text: qsTr("Account"); font.bold: true }
+                    RowLayout {
+                        Layout.fillWidth: true; visible: !root.choosingUser
+                        Label {
+                            Layout.fillWidth: true; text: root.loginUser; elide: Text.ElideRight
+                            font.pixelSize: 18; font.bold: true
+                            Accessible.name: qsTr("Selected account: ") + text
+                        }
+                        ToolButton {
+                            text: qsTr("Change"); implicitHeight: 40
+                            font.family: config.Font; palette.buttonText: config.Ink
+                            Accessible.name: qsTr("Change account"); enabled: !root.busy
+                            onClicked: {
+                                root.choosingUser = true; password.clear();
+                                if (root.manualUser) username.forceActiveFocus();
+                                else userChoice.forceActiveFocus();
+                            }
+                        }
+                    }
+                    Choice {
+                        id: userChoice; Layout.fillWidth: true
+                        visible: root.choosingUser && !root.manualUser
+                        model: userModel; textRole: "name"; currentIndex: userModel.lastIndex
+                        Accessible.name: qsTr("Account"); enabled: !root.busy
+                        onActivated: {
+                            root.choosingUser = false; password.clear(); password.forceActiveFocus();
+                        }
+                    }
                     Entry {
-                        id: username; Layout.fillWidth: true; text: userModel.lastUser
+                        id: username; Layout.fillWidth: true
+                        visible: root.choosingUser && root.manualUser
                         Accessible.name: qsTr("Username"); enabled: !root.busy
                         KeyNavigation.tab: password
-                        onAccepted: password.forceActiveFocus()
+                        onAccepted: {
+                            if (text.trim() !== "") root.choosingUser = false;
+                            password.forceActiveFocus();
+                        }
+                        onTextEdited: password.clear()
+                    }
+                    ToolButton {
+                        visible: root.choosingUser && userChoice.count > 0
+                        text: root.manualUser ? qsTr("Use listed account") : qsTr("Other user…")
+                        implicitHeight: 40; font.family: config.Font; palette.buttonText: config.Ink
+                        Accessible.name: text; enabled: !root.busy
+                        onClicked: {
+                            root.manualUser = !root.manualUser; password.clear();
+                            if (root.manualUser) { username.clear(); username.forceActiveFocus(); }
+                            else {
+                                if (userChoice.currentIndex < 0) userChoice.currentIndex = 0;
+                                userChoice.forceActiveFocus();
+                            }
+                        }
                     }
                     Label { text: qsTr("Password"); font.bold: true }
                     Entry {
@@ -235,7 +310,6 @@ Rectangle {
                         Accessible.name: qsTr("Password"); enabled: !root.busy
                         KeyNavigation.tab: sessions
                         onAccepted: root.login()
-                        Component.onCompleted: forceActiveFocus()
                     }
                     Label { text: qsTr("Caps Lock is on"); color: config.Urgent; visible: keyboard.capsLock }
                     Label { text: qsTr("Session"); font.bold: true }
@@ -259,7 +333,7 @@ Rectangle {
                     Pill {
                         primary: true
                         Layout.fillWidth: true; text: root.busy ? qsTr("Signing in…") : qsTr("Sign in")
-                        enabled: !root.busy && username.text.trim() !== "" && sessions.currentIndex >= 0
+                        enabled: !root.busy && root.loginUser !== "" && sessions.currentIndex >= 0
                         onClicked: root.login()
                     }
                     RowLayout {
