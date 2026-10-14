@@ -9,25 +9,49 @@ Column {
     signal actionRequested(string action)
     spacing: 9
     readonly property color ink: "#28585c"
-    Rectangle {
-        width: parent.width; height: 115; radius: 20
-        color: "#d1eae4"; border { color: home.ink; width: 2 }
-        Image { anchors.fill: parent; anchors.margins: 6; source: home.services ? home.services.wallpaper : ""; fillMode: Image.PreserveAspectCrop }
-        Rectangle { anchors.fill: parent; anchors.margins: 3; color: "#aaf1fff9"; radius: 17 }
+    Item {
+        width: parent.width; height: 128
+        Canvas {
+            id: wallpaper
+            anchors.fill: parent
+            property string imageUrl: home.services ? home.services.wallpaper : ""
+            onImageUrlChanged: { if (imageUrl) loadImage(imageUrl); requestPaint(); }
+            onImageLoaded: requestPaint()
+            onWidthChanged: requestPaint()
+            onHeightChanged: requestPaint()
+            Component.onCompleted: { if (imageUrl) loadImage(imageUrl); }
+            onPaint: {
+                const ctx = getContext("2d");
+                ctx.reset();
+                const r = 31;
+                ctx.beginPath();
+                ctx.moveTo(0, height); ctx.lineTo(0, r);
+                ctx.quadraticCurveTo(0, 0, r, 0);
+                ctx.lineTo(width - r, 0); ctx.quadraticCurveTo(width, 0, width, r);
+                ctx.lineTo(width, height); ctx.closePath(); ctx.clip();
+                ctx.fillStyle = "#d1eae4"; ctx.fillRect(0, 0, width, height);
+                if (imageUrl && isImageLoaded(imageUrl)) {
+                    const image = ctx.createImageData(imageUrl);
+                    const scale = Math.max(width / image.width, height / image.height);
+                    const w = image.width * scale, h = image.height * scale;
+                    ctx.drawImage(imageUrl, (width - w) / 2, (height - h) / 2, w, h);
+                }
+            }
+        }
         Column {
             x: 13; y: 13; spacing: 3
-            Text { text: home.services ? Qt.formatDateTime(home.services.now, "h:mm AP") : "—"; color: home.ink; font { pixelSize: 22; bold: true; italic: true } }
-            Text { text: home.services ? Qt.formatDateTime(home.services.now, "ddd, MMM d") : ""; color: home.ink; font { pixelSize: 11; bold: true } }
+            Text { text: home.services ? Qt.formatDateTime(home.services.now, "h:mm AP") : "—"; color: "#ffffff"; style: Text.Outline; styleColor: "#203a42"; font { pixelSize: 22; bold: true; italic: true } }
+            Text { text: home.services ? Qt.formatDateTime(home.services.now, "ddd, MMM d") : ""; color: "#ffffff"; style: Text.Outline; styleColor: "#203a42"; font { pixelSize: 11; bold: true } }
         }
         Column {
             anchors { right: parent.right; top: parent.top; margins: 13 } spacing: 4
-            Text { text: "↓ " + (home.services ? home.services.download : "—"); color: home.ink; font { pixelSize: 10; bold: true } }
-            Text { text: "↑ " + (home.services ? home.services.upload : "—"); color: home.ink; font { pixelSize: 10; bold: true } }
+            Text { text: "↓ " + (home.services ? home.services.download : "—"); color: "#ffffff"; style: Text.Outline; styleColor: "#203a42"; font { pixelSize: 10; bold: true } }
+            Text { text: "↑ " + (home.services ? home.services.upload : "—"); color: "#ffffff"; style: Text.Outline; styleColor: "#203a42"; font { pixelSize: 10; bold: true } }
         }
-        Text { x: 13; anchors.bottom: parent.bottom; anchors.bottomMargin: 14; text: "QUICK CONTROLS"; color: home.ink; font { pixelSize: 10; bold: true; letterSpacing: 2 } }
+        Text { x: 13; anchors.bottom: parent.bottom; anchors.bottomMargin: 14; text: "QUICK CONTROLS"; color: "#ffffff"; style: Text.Outline; styleColor: "#203a42"; font { pixelSize: 10; bold: true; letterSpacing: 2 } }
     }
     Row {
-        width: parent.width; spacing: 7
+        x: 13; width: parent.width - 26; spacing: 7
         Repeater {
             model: [
                 {key: "network", glyph: "≋", icon: "network-wireless", title: "Network", value: home.services ? home.services.networkLabel : "Unavailable", color: "#dcefe9"},
@@ -38,7 +62,7 @@ Column {
                 focusPolicy: Qt.NoFocus
                 required property var modelData
                 objectName: modelData.key
-                width: (home.width - 14) / 3; height: 64
+                width: (home.width - 40) / 3; height: 64
                 enabled: home.interactive && !!home.services && (modelData.key !== "mute" || home.services.audioReady)
                 Accessible.name: modelData.title + ": " + modelData.value
                 onClicked: modelData.key === "mute" ? home.services.toggleMute() : home.actionRequested(modelData.key)
@@ -57,7 +81,7 @@ Column {
         }
     }
     Rectangle {
-        width: parent.width; height: 40; radius: 18; color: "#e5f2ee"; border { width: 2; color: home.ink }
+        x: 13; width: parent.width - 26; height: 40; radius: 18; color: "#e5f2ee"; border { width: 2; color: home.ink }
         Text { x: 12; anchors.verticalCenter: parent.verticalCenter; text: "VOL"; color: home.ink; font { pixelSize: 10; bold: true } }
         Slider {
             focusPolicy: Qt.NoFocus
@@ -73,7 +97,7 @@ Column {
     Button {
         focusPolicy: Qt.NoFocus
         objectName: "capture"
-        width: parent.width; height: 36; enabled: home.interactive
+        x: 13; width: parent.width - 26; height: 36; enabled: home.interactive
         text: "Screen capture  ↗"
         onClicked: home.actionRequested("capture")
         background: Rectangle { radius: 17; color: parent.hovered ? "#b8ded8" : "#d8eae6"; border { width: 2; color: home.ink } }

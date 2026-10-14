@@ -211,7 +211,7 @@ FocusScope {
     Flickable {
         id: homeView
         objectName: "homeView"
-        anchors { top: parent.top; bottom: parent.bottom; left: parent.left; right: parent.right; topMargin: 25; leftMargin: 25; rightMargin: 25 }
+        anchors { top: parent.top; bottom: parent.bottom; left: parent.left; right: parent.right; topMargin: phone.depth ? 12 : 11; leftMargin: phone.depth ? 12 : 11; rightMargin: phone.depth ? 12 : 11 }
         contentWidth: width
         contentHeight: controls.height
         bottomMargin: 110

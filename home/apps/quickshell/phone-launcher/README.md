@@ -129,3 +129,10 @@ Offscreen tests passed first-character entry, focus isolation, query clearing,
 compact controls, transformed app/control clicks, and outside press/release with
 an underlying test MouseArea receiving zero clicks. Live compositor routing
 across actual desktop apps and multiple outputs remains unverified.
+
+The wallpaper header is fully opaque and flush with the screen's top and side
+edges. A Canvas clips the source image only at the screen's rounded top corners;
+there is no wash, image padding or header border. White text uses a fine dark
+outline for contrast. Header expansion preserves the controls' previous size
+and vertical position. Normal/compact home input/control tests and transformed
+inside/outside-click tests pass; the real wallpaper render was inspected.
