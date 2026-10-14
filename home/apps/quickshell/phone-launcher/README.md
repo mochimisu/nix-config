@@ -40,11 +40,19 @@ keyboard navigation and launch signals. Actual compositor focus and output
 placement still require a live trial. The animation preview uses offscreen
 icons, which can fall back to initials when platform icon themes are unavailable.
 
-The revised presentation leans the opposite way (+22° around Y, +5° around Z),
-with a matching reversed entrance. A stepped rear chassis, highlighted rim,
-inset screen border and seven faint shadow silhouettes add thickness using
-ordinary QtQuick rectangles. Flat mode also removes these depth layers.
-Exit scaling now shares the 180ms rotation timing to keep the shadow inside
-its panel. Sixty nonempty captured frames across normal and compact entrance/
-exit sequences passed pixel-bound checks; transformed clicks and keyboard
-regressions passed, including flat-mode clicking.
+
+The pose is fitted visually to the original video at 0:13, with its top leaning
+right and its top edge rising right. A single mild-perspective matrix combines
+pitch 25°, yaw -35° and roll -4° (5000px focal distance), replacing stacked
+Rotation items that exaggerated perspective. These are visual-fit parameters,
+not recovered author settings. The 356px phone width retains four app columns.
+The entrance makes an 80° clockwise turn from a landscape-like pose, as observed
+at approximately 8.9–9.1s. This launcher has no landscape settings page, so the
+entrance is an adaptation, not a recreation of that page transition.
+
+Reference: https://www.reddit.com/r/LinuxPorn/comments/1x36scr/project_sekai_inspired_rice/
+
+Transformed clicks, keyboard search/navigation/Enter/Escape, compact layout and
+flat fallback passed offscreen tests. Fifty-nine nonempty captured frames across
+normal/compact entrance and exit passed pixel-bound checks. Live Wayland focus
+and placement remain unverified.
