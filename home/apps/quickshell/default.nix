@@ -3,5 +3,6 @@
 }: {
   imports = [
     ./sidebar
+    ./phone-launcher
   ];
 }
