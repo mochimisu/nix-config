@@ -1,10 +1,15 @@
 //@ pragma UseQApplication
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import Quickshell.Hyprland
 import Quickshell.Wayland
 
 ShellRoot {
+    IpcHandler {
+        target: "launcher"
+        function close(): void { presentation.finish(null); }
+    }
     Status { id: status }
     PanelWindow {
         id: window

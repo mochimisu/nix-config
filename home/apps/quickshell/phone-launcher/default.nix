@@ -1,8 +1,9 @@
 {lib, pkgs, osConfig ? null, ...}: let
   enabled = osConfig != null && (osConfig.networking.hostName or "") == "blackmoon";
-  launcher = pkgs.writeShellScriptBin "sekai-launcher" ''
-    exec ${pkgs.quickshell}/bin/qs -n -c phone-launcher
-  '';
+  launcher = pkgs.writeShellScriptBin "sekai-launcher" (builtins.replaceStrings
+    ["@qs@" "@flock@" "@config@"]
+    ["${pkgs.quickshell}/bin/qs" "${pkgs.util-linux}/bin/flock" "${./.}"]
+    (builtins.readFile ./launcher.sh));
 in {
   config = lib.mkIf enabled {
     home.packages = [launcher];
@@ -13,7 +14,8 @@ in {
       ".config/quickshell/phone-launcher/Presentation.qml".source = ./Presentation.qml;
       ".config/quickshell/phone-launcher/Phone.qml".source = ./Phone.qml;
     };
-    # Keep Super+Space and Super+Shift+Space on Rofi during the trial.
+    # The shared Super+Space binding invokes menu; run/clipboard menus stay Rofi.
+    wayland.windowManager.hyprland.settings.menu._var = lib.mkForce "${launcher}/bin/sekai-launcher";
     wayland.windowManager.hyprland.settings.bind = [{
       _args = [
         "SUPER + ALT + space"

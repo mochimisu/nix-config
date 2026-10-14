@@ -15,7 +15,7 @@ remain available for editing the search text. Escape clears search back to home,
 the launcher process. Missing icons display the application's initial.
 
 The Nix module is enabled only for Blackmoon. After a future normal activation,
-`sekai-launcher` or Super+Alt+Space opens it. The existing Rofi shortcuts remain
+`sekai-launcher`, Super+Space or Super+Alt+Space toggles it. The other Rofi shortcuts remain
 unchanged. No activation is required for the command above.
 
 The panel selects the focused Hyprland monitor and caps its size to that output's
@@ -165,3 +165,41 @@ renders used Qt OpenGL on the RTX 4090 driver in an isolated Xvfb display. The
 no screenshot antialiasing. Live Hyprland/Wayland input/focus, fractional output
 scaling and animation performance remain unverified. No activation or rebuild
 was performed, and tests invoked no real control actions.
+
+
+## Default launcher and sharper text (2026-10-14)
+
+On Blackmoon, `menu` now points to `sekai-launcher`, so the existing Super+Space
+application binding uses this phone. The host gate remains unchanged. Rofi is
+still installed for Super+Shift+Space/run, clipboard dmenu, and other utilities.
+The wrapper serializes startup with flock, asks the existing instance to close
+through IPC, and otherwise starts Quickshell with no-duplicate mode. It uses an
+immutable source path in the Nix store after normal deployment.
+
+Text and controls now render outside the filtered chassis layer. Text uses
+Qt's hardware curve renderer instead of being rasterized and mipmapped along
+with the phone. Direct high-quality distance-field text was compared too, but
+curve rendering avoided its colored fringes on the rotated letters. The chassis
+keeps its 2x/MSAA/mipmap treatment; only the wallpaper has a separate small 2x
+filtered layer. No whole-output supersampling or larger phone texture was added.
+Perspective and small letters still require antialiasing, but the extra blur
+from resampling an already-rendered text texture is gone.
+
+Blackmoon evaluation passed. Isolated RTX 4090 rendering, normal/compact controls,
+search, transformed app clicks, and early input tests passed. Live Wayland tests
+verified startup on DP-3, IPC toggle close/reopen, six concurrent invocations
+without duplicates, typing followed by Escape to home then Escape to close,
+and outside press/release dismissal. Hyprland synthetic pointer buttons require
+a motion frame to flush; a held press was observed before release closed it.
+No real service controls or app launch side effects were executed.
+
+For the narrow live trial, only Super+Space was replaced through `hyprctl eval`;
+all other registered bindings were compared and unchanged. The live command is
+`/home/brandon/Documents/Codex/2026-10-14/task-2/sekai-launcher-live`, generated
+from the same wrapper and targeting this isolated checkout. This runtime binding
+lasts until a Hyprland config reload or logout. The branch contains the durable
+Nix change; it has not been merged, broadly rebuilt, or activated. A later normal
+deployment of this branch makes the binding persistent. To restore only the
+live binding: `hyprctl eval 'hl.unbind("SUPER + space"); hl.bind("SUPER + space", hl.dsp.exec_cmd("rofi-toggle -show drun"))'`.
+
+Text-renderer reference: https://doc.qt.io/qt-6/qml-qtquick-text.html#renderType-prop

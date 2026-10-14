@@ -17,6 +17,10 @@ Column {
             scale: 0.5
             transformOrigin: Item.TopLeft
             // Rasterize the rounded wallpaper clip at the phone layer's density.
+            layer.enabled: wallpaper.GraphicsInfo.api !== GraphicsInfo.Software
+            layer.textureSize: Qt.size(width, height)
+            layer.smooth: true
+            layer.mipmap: true
             smooth: true
             antialiasing: true
             property string imageUrl: home.services ? home.services.wallpaper : ""
@@ -47,15 +51,15 @@ Column {
         }
         Column {
             x: 13; y: 13; spacing: 3
-            Text { text: home.services ? Qt.formatDateTime(home.services.now, "h:mm AP") : "—"; color: "#ffffff"; style: Text.Outline; styleColor: "#203a42"; font { pixelSize: 22; bold: true; italic: true } }
-            Text { text: home.services ? Qt.formatDateTime(home.services.now, "ddd, MMM d") : ""; color: "#ffffff"; style: Text.Outline; styleColor: "#203a42"; font { pixelSize: 11; bold: true } }
+            Text { renderType: Text.CurveRendering; text: home.services ? Qt.formatDateTime(home.services.now, "h:mm AP") : "—"; color: "#ffffff"; style: Text.Outline; styleColor: "#203a42"; font { pixelSize: 22; bold: true; italic: true } }
+            Text { renderType: Text.CurveRendering; text: home.services ? Qt.formatDateTime(home.services.now, "ddd, MMM d") : ""; color: "#ffffff"; style: Text.Outline; styleColor: "#203a42"; font { pixelSize: 11; bold: true } }
         }
         Column {
             anchors { right: parent.right; top: parent.top; margins: 13 } spacing: 4
-            Text { text: "↓ " + (home.services ? home.services.download : "—"); color: "#ffffff"; style: Text.Outline; styleColor: "#203a42"; font { pixelSize: 10; bold: true } }
-            Text { text: "↑ " + (home.services ? home.services.upload : "—"); color: "#ffffff"; style: Text.Outline; styleColor: "#203a42"; font { pixelSize: 10; bold: true } }
+            Text { renderType: Text.CurveRendering; text: "↓ " + (home.services ? home.services.download : "—"); color: "#ffffff"; style: Text.Outline; styleColor: "#203a42"; font { pixelSize: 10; bold: true } }
+            Text { renderType: Text.CurveRendering; text: "↑ " + (home.services ? home.services.upload : "—"); color: "#ffffff"; style: Text.Outline; styleColor: "#203a42"; font { pixelSize: 10; bold: true } }
         }
-        Text { x: 13; anchors.bottom: parent.bottom; anchors.bottomMargin: 14; text: "QUICK CONTROLS"; color: "#ffffff"; style: Text.Outline; styleColor: "#203a42"; font { pixelSize: 10; bold: true; letterSpacing: 2 } }
+        Text { renderType: Text.CurveRendering; x: 13; anchors.bottom: parent.bottom; anchors.bottomMargin: 14; text: "QUICK CONTROLS"; color: "#ffffff"; style: Text.Outline; styleColor: "#203a42"; font { pixelSize: 10; bold: true; letterSpacing: 2 } }
     }
     Row {
         x: 13; width: parent.width - 26; spacing: 7
@@ -79,17 +83,17 @@ Column {
                     Item {
                         anchors.horizontalCenter: parent.horizontalCenter; width: 18; height: 18
                         Image { id: controlIcon; anchors.fill: parent; source: Quickshell.iconPath(modelData.icon, true); fillMode: Image.PreserveAspectFit }
-                        Text { anchors.centerIn: parent; visible: !controlIcon.source.toString() || controlIcon.status === Image.Error; text: modelData.glyph; color: home.ink; font { pixelSize: 18; bold: true } }
+                        Text { renderType: Text.CurveRendering; anchors.centerIn: parent; visible: !controlIcon.source.toString() || controlIcon.status === Image.Error; text: modelData.glyph; color: home.ink; font { pixelSize: 18; bold: true } }
                     }
-                    Text { width: parent.width; text: modelData.title; horizontalAlignment: Text.AlignHCenter; color: home.ink; font { pixelSize: 11; bold: true } }
-                    Text { width: parent.width; text: modelData.value; elide: Text.ElideRight; horizontalAlignment: Text.AlignHCenter; color: home.ink; font.pixelSize: 9 }
+                    Text { renderType: Text.CurveRendering; width: parent.width; text: modelData.title; horizontalAlignment: Text.AlignHCenter; color: home.ink; font { pixelSize: 11; bold: true } }
+                    Text { renderType: Text.CurveRendering; width: parent.width; text: modelData.value; elide: Text.ElideRight; horizontalAlignment: Text.AlignHCenter; color: home.ink; font.pixelSize: 9 }
                 }
             }
         }
     }
     Rectangle {
         x: 13; width: parent.width - 26; height: 40; radius: 18; color: "#e5f2ee"; border { width: 2; color: home.ink }
-        Text { x: 12; anchors.verticalCenter: parent.verticalCenter; text: "VOL"; color: home.ink; font { pixelSize: 10; bold: true } }
+        Text { renderType: Text.CurveRendering; x: 12; anchors.verticalCenter: parent.verticalCenter; text: "VOL"; color: home.ink; font { pixelSize: 10; bold: true } }
         Slider {
             focusPolicy: Qt.NoFocus
             objectName: "volume"
@@ -108,6 +112,6 @@ Column {
         text: "Screen capture  ↗"
         onClicked: home.actionRequested("capture")
         background: Rectangle { radius: 17; color: parent.hovered ? "#b8ded8" : "#d8eae6"; border { width: 2; color: home.ink } }
-        contentItem: Text { text: parent.text; color: home.ink; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter; font { pixelSize: 13; bold: true; italic: true } }
+        contentItem: Text { renderType: Text.CurveRendering; text: parent.text; color: home.ink; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter; font { pixelSize: 13; bold: true; italic: true } }
     }
 }
