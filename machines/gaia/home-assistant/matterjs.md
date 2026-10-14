@@ -4,7 +4,7 @@ Gaia runs `matterjs-server` as the primary Matter backend. The normal service na
 
 ## Current Shape
 
-- Primary controller: `ghcr.io/matter-js/matterjs-server:latest`.
+- Primary controller: the immutable `ghcr.io/matter-js/matterjs-server` digest in `../container-images.nix`.
 - WebSocket/dashboard: local `ws://127.0.0.1:5580/ws` and `http://127.0.0.1:5580/`; LAN dashboard access is available at `http://gaia:5580/`.
 - Matter.js storage: `/earth/home-assistant/matterjs-server`.
 - Custom OTA drop directory: `/earth/home-assistant/matterjs-server/ota-provider`.
@@ -60,4 +60,9 @@ If a BILRESA remote answers `ping_node` or Identify but button events arrive min
 matter-health | head
 ```
 
-or a direct `server_info` websocket call; it should not report the old floating `stable` image's `matter-server/0.6.4` build. After deploying a fresh `latest` image, restart `podman-matter-server.service`, run `matterjs-set-thread-dataset.service`, restart `matter-layer.service`, then watch `journalctl -u podman-matter-server.service` for `Replacing subscription to @1:2ec` and delayed `node_id: 748` Switch events.
+or a direct `server_info` websocket call; it should not report the old floating `stable` image's `matter-server/0.6.4` build. After reviewing and deploying a new pinned image, restart `podman-matter-server.service`, run `matterjs-set-thread-dataset.service`, restart `matter-layer.service`, then watch `journalctl -u podman-matter-server.service` for `Replacing subscription to @1:2ec` and delayed `node_id: 748` Switch events.
+
+## Immutable image reference (2026-10-14)
+
+The module now selects `gaia.homeAssistant.matterjs.image`, defaulting to the digest
+in `../container-images.nix`, with `pull = "missing"`. See `docs/pins.md` at the repository root for updates.

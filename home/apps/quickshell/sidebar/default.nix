@@ -7,14 +7,14 @@
 }: let
   variables = config.variables or {};
   nestedDesktop = variables.nestedDesktop or false;
-  isLinuxGui = pkgs.stdenv.isLinux && (variables.isGui or true);
+  isLinuxGui = pkgs.stdenv.hostPlatform.isLinux && (variables.isGui or true);
   hostName =
     if osConfig != null
     then osConfig.networking.hostName or ""
     else "";
 
   sidebarScreens =
-    if pkgs.stdenv.isLinux && builtins.hasAttr "ewwSidebarScreens" variables
+    if pkgs.stdenv.hostPlatform.isLinux && builtins.hasAttr "ewwSidebarScreens" variables
     then variables.ewwSidebarScreens
     else ["0"];
 

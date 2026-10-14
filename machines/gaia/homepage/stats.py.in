@@ -1,0 +1,325 @@
+#!@python@/bin/python3
+import asyncio
+import ipaddress
+import json
+import os
+import subprocess
+import time
+from pathlib import Path
+
+out_dir = Path("/run/gaia-homepage")
+out_file = out_dir / "stats.json"
+clients = set()
+latest_payload = None
+
+def read_cpu():
+    with open("/proc/stat", "r", encoding="utf-8") as f:
+        parts = f.readline().split()[1:]
+    vals = [int(x) for x in parts]
+    idle = vals[3] + (vals[4] if len(vals) > 4 else 0)
+    return sum(vals), idle
+
+def read_mem():
+    data = {}
+    with open("/proc/meminfo", "r", encoding="utf-8") as f:
+        for line in f:
+            k, v = line.split(":", 1)
+            data[k] = int(v.strip().split()[0]) * 1024
+    total = data.get("MemTotal", 0)
+    available = data.get("MemAvailable", 0)
+    used = max(total - available, 0)
+    pct = (used / total * 100) if total else 0
+    return {"total": total, "used": used, "available": available, "percent": pct}
+
+def read_df():
+    mounts = @statsMountsJson@
+    rows = []
+    output = subprocess.check_output(["@coreutils@/bin/df", "-h", *mounts], text=True)
+    for line in output.splitlines()[1:]:
+        parts = line.split()
+        if len(parts) >= 6:
+            rows.append({
+                "filesystem": parts[0],
+                "size": parts[1],
+                "used": parts[2],
+                "available": parts[3],
+                "percent": parts[4],
+                "mount": parts[5],
+            })
+    return rows
+
+def run_text(cmd, timeout=10):
+    return subprocess.check_output(cmd, text=True, stderr=subprocess.STDOUT, timeout=timeout)
+
+def read_btrfs_device_stats(mount):
+    errors = []
+    try:
+        output = run_text(["@btrfs@/bin/btrfs", "device", "stats", mount])
+    except Exception as e:
+        return {"ok": False, "error": str(e), "errors": []}
+    for line in output.splitlines():
+        if " " not in line:
+            continue
+        key, value = line.rsplit(None, 1)
+        try:
+            count = int(value)
+        except ValueError:
+            continue
+        name = key.split(".", 1)[-1]
+        if count:
+            errors.append({"name": name, "count": count})
+    return {"ok": not errors, "errors": errors}
+
+def read_btrfs_scrub(mount):
+    try:
+        output = run_text(["@btrfs@/bin/btrfs", "scrub", "status", "-R", mount])
+    except Exception as e:
+        return {"ok": False, "status": "unknown", "error": str(e)}
+    scrub = {"ok": True, "status": "unknown"}
+    error_total = 0
+    for raw in output.splitlines():
+        line = raw.strip()
+        if not line or ":" not in line:
+            continue
+        key, value = [part.strip() for part in line.split(":", 1)]
+        key_l = key.lower().replace(" ", "_")
+        if key_l == "status":
+            scrub["status"] = value
+        elif key_l == "duration":
+            scrub["duration"] = value
+        elif key_l == "total_to_scrub":
+            scrub["totalToScrub"] = value
+        elif key_l == "rate":
+            scrub["rate"] = value
+        elif key_l.endswith("_errors"):
+            try:
+                count = int(value.split()[0])
+            except Exception:
+                continue
+            if count:
+                error_total += count
+    scrub["errorCount"] = error_total
+    scrub["ok"] = error_total == 0 and "aborted" not in scrub.get("status", "").lower()
+    return scrub
+
+def read_btrfs_usage(mount):
+    usage = {}
+    try:
+        output = run_text(["@btrfs@/bin/btrfs", "filesystem", "usage", "-h", mount])
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+    for raw in output.splitlines():
+        line = raw.strip()
+        if ":" not in line:
+            continue
+        key, value = [part.strip() for part in line.split(":", 1)]
+        if key == "Device size":
+            usage["deviceSize"] = value
+        elif key == "Device allocated":
+            usage["deviceAllocated"] = value
+        elif key == "Device unallocated":
+            usage["deviceUnallocated"] = value
+        elif key == "Used":
+            usage["used"] = value
+        elif key == "Free (estimated)":
+            usage["freeEstimated"] = value
+    usage["ok"] = True
+    return usage
+
+def read_btrfs_health():
+    rows = []
+    for mount in @btrfsMountsJson@:
+        if not os.path.ismount(mount):
+            rows.append({"mount": mount, "ok": False, "status": "not mounted"})
+            continue
+        device_stats = read_btrfs_device_stats(mount)
+        scrub = read_btrfs_scrub(mount)
+        usage = read_btrfs_usage(mount)
+        ok = device_stats.get("ok", False) and scrub.get("ok", False) and usage.get("ok", False)
+        rows.append({
+            "mount": mount,
+            "ok": ok,
+            "status": "healthy" if ok else "attention",
+            "deviceStats": device_stats,
+            "scrub": scrub,
+            "usage": usage,
+        })
+    return rows
+
+def read_top():
+    output = subprocess.check_output([
+        "@procps@/bin/ps", "-eo", "pid=,pcpu=,comm=", "--sort=-pcpu"
+    ], text=True)
+    rows = []
+    for line in output.splitlines()[:5]:
+        parts = line.split(None, 2)
+        if len(parts) == 3:
+            try:
+                rows.append({"pid": parts[0], "command": parts[2], "cpu": float(parts[1])})
+            except ValueError:
+                continue
+    return rows
+
+def read_temp():
+    candidates = []
+    for path in Path("/sys/class/hwmon").glob("hwmon*/temp*_input"):
+        try:
+            raw = int(path.read_text().strip())
+            if 1000 <= raw <= 125000:
+                label_path = path.with_name(path.name.replace("_input", "_label"))
+                label = label_path.read_text().strip() if label_path.exists() else path.parent.name
+                candidates.append((label, raw / 1000.0))
+        except Exception:
+            pass
+    for path in Path("/sys/class/thermal").glob("thermal_zone*/temp"):
+        try:
+            raw = int(path.read_text().strip())
+            if 1000 <= raw <= 125000:
+                type_path = path.with_name("type")
+                label = type_path.read_text().strip() if type_path.exists() else path.parent.name
+                candidates.append((label, raw / 1000.0))
+        except Exception:
+            pass
+    if not candidates:
+        return None
+    preferred = [c for c in candidates if any(x in c[0].lower() for x in ["cpu", "package", "core", "k10", "tctl", "tdie"])]
+    label, temp = max(preferred or candidates, key=lambda x: x[1])
+    return {"label": label, "celsius": temp}
+
+def read_uptime():
+    with open("/proc/uptime", "r", encoding="utf-8") as f:
+        return int(float(f.readline().split()[0]))
+
+def read_addresses():
+    try:
+        output = subprocess.check_output(["@iproute2@/bin/ip", "-j", "-4", "addr", "show", "scope", "global"], text=True)
+        data = json.loads(output)
+    except Exception:
+        return {"lan": None, "tailnet": None}
+    lan = None
+    tailnet = None
+    tailnet_net = ipaddress.ip_network("100.64.0.0/10")
+    for iface in data:
+        ifname = iface.get("ifname", "")
+        for addr in iface.get("addr_info", []):
+            ip = addr.get("local")
+            if not ip:
+                continue
+            ip_obj = ipaddress.ip_address(ip)
+            if ip_obj in tailnet_net or ifname.startswith("tailscale"):
+                tailnet = tailnet or ip
+            elif ip_obj.is_private:
+                lan = lan or ip
+    return {"lan": lan, "tailnet": tailnet}
+
+def sse_event(message):
+    return ("data: " + message.replace("\n", "\ndata: ") + "\n\n").encode("utf-8")
+
+async def broadcast(message):
+    dead = []
+    packet = sse_event(message)
+    for writer in list(clients):
+        try:
+            writer.write(packet)
+            await writer.drain()
+        except Exception:
+            dead.append(writer)
+    for writer in dead:
+        clients.discard(writer)
+        try:
+            writer.close()
+            await writer.wait_closed()
+        except Exception:
+            pass
+
+async def keepalive_loop():
+    while True:
+        await asyncio.sleep(15)
+        dead = []
+        for writer in list(clients):
+            try:
+                writer.write(b": keepalive\n\n")
+                await writer.drain()
+            except Exception:
+                dead.append(writer)
+        for writer in dead:
+            clients.discard(writer)
+            try:
+                writer.close()
+                await writer.wait_closed()
+            except Exception:
+                pass
+
+async def stats_loop():
+    global latest_payload
+    previous_total, previous_idle = read_cpu()
+    await asyncio.sleep(1)
+    while True:
+        total, idle = read_cpu()
+        total_delta = total - previous_total
+        idle_delta = idle - previous_idle
+        cpu_percent = (100.0 * (total_delta - idle_delta) / total_delta) if total_delta else 0.0
+        previous_total, previous_idle = total, idle
+
+        payload = {
+            "updatedAt": int(time.time()),
+            "cpuPercent": round(cpu_percent, 1),
+            "memory": read_mem(),
+            "topProcesses": read_top(),
+            "filesystems": read_df(),
+            "btrfsHealth": read_btrfs_health(),
+            "cpuTemp": read_temp(),
+            "uptimeSeconds": read_uptime(),
+            "networkAddresses": read_addresses(),
+        }
+        latest_payload = json.dumps(payload, separators=(",", ":"))
+        tmp = out_file.with_suffix(".json.tmp")
+        out_dir.mkdir(parents=True, exist_ok=True)
+        tmp.write_text(latest_payload, encoding="utf-8")
+        os.replace(tmp, out_file)
+        await broadcast(latest_payload)
+        await asyncio.sleep(5)
+
+async def handle_sse(reader, writer):
+    try:
+        data = await reader.readuntil(b"\r\n\r\n")
+        request = data.decode("latin1")
+        request_line = request.split("\r\n", 1)[0]
+        if not request_line.startswith("GET "):
+            writer.write(b"HTTP/1.1 405 Method Not Allowed\r\nConnection: close\r\n\r\n")
+            await writer.drain()
+            writer.close()
+            return
+        writer.write((
+            "HTTP/1.1 200 OK\r\n"
+            "Content-Type: text/event-stream; charset=utf-8\r\n"
+            "Cache-Control: no-store\r\n"
+            "Connection: keep-alive\r\n"
+            "X-Accel-Buffering: no\r\n\r\n"
+        ).encode("ascii"))
+        await writer.drain()
+        clients.add(writer)
+        if latest_payload:
+            writer.write(sse_event(latest_payload))
+            await writer.drain()
+        while True:
+            data = await reader.read(1024)
+            if not data:
+                break
+    except Exception:
+        pass
+    finally:
+        clients.discard(writer)
+        try:
+            writer.close()
+            await writer.wait_closed()
+        except Exception:
+            pass
+
+async def main():
+    out_dir.mkdir(parents=True, exist_ok=True)
+    server = await asyncio.start_server(handle_sse, "127.0.0.1", 8090)
+    async with server:
+        await asyncio.gather(server.serve_forever(), stats_loop(), keepalive_loop())
+
+asyncio.run(main())

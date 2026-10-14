@@ -5,7 +5,7 @@
   ...
 }: let
   variables = config.variables or {};
-  isLinuxGui = pkgs.stdenv.isLinux && (variables.isGui or true);
+  isLinuxGui = pkgs.stdenv.hostPlatform.isLinux && (variables.isGui or true);
 in {
   imports = [
     ./sidebar

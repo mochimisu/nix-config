@@ -10,8 +10,9 @@
   enableSddmKeyboard = touchscreenVars.sddmKeyboard or false;
   sddmKeyboardMaxWidth = touchscreenVars.sddmKeyboardMaxWidth or 1440;
   sddmKeyboardLayout =
-    touchscreenVars.sddmKeyboardLayout
-    or (
+    if touchscreenVars.sddmKeyboardLayout != null
+    then touchscreenVars.sddmKeyboardLayout
+    else (
       if
         (config.services.xserver.xkb.layout or "") == "custom"
         && (config.services.xserver.xkb.variant or "") == "dvorak-custom"

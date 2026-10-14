@@ -4,7 +4,7 @@ let
   kittyVars = variables.kitty or {};
   sshBg = kittyVars.sshBackground or "";
   sshFg = kittyVars.sshForeground or "";
-  isLinuxGui = pkgs.stdenv.isLinux && (variables.isGui or true);
+  isLinuxGui = pkgs.stdenv.hostPlatform.isLinux && (variables.isGui or true);
 in {
   programs.kitty = lib.mkIf isLinuxGui {
     enable = true;

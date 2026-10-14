@@ -4,7 +4,7 @@
   pkgs,
   ...
 }: {
-  imports = [./steam-frame-network.nix];
+  imports = [../../overlays/touchscreen.nix ./steam-frame-network.nix];
   networking.hostName = "oasis";
   gaming.performance = {
     enable = true;

@@ -89,10 +89,10 @@
   };
 in {
   options.gaia.homeAssistant.matterjs = {
-    imageTag = lib.mkOption {
+    image = lib.mkOption {
       type = lib.types.str;
-      default = "latest";
-      description = "matter-js/matterjs-server image tag to use for Gaia's primary Matter backend.";
+      default = (import ../container-images.nix).matterjs;
+      description = "matter-js/matterjs-server immutable image reference to use for Gaia's primary Matter backend.";
     };
     port = lib.mkOption {
       type = lib.types.port;

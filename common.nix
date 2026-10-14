@@ -36,12 +36,6 @@ in {
     ./wikimem-client.nix
   ];
 
-  # sops-nix still requests Go 1.25, removed by current nixpkgs.
-  # Define the compatibility package once for all secret consumers.
-  sops.package = lib.mkDefault (import inputs.sops-nix {
-    pkgs = pkgs.extend (_: _: {buildGo125Module = pkgs.buildGoModule;});
-  }).sops-install-secrets;
-
   # Nix
   nix = {
     package = pkgs.nixVersions.stable;
@@ -69,29 +63,6 @@ in {
     };
     optimise.automatic = true;
   };
-
-  services.nix-serve = lib.mkIf isGaia {
-    enable = true;
-    port = 5000;
-    openFirewall = true;
-    secretKeyFile = "/home/brandon/.local/state/nix-cache/gaia-cache-priv-key.pem";
-  };
-
-  nixpkgs.overlays = [
-    (import ./overlays/ha-ac-infinity.nix)
-    (import ./overlays/ha-bambulab.nix)
-    (import ./overlays/wvkbd.nix)
-    inputs.hyprgrass.overlays.default
-    (_: prev: {
-      hyprlandPlugins =
-        (prev.hyprlandPlugins or {})
-        // {
-          hyprgrass = prev.hyprlandPlugins.hyprgrass.overrideAttrs (old: {
-            patches = (old.patches or []) ++ [./overlays/hyprgrass-tap-count.patch];
-          });
-        };
-    })
-  ];
 
   nixpkgs.config = {
     allowUnfree = true;

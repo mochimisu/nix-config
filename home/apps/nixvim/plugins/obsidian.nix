@@ -6,7 +6,7 @@
 }:
 let
   defaultVaultPath = "${config.home.homeDirectory}/Obsidian Vault";
-  vaultPath = config.variables.obsidianVaultPath or defaultVaultPath;
+  vaultPath = if config.variables.obsidianVaultPath == null then defaultVaultPath else config.variables.obsidianVaultPath;
 in {
   programs.nixvim.plugins.obsidian = {
     enable = true;
@@ -28,7 +28,7 @@ in {
     text = "";
   };
 
-  xdg.configFile."obsidian/obsidian.json" = lib.mkIf pkgs.stdenv.isLinux {
+  xdg.configFile."obsidian/obsidian.json" = lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
     force = true;
     text = builtins.toJSON {
       vaults.vault = {

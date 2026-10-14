@@ -23,11 +23,11 @@
   '';
 in {
   home.packages = with pkgs;
-    lib.mkIf pkgs.stdenv.isLinux [
+    lib.mkIf pkgs.stdenv.hostPlatform.isLinux [
       pwvucontrol
       karlender
     ];
-  programs.waybar = lib.mkIf pkgs.stdenv.isLinux {
+  programs.waybar = lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
     enable = true;
     package = pkgs.waybar;
 
@@ -47,9 +47,7 @@ in {
               "temperature#cpu"
             ]
             ++ (
-              if builtins.hasAttr "waybarModulesLeft" config.variables
-              then ["temperature#gpu" "temperature#water"]
-              else []
+              config.variables.waybarModulesLeft
             );
           "modules-center" = ["hyprland/window"];
           "modules-right" = [

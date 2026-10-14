@@ -5,9 +5,9 @@
   ...
 }: let
   variables = config.variables or {};
-  isLinuxGui = pkgs.stdenv.isLinux && (variables.isGui or true);
+  isLinuxGui = pkgs.stdenv.hostPlatform.isLinux && (variables.isGui or true);
   sidebarScreens =
-    if pkgs.stdenv.isLinux && builtins.hasAttr "ewwSidebarScreens" variables
+    if pkgs.stdenv.hostPlatform.isLinux && builtins.hasAttr "ewwSidebarScreens" variables
     then variables.ewwSidebarScreens
     else ["0"];
   configDir = "${config.home.homeDirectory}/.config/eww/sidebar";

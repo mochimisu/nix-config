@@ -3,6 +3,7 @@
   pkgs,
   ...
 }: {
+  imports = [../../overlays/touchscreen.nix];
   networking.hostName = "espresso";
   gaming.performance = {
     enable = true;

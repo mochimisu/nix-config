@@ -7,7 +7,7 @@
   inherit (config.catppuccin) flavor accent sources;
   palette = (lib.importJSON "${sources.palette}/palette.json").${flavor}.colors;
   variables = config.variables or {};
-  isLinuxGui = pkgs.stdenv.isLinux && (variables.isGui or true);
+  isLinuxGui = pkgs.stdenv.hostPlatform.isLinux && (variables.isGui or true);
   rofiVars = variables.rofi or {};
   rofiX11 = pkgs.rofi.override {
     rofi-unwrapped = pkgs.rofi-unwrapped.override {
@@ -23,7 +23,7 @@ in {
   programs.rofi = lib.mkIf isLinuxGui {
     enable = true;
     package = rofiPackage;
-    extraConfig = {
+    settings = {
       modi = "drun,run,window,ssh,calc";
       show-icons = true;
       drun-display-format = "{icon} {name}";
