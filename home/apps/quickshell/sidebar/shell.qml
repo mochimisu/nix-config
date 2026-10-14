@@ -48,7 +48,7 @@ ShellRoot {
     readonly property color selectedColor: themed ? theme.mint : "#33ffffff"
     readonly property color warningFill: themed ? theme.pink : "#33f38ba8"
     readonly property color edgeColor: themed ? theme.ink : "#80ffffff"
-    readonly property int panelRadius: themed ? 12 : 8
+    readonly property int panelRadius: themed ? 16 : 8
 
     // ----- Derived sizing / style -----
     readonly property color fgColor: themed ? theme.ink : "white"
@@ -71,6 +71,42 @@ ShellRoot {
     readonly property int cavaTextPx: Math.max(10, Math.round(fontSizePx * 0.8))
     readonly property int batteryIconPx: Math.max(statusIconPx + 4, Math.round(fontSizePx * 1.45))
     readonly property int trayToStatusGapPx: Math.max(4, Math.round(trayIconPx * 0.3))
+
+    // Decorative cards do not own input: existing handlers keep their targets.
+    component RailCard: Rectangle {
+        visible: root.themed
+        radius: 9
+        color: root.surfaceColor
+        border { width: 1; color: root.edgeColor }
+        Rectangle {
+            anchors.fill: parent; anchors.margins: 2
+            radius: 7; color: "transparent"
+            border { width: 1; color: "#ffffff" }
+        }
+    }
+    component MenuCard: Rectangle {
+        radius: root.panelRadius
+        Rectangle {
+            visible: root.themed
+            anchors.fill: parent; anchors.margins: 4
+            radius: parent.radius - 4; color: "transparent"
+            border { width: 1; color: root.theme.inactive || "transparent" }
+            opacity: 0.45
+        }
+    }
+    component MenuButton: Rectangle {
+        objectName: "menuButton"
+        radius: root.themed ? 12 : 4
+        border.width: root.themed ? 2 : 0
+        border.color: root.themed ? (menuHover.hovered ? root.theme.teal : root.edgeColor) : "transparent"
+        HoverHandler { id: menuHover }
+        Rectangle {
+            visible: root.themed
+            anchors.fill: parent; anchors.margins: 3
+            radius: parent.radius - 3; color: "transparent"
+            border { width: 1; color: "#ffffff" }
+        }
+    }
 
     // ----- Runtime state -----
     property var workspacesState: ({})
@@ -709,454 +745,506 @@ ShellRoot {
             Rectangle {
                 id: contentRoot
                 anchors.fill: parent
-                color: root.themed ? root.surfaceColor : "transparent"
-                border.width: root.themed ? 1 : 0
-                border.color: root.themed ? root.theme.inactive : "transparent"
+                color: "transparent"
 
                 readonly property string monitorName: panel.modelData.name
                 readonly property var monitorWorkspaces: root.monitorWorkspaces(monitorName)
                 readonly property string monitorWindowTitle: root.activeWindowTitle(monitorName)
 
-                Column {
+                Flickable {
+                    id: railViewport
                     anchors.fill: parent
-                    spacing: 0
-
-                    // --- Top: workspaces ---
+                    anchors.topMargin: root.themed ? 4 : 0
+                    anchors.bottomMargin: root.themed ? 4 : 0
+                    contentHeight: railColumn.implicitHeight
+                    interactive: root.themed && contentHeight > height
+                    clip: root.themed
+                    boundsBehavior: Flickable.StopAtBounds
                     Column {
-                        id: topSection
-                        width: parent.width
-                        spacing: root.workspaceSpacingPx
+                        id: railColumn
+                        width: railViewport.width
+                        spacing: root.themed ? 6 : 0
 
-                        Repeater {
-                            model: contentRoot.monitorWorkspaces
+                        Item {
+                            id: workspaceModule
+                            width: parent.width
+                            height: topSection.implicitHeight + (root.themed ? 8 : 0)
+                            RailCard { anchors.fill: parent }
+                            // --- Top: workspaces ---
+                            Column {
+                                id: topSection
+                                width: parent.width
+                                y: root.themed ? 4 : 0
+                                spacing: root.workspaceSpacingPx
+
+                                Repeater {
+                                    model: contentRoot.monitorWorkspaces
+
+                                    Item {
+                                        id: workspaceItem
+
+                                        required property var modelData
+                                        readonly property var workspace: modelData
+
+                                        width: topSection.width
+                                        height: root.workspaceHeightPx
+
+                                        Rectangle {
+                                            anchors.centerIn: parent
+                                            width: parent.width - 4
+                                            height: parent.height - 2
+                                            radius: root.themed ? 5 : 3
+                                            color: modelData.urgent ? root.warningFill
+                                                : root.themed ? (modelData.active ? root.selectedColor : root.chipColor) : "transparent"
+                                            border.width: root.themed && modelData.active ? 1 : 0
+                                            border.color: root.fgColor
+                                        }
+
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: modelData.urgent ? ("!" + modelData.name + "!") : (modelData.active && !root.themed ? ("-" + modelData.name + "-") : String(modelData.name))
+                                            color: modelData.urgent ? root.urgentColor : root.fgColor
+                                            font.family: root.baseFont
+                                            font.pixelSize: Math.max(8, root.fontSizePx - 2)
+                                            font.bold: !!modelData.active || !!modelData.urgent
+                                            renderType: Text.NativeRendering
+                                        }
+
+                                        MouseArea {
+                                            z: 10
+                                            anchors.fill: parent
+                                            acceptedButtons: Qt.LeftButton
+                                            cursorShape: Qt.PointingHandCursor
+
+                                            onClicked: function(mouse) {
+                                                root.dispatchWorkspace(workspaceItem.workspace);
+                                                mouse.accepted = true;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                        }
+
+                        // --- Center: active window title ---
+                        Item {
+                            id: centerSection
+                            width: parent.width
+                            height: Math.max(0, railViewport.height - workspaceModule.height - bottomSection.implicitHeight - railColumn.spacing * 2)
+
+                            RailCard {
+                                id: titleCard
+                                anchors.centerIn: parent
+                                width: parent.width
+                                height: Math.min(parent.height, windowTitle.implicitWidth + 16, 260)
+                                visible: root.themed && height > 24 && contentRoot.monitorWindowTitle !== ""
+                            }
+                            Text {
+                                id: windowTitle
+                                anchors.centerIn: parent
+                                visible: !root.themed || titleCard.visible
+                                width: root.themed ? Math.max(0, titleCard.height - 12) : centerSection.height
+                                text: contentRoot.monitorWindowTitle
+                                color: root.fgColor
+                                font.family: root.baseFont
+                                font.pixelSize: 13
+                                elide: Text.ElideRight
+                                rotation: 90
+                                horizontalAlignment: Text.AlignHCenter
+                                renderType: Text.NativeRendering
+                            }
+                        }
+
+                        // --- Bottom: status blocks ---
+                        Column {
+                            id: bottomSection
+                            width: parent.width
+                            spacing: 6
 
                             Item {
-                                id: workspaceItem
+                                id: trayModule
+                                width: parent.width
+                                visible: trayColumn.implicitHeight > 0
+                                height: visible ? trayColumn.implicitHeight + (root.themed ? 8 : 0) : 0
+                                RailCard { anchors.fill: parent }
+                                // System tray
+                                Column {
+                                    id: trayColumn
+                                    y: root.themed ? 4 : 0
+                                    width: parent.width
+                                    spacing: 4
 
-                                required property var modelData
-                                readonly property var workspace: modelData
+                                    Repeater {
+                                        model: SystemTray.items
 
-                                width: topSection.width
-                                height: root.workspaceHeightPx
+                                        Item {
+                                            id: trayItem
+                                            required property var modelData
 
-                                Rectangle {
-                                    anchors.centerIn: parent
-                                    width: parent.width - 4
-                                    height: parent.height - 2
-                                    radius: root.themed ? 5 : 3
-                                    color: modelData.urgent ? root.warningFill
-                                        : root.themed ? (modelData.active ? root.selectedColor : root.chipColor) : "transparent"
-                                    border.width: root.themed && modelData.active ? 1 : 0
-                                    border.color: root.fgColor
+                                            readonly property bool hasNativeMenu: !!modelData && !!modelData.hasMenu
+                                            property bool longPressTriggered: false
+
+                                            width: bottomSection.width
+                                            height: root.trayIconPx + 4
+
+                                            IconImage {
+                                                anchors.centerIn: parent
+                                                implicitSize: root.trayIconPx
+                                                source: root.trayIconSource(modelData.icon)
+                                            }
+
+                                            MouseArea {
+                                                anchors.fill: parent
+                                                acceptedButtons: Qt.AllButtons
+                                                pressAndHoldInterval: 400
+
+                                                onClicked: function(mouse) {
+                                                    if (trayItem.longPressTriggered) {
+                                                        trayItem.longPressTriggered = false;
+                                                        return;
+                                                    }
+
+                                                    if (mouse.button === Qt.LeftButton) {
+                                                        if (modelData.onlyMenu) {
+                                                            if (!root.openTrayMenu(modelData, trayItem, panel, contentRoot)) {
+                                                                modelData.activate();
+                                                            }
+                                                        } else {
+                                                            modelData.activate();
+                                                        }
+                                                    } else if (mouse.button === Qt.RightButton) {
+                                                        if (!root.openTrayMenu(modelData, trayItem, panel, contentRoot)) {
+                                                            modelData.secondaryActivate();
+                                                        }
+                                                    } else if (mouse.button === Qt.MiddleButton) {
+                                                        modelData.secondaryActivate();
+                                                    }
+                                                }
+
+                                                onPressAndHold: {
+                                                    trayItem.longPressTriggered = true;
+                                                    if (!root.openTrayMenu(modelData, trayItem, panel, contentRoot)) {
+                                                        modelData.secondaryActivate();
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
 
-                                Text {
+                            }
+                            // Gap between tray items and status icons.
+                            Item {
+                                width: parent.width
+                                height: root.trayToStatusGapPx
+                                visible: !root.themed
+                            }
+
+                            Item {
+                                id: statusModule
+                                width: parent.width
+                                height: statusColumn.implicitHeight + (root.themed ? 8 : 0)
+                                RailCard { anchors.fill: parent }
+                                Column {
+                                    id: statusColumn
+                                    width: parent.width
+                                    y: root.themed ? 4 : 0
+                                    spacing: 6
+                                    // Bluetooth icon + count
+                                    Item {
+                                        width: parent.width
+                                        height: 24
+
+                                        Column {
+                                            anchors.centerIn: parent
+                                            spacing: -2
+
+                                            Text {
+                                                text: ""
+                                                color: root.fgColor
+                                                font.family: "Font Awesome 7 Brands"
+                                                font.pixelSize: root.statusIconPx
+                                                horizontalAlignment: Text.AlignHCenter
+                                                renderType: Text.NativeRendering
+                                            }
+
+                                            Text {
+                                                text: String(root.bluetoothCount)
+                                                color: root.fgColor
+                                                font.family: root.baseFont
+                                                font.pixelSize: 9
+                                                horizontalAlignment: Text.AlignHCenter
+                                                renderType: Text.NativeRendering
+                                            }
+                                }
+                            }
+
+                            // Network
+                            Text {
+                                width: parent.width
+                                text: root.networkIconGlyph()
+                                color: root.fgColor
+                                font.family: "Font Awesome 7 Free Solid"
+                                font.pixelSize: root.statusIconPx
+                                horizontalAlignment: Text.AlignHCenter
+                                renderType: Text.NativeRendering
+                            }
+
+                            // Volume + cava
+                            Item {
+                                width: parent.width
+                                height: 32
+
+                                Column {
                                     anchors.centerIn: parent
-                                    text: modelData.urgent ? ("!" + modelData.name + "!") : (modelData.active && !root.themed ? ("-" + modelData.name + "-") : String(modelData.name))
-                                    color: modelData.urgent ? root.urgentColor : root.fgColor
-                                    font.family: root.baseFont
-                                    font.pixelSize: Math.max(8, root.fontSizePx - 2)
-                                    font.bold: !!modelData.active || !!modelData.urgent
-                                    renderType: Text.NativeRendering
+                                    width: parent.width
+                                    spacing: -1
+
+                                    Item {
+                                        width: parent.width
+                                        height: root.cavaTextPx
+                                        clip: true
+
+                                        Text {
+                                            id: cavaText
+                                            text: root.cavaBars
+                                            color: root.fgColor
+                                            font.family: "monospace"
+                                            font.pixelSize: root.cavaTextPx
+                                            renderType: Text.NativeRendering
+                                            x: Math.round((parent.width - (cavaText.implicitWidth * 0.16)) / 2)
+
+                                            transform: Scale {
+                                                xScale: 0.16
+                                                yScale: 1.0
+                                                origin.x: 0
+                                                origin.y: cavaText.height / 2
+                                            }
+                                        }
+                                    }
+
+                                    Text {
+                                        width: parent.width
+                                        text: root.audioMuted ? "MUTE" : (String(root.volumePercent) + "%")
+                                        color: root.audioMuted ? root.mutedColor : root.fgColor
+                                        font.family: root.baseFont
+                                        font.pixelSize: 9
+                                        horizontalAlignment: Text.AlignHCenter
+                                        renderType: Text.NativeRendering
+                                    }
                                 }
 
                                 MouseArea {
-                                    z: 10
                                     anchors.fill: parent
-                                    acceptedButtons: Qt.LeftButton
-                                    cursorShape: Qt.PointingHandCursor
-
+                                    acceptedButtons: Qt.AllButtons
                                     onClicked: function(mouse) {
-                                        root.dispatchWorkspace(workspaceItem.workspace);
-                                        mouse.accepted = true;
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // --- Center: active window title ---
-                    Item {
-                        id: centerSection
-                        width: parent.width
-                        height: Math.max(0, contentRoot.height - topSection.implicitHeight - bottomSection.implicitHeight)
-
-                        Text {
-                            anchors.centerIn: parent
-                            width: centerSection.height
-                            text: contentRoot.monitorWindowTitle
-                            color: root.fgColor
-                            font.family: root.baseFont
-                            font.pixelSize: 13
-                            elide: Text.ElideRight
-                            rotation: 90
-                            horizontalAlignment: Text.AlignHCenter
-                            renderType: Text.NativeRendering
-                        }
-                    }
-
-                    // --- Bottom: status blocks ---
-                    Column {
-                        id: bottomSection
-                        width: parent.width
-                        spacing: 6
-
-                        // System tray
-                        Column {
-                            width: parent.width
-                            spacing: 4
-
-                            Repeater {
-                                model: SystemTray.items
-
-                                Item {
-                                    id: trayItem
-                                    required property var modelData
-
-                                    readonly property bool hasNativeMenu: !!modelData && !!modelData.hasMenu
-                                    property bool longPressTriggered: false
-
-                                    width: bottomSection.width
-                                    height: root.trayIconPx + 4
-
-                                    IconImage {
-                                        anchors.centerIn: parent
-                                        implicitSize: root.trayIconPx
-                                        source: root.trayIconSource(modelData.icon)
-                                    }
-
-                                    MouseArea {
-                                        anchors.fill: parent
-                                        acceptedButtons: Qt.AllButtons
-                                        pressAndHoldInterval: 400
-
-                                        onClicked: function(mouse) {
-                                            if (trayItem.longPressTriggered) {
-                                                trayItem.longPressTriggered = false;
-                                                return;
-                                            }
-
-                                            if (mouse.button === Qt.LeftButton) {
-                                                if (modelData.onlyMenu) {
-                                                    if (!root.openTrayMenu(modelData, trayItem, panel, contentRoot)) {
-                                                        modelData.activate();
-                                                    }
-                                                } else {
-                                                    modelData.activate();
-                                                }
-                                            } else if (mouse.button === Qt.RightButton) {
-                                                if (!root.openTrayMenu(modelData, trayItem, panel, contentRoot)) {
-                                                    modelData.secondaryActivate();
-                                                }
-                                            } else if (mouse.button === Qt.MiddleButton) {
-                                                modelData.secondaryActivate();
-                                            }
-                                        }
-
-                                        onPressAndHold: {
-                                            trayItem.longPressTriggered = true;
-                                            if (!root.openTrayMenu(modelData, trayItem, panel, contentRoot)) {
-                                                modelData.secondaryActivate();
-                                            }
+                                        if (mouse.button === Qt.RightButton) {
+                                            root.toggleMute();
+                                        } else {
+                                            audioPopup.visible = !audioPopup.visible;
                                         }
                                     }
+                                    onWheel: function(wheel) {
+                                        root.adjustVolume(wheel.angleDelta.y > 0 ? 5 : -5);
+                                    }
                                 }
                             }
-                        }
 
-                        // Gap between tray items and status icons.
-                        Item {
-                            width: parent.width
-                            height: root.trayToStatusGapPx
-                        }
-
-                        // Bluetooth icon + count
-                        Item {
-                            width: parent.width
-                            height: 24
-
-                            Column {
-                                anchors.centerIn: parent
-                                spacing: -2
-
-                                Text {
-                                    text: ""
-                                    color: root.fgColor
-                                    font.family: "Font Awesome 7 Brands"
-                                    font.pixelSize: root.statusIconPx
-                                    horizontalAlignment: Text.AlignHCenter
-                                    renderType: Text.NativeRendering
-                                }
-
-                                Text {
-                                    text: String(root.bluetoothCount)
-                                    color: root.fgColor
-                                    font.family: root.baseFont
-                                    font.pixelSize: 9
-                                    horizontalAlignment: Text.AlignHCenter
-                                    renderType: Text.NativeRendering
-                                }
-                            }
-                        }
-
-                        // Network
-                        Text {
-                            width: parent.width
-                            text: root.networkIconGlyph()
-                            color: root.fgColor
-                            font.family: "Font Awesome 7 Free Solid"
-                            font.pixelSize: root.statusIconPx
-                            horizontalAlignment: Text.AlignHCenter
-                            renderType: Text.NativeRendering
-                        }
-
-                        // Volume + cava
-                        Item {
-                            width: parent.width
-                            height: 32
-
-                            Column {
-                                anchors.centerIn: parent
+                            // PTT
+                            Item {
+                                visible: root.pttEnabled && root.pttState === "enabled"
                                 width: parent.width
-                                spacing: -1
+                                height: visible ? 24 : 0
 
-                                Item {
-                                    width: parent.width
-                                    height: root.cavaTextPx
-                                    clip: true
+                                Column {
+                                    anchors.centerIn: parent
+                                    spacing: -2
 
                                     Text {
-                                        id: cavaText
-                                        text: root.cavaBars
+                                        text: "󰍬"
+                                        color: root.accentColor
+                                        font.family: root.baseFont
+                                        font.pixelSize: 9
+                                        horizontalAlignment: Text.AlignHCenter
+                                    }
+
+                                    Text {
+                                        text: "PTT"
+                                        color: root.accentColor
+                                        font.family: root.baseFont
+                                        font.pixelSize: 8
+                                        horizontalAlignment: Text.AlignHCenter
+                                    }
+                                }
+                            }
+
+                            // Keyboard mode
+                            Item {
+                                visible: root.qwertyState === "qwerty"
+                                width: parent.width
+                                height: visible ? 24 : 0
+
+                                Column {
+                                    anchors.centerIn: parent
+                                    spacing: -2
+
+                                    Text {
+                                        text: "KEY"
+                                        color: root.accentColor
+                                        font.family: root.baseFont
+                                        font.pixelSize: 8
+                                        horizontalAlignment: Text.AlignHCenter
+                                    }
+
+                                    Text {
+                                        text: "QWER"
+                                        color: root.accentColor
+                                        font.family: root.baseFont
+                                        font.pixelSize: 8
+                                        horizontalAlignment: Text.AlignHCenter
+                                    }
+                                }
+                            }
+
+                            // Battery
+                            Item {
+                                visible: String(root.batteryState.state || "") !== ""
+                                width: parent.width
+                                height: visible ? Math.max(28, root.batteryIconPx + root.tinyTextPx) : 0
+
+                                Column {
+                                    anchors.centerIn: parent
+                                    spacing: -2
+
+                                    Text {
+                                        text: root.batteryIcon()
                                         color: root.fgColor
-                                        font.family: "monospace"
-                                        font.pixelSize: root.cavaTextPx
+                                        font.family: root.baseFont
+                                        font.pixelSize: root.batteryIconPx
+                                        rotation: -90
+                                        horizontalAlignment: Text.AlignHCenter
+                                    }
+
+                                    Text {
+                                        text: String(root.batteryState.percent || 0) + "%"
+                                        color: root.fgColor
+                                        font.family: root.baseFont
+                                        font.pixelSize: 8
+                                        horizontalAlignment: Text.AlignHCenter
+                                    }
+                                }
+                            }
+
+                            // Notifications
+                            Item {
+                                visible: root.notificationCount > 0
+                                width: parent.width
+                                height: visible ? 24 : 0
+
+                                Column {
+                                    anchors.centerIn: parent
+                                    spacing: -2
+
+                                    Text {
+                                        text: ""
+                                        color: root.toastNotifications.length > 0 ? root.accentColor : root.fgColor
+                                        font.family: "Font Awesome 7 Free Solid"
+                                        font.pixelSize: root.statusIconPx
+                                        horizontalAlignment: Text.AlignHCenter
                                         renderType: Text.NativeRendering
-                                        x: Math.round((parent.width - (cavaText.implicitWidth * 0.16)) / 2)
+                                    }
 
-                                        transform: Scale {
-                                            xScale: 0.16
-                                            yScale: 1.0
-                                            origin.x: 0
-                                            origin.y: cavaText.height / 2
-                                        }
+                                    Text {
+                                        text: String(root.notificationCount)
+                                        color: root.fgColor
+                                        font.family: root.baseFont
+                                        font.pixelSize: 8
+                                        horizontalAlignment: Text.AlignHCenter
+                                        renderType: Text.NativeRendering
                                     }
                                 }
 
-                                Text {
-                                    width: parent.width
-                                    text: root.audioMuted ? "MUTE" : (String(root.volumePercent) + "%")
-                                    color: root.audioMuted ? root.mutedColor : root.fgColor
-                                    font.family: root.baseFont
-                                    font.pixelSize: 9
-                                    horizontalAlignment: Text.AlignHCenter
-                                    renderType: Text.NativeRendering
-                                }
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                acceptedButtons: Qt.AllButtons
-                                onClicked: function(mouse) {
-                                    if (mouse.button === Qt.RightButton) {
-                                        root.toggleMute();
-                                    } else {
-                                        audioPopup.visible = !audioPopup.visible;
+                                MouseArea {
+                                    anchors.fill: parent
+                                    onClicked: {
+                                        controlCenterPopup.visible = !controlCenterPopup.visible;
                                     }
                                 }
-                                onWheel: function(wheel) {
-                                    root.adjustVolume(wheel.angleDelta.y > 0 ? 5 : -5);
-                                }
                             }
-                        }
 
-                        // PTT
-                        Item {
-                            visible: root.pttEnabled && root.pttState === "enabled"
-                            width: parent.width
-                            height: visible ? 24 : 0
-
-                            Column {
-                                anchors.centerIn: parent
-                                spacing: -2
-
-                                Text {
-                                    text: "󰍬"
-                                    color: root.accentColor
-                                    font.family: root.baseFont
-                                    font.pixelSize: 9
-                                    horizontalAlignment: Text.AlignHCenter
-                                }
-
-                                Text {
-                                    text: "PTT"
-                                    color: root.accentColor
-                                    font.family: root.baseFont
-                                    font.pixelSize: 8
-                                    horizontalAlignment: Text.AlignHCenter
-                                }
-                            }
-                        }
-
-                        // Keyboard mode
-                        Item {
-                            visible: root.qwertyState === "qwerty"
-                            width: parent.width
-                            height: visible ? 24 : 0
-
-                            Column {
-                                anchors.centerIn: parent
-                                spacing: -2
-
-                                Text {
-                                    text: "KEY"
-                                    color: root.accentColor
-                                    font.family: root.baseFont
-                                    font.pixelSize: 8
-                                    horizontalAlignment: Text.AlignHCenter
-                                }
-
-                                Text {
-                                    text: "QWER"
-                                    color: root.accentColor
-                                    font.family: root.baseFont
-                                    font.pixelSize: 8
-                                    horizontalAlignment: Text.AlignHCenter
-                                }
-                            }
-                        }
-
-                        // Battery
-                        Item {
-                            visible: String(root.batteryState.state || "") !== ""
-                            width: parent.width
-                            height: visible ? Math.max(28, root.batteryIconPx + root.tinyTextPx) : 0
-
-                            Column {
-                                anchors.centerIn: parent
-                                spacing: -2
-
-                                Text {
-                                    text: root.batteryIcon()
-                                    color: root.fgColor
-                                    font.family: root.baseFont
-                                    font.pixelSize: root.batteryIconPx
-                                    rotation: -90
-                                    horizontalAlignment: Text.AlignHCenter
-                                }
-
-                                Text {
-                                    text: String(root.batteryState.percent || 0) + "%"
-                                    color: root.fgColor
-                                    font.family: root.baseFont
-                                    font.pixelSize: 8
-                                    horizontalAlignment: Text.AlignHCenter
-                                }
-                            }
-                        }
-
-                        // Notifications
-                        Item {
-                            visible: root.notificationCount > 0
-                            width: parent.width
-                            height: visible ? 24 : 0
-
-                            Column {
-                                anchors.centerIn: parent
-                                spacing: -2
-
-                                Text {
-                                    text: ""
-                                    color: root.toastNotifications.length > 0 ? root.accentColor : root.fgColor
-                                    font.family: "Font Awesome 7 Free Solid"
-                                    font.pixelSize: root.statusIconPx
-                                    horizontalAlignment: Text.AlignHCenter
-                                    renderType: Text.NativeRendering
-                                }
-
-                                Text {
-                                    text: String(root.notificationCount)
-                                    color: root.fgColor
-                                    font.family: root.baseFont
-                                    font.pixelSize: 8
-                                    horizontalAlignment: Text.AlignHCenter
-                                    renderType: Text.NativeRendering
                                 }
                             }
 
-                            MouseArea {
-                                anchors.fill: parent
-                                onClicked: {
-                                    controlCenterPopup.visible = !controlCenterPopup.visible;
-                                }
-                            }
-                        }
-
-                        // Clock
-                        Item {
-                            id: clockBlock
-
-                            width: parent.width
-                            height: clockColumn.implicitHeight
-
-                            Column {
-                                id: clockColumn
+                            // Clock
+                            Item {
+                                id: clockBlock
 
                                 width: parent.width
-                                spacing: -2
+                                height: clockColumn.implicitHeight + (root.themed ? 8 : 0)
+                                RailCard { anchors.fill: parent }
 
-                                Text {
+                                Column {
+                                    id: clockColumn
+                                    y: root.themed ? 4 : 0
+
                                     width: parent.width
-                                    text: String(root.clockState.hour || "00")
-                                    color: root.fgColor
-                                    font.family: root.baseFont
-                                    font.pixelSize: root.clockMainPx
-                                    font.letterSpacing: root.clockLetterSpacing
-                                    font.bold: true
-                                    horizontalAlignment: Text.AlignHCenter
-                                    renderType: Text.NativeRendering
+                                    spacing: -2
+
+                                    Text {
+                                        width: parent.width
+                                        text: String(root.clockState.hour || "00")
+                                        color: root.fgColor
+                                        font.family: root.baseFont
+                                        font.pixelSize: root.clockMainPx
+                                        font.letterSpacing: root.clockLetterSpacing
+                                        font.bold: true
+                                        horizontalAlignment: Text.AlignHCenter
+                                        renderType: Text.NativeRendering
+                                    }
+
+                                    Text {
+                                        width: parent.width
+                                        text: String(root.clockState.minute || "00")
+                                        color: root.fgColor
+                                        font.family: root.baseFont
+                                        font.pixelSize: root.clockMainPx
+                                        font.letterSpacing: root.clockLetterSpacing
+                                        font.bold: true
+                                        horizontalAlignment: Text.AlignHCenter
+                                        renderType: Text.NativeRendering
+                                    }
+
+                                    Text {
+                                        width: parent.width
+                                        text: String(root.clockState.ampm || "am")
+                                        color: root.fgColor
+                                        font.family: root.baseFont
+                                        font.pixelSize: root.tinyTextPx
+                                        horizontalAlignment: Text.AlignRight
+                                    }
+
+                                    Text {
+                                        width: parent.width
+                                        text: String(root.clockState.date || "01/01")
+                                        color: root.fgColor
+                                        font.family: root.baseFont
+                                        font.pixelSize: root.dateTextPx
+                                        horizontalAlignment: Text.AlignHCenter
+                                    }
                                 }
 
-                                Text {
-                                    width: parent.width
-                                    text: String(root.clockState.minute || "00")
-                                    color: root.fgColor
-                                    font.family: root.baseFont
-                                    font.pixelSize: root.clockMainPx
-                                    font.letterSpacing: root.clockLetterSpacing
-                                    font.bold: true
-                                    horizontalAlignment: Text.AlignHCenter
-                                    renderType: Text.NativeRendering
-                                }
-
-                                Text {
-                                    width: parent.width
-                                    text: String(root.clockState.ampm || "am")
-                                    color: root.fgColor
-                                    font.family: root.baseFont
-                                    font.pixelSize: root.tinyTextPx
-                                    horizontalAlignment: Text.AlignRight
-                                }
-
-                                Text {
-                                    width: parent.width
-                                    text: String(root.clockState.date || "01/01")
-                                    color: root.fgColor
-                                    font.family: root.baseFont
-                                    font.pixelSize: root.dateTextPx
-                                    horizontalAlignment: Text.AlignHCenter
-                                }
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                onClicked: {
-                                    controlCenterPopup.visible = !controlCenterPopup.visible;
+                                MouseArea {
+                                    anchors.fill: parent
+                                    onClicked: {
+                                        controlCenterPopup.visible = !controlCenterPopup.visible;
+                                    }
                                 }
                             }
                         }
                     }
-                }
+
+                    }
 
                 // Audio output popup
                 PopupWindow {
@@ -1165,7 +1253,7 @@ ShellRoot {
                     visible: false
                     color: "transparent"
                     implicitWidth: 260
-                    implicitHeight: Math.max(40, sinksColumn.implicitHeight + 10)
+                    implicitHeight: root.themed ? Math.min(panel.height - 16, Math.max(40, sinksColumn.implicitHeight + 20)) : Math.max(40, sinksColumn.implicitHeight + 10)
 
                     anchor {
                         window: panel
@@ -1173,23 +1261,30 @@ ShellRoot {
                         rect.y: panel.height - audioPopup.implicitHeight - 8
                     }
 
-                    Rectangle {
+                    MenuCard {
+                        id: audioCard
                         anchors.fill: parent
-                        radius: root.panelRadius
                         color: root.themed ? root.surfaceColor : "#99000000"
                         border.width: root.themed ? 2 : 1
                         border.color: root.edgeColor
 
+                        Flickable {
+                            id: audioViewport
+                            anchors.fill: parent
+                            anchors.margins: root.themed ? 10 : 4
+                            contentHeight: sinksColumn.implicitHeight
+                            interactive: root.themed && contentHeight > height
+                            clip: root.themed
+                            boundsBehavior: Flickable.StopAtBounds
                         Column {
                             id: sinksColumn
-                            anchors.fill: parent
-                            anchors.margins: 4
-                            spacing: 2
+                            width: audioViewport.width
+                            spacing: root.themed ? 6 : 2
 
                             Repeater {
                                 model: Pipewire.nodes
 
-                                Rectangle {
+                                MenuButton {
                                     required property var modelData
                                     id: audioSinkRow
 
@@ -1198,11 +1293,11 @@ ShellRoot {
                                     property bool hovered: false
 
                                     width: sinksColumn.width
-                                    height: audioOutput ? 24 : 0
-                                    radius: 4
+                                    height: audioOutput ? (root.themed ? 32 : 24) : 0
+
                                     visible: audioOutput
                                     color: isDefaultOutput ? root.selectedColor : (hovered ? root.chipColor : "transparent")
-                                    border.width: hovered ? 1 : 0
+                                    border.width: root.themed ? 2 : (hovered ? 1 : 0)
                                     border.color: root.themed ? root.theme.inactive : "#55ffffff"
 
                                     Text {
@@ -1231,6 +1326,7 @@ ShellRoot {
                                 }
                             }
                         }
+                        }
                     }
                 }
 
@@ -1241,7 +1337,7 @@ ShellRoot {
                     visible: false
                     color: "transparent"
                     implicitWidth: 320
-                    implicitHeight: Math.min(panel.height - 16, Math.max(260, controlCenterColumn.implicitHeight + 16))
+                    implicitHeight: Math.min(panel.height - 16, Math.max(260, controlCenterColumn.implicitHeight + (root.themed ? 28 : 16)))
 
                     anchor {
                         window: panel
@@ -1249,26 +1345,35 @@ ShellRoot {
                         rect.y: panel.height - controlCenterPopup.implicitHeight - 8
                     }
 
-                    Rectangle {
+                    MenuCard {
+                        id: controlCard
                         anchors.fill: parent
-                        radius: root.panelRadius
                         color: root.themed ? root.surfaceColor : "#cc11111b"
                         border.width: root.themed ? 2 : 1
                         border.color: root.edgeColor
 
+                        Flickable {
+                            id: controlsViewport
+                            anchors.fill: parent
+                            anchors.margins: root.themed ? 14 : 8
+                            contentHeight: controlCenterColumn.implicitHeight
+                            interactive: root.themed && contentHeight > height
+                            clip: root.themed
+                            boundsBehavior: Flickable.StopAtBounds
                         Column {
                             id: controlCenterColumn
 
-                            anchors.fill: parent
-                            anchors.margins: 8
-                            spacing: 8
+                            width: controlsViewport.width
+                            spacing: root.themed ? 10 : 8
 
                             Text {
                                 width: parent.width
                                 text: "Controls"
+                                font.bold: root.themed
+                                font.italic: root.themed
                                 color: root.fgColor
                                 font.family: root.baseFont
-                                font.pixelSize: 14
+                                font.pixelSize: root.themed ? 16 : 14
                             }
 
                             Rectangle {
@@ -1286,17 +1391,18 @@ ShellRoot {
 
                             Row {
                                 width: parent.width
-                                height: 28
+                                height: root.themed ? 32 : 28
                                 spacing: 6
 
-                                Rectangle {
-                                    width: 92
+                                MenuButton {
+                                    width: root.themed ? (parent.width - parent.spacing * 2) / 3 : 92
                                     height: parent.height
-                                    radius: 4
+
                                     color: root.audioMuted ? root.warningFill : root.chipColor
 
                                     Text {
                                         anchors.centerIn: parent
+                                        font.weight: root.themed ? Font.DemiBold : Font.Normal
                                         text: root.audioMuted ? "unmute" : "mute"
                                         color: root.fgColor
                                         font.family: root.baseFont
@@ -1309,14 +1415,15 @@ ShellRoot {
                                     }
                                 }
 
-                                Rectangle {
+                                MenuButton {
                                     width: 42
                                     height: parent.height
-                                    radius: 4
+
                                     color: root.chipColor
 
                                     Text {
                                         anchors.centerIn: parent
+                                        font.weight: root.themed ? Font.DemiBold : Font.Normal
                                         text: "-"
                                         color: root.fgColor
                                         font.family: root.baseFont
@@ -1340,14 +1447,15 @@ ShellRoot {
                                     verticalAlignment: Text.AlignVCenter
                                 }
 
-                                Rectangle {
+                                MenuButton {
                                     width: 42
                                     height: parent.height
-                                    radius: 4
+
                                     color: root.chipColor
 
                                     Text {
                                         anchors.centerIn: parent
+                                        font.weight: root.themed ? Font.DemiBold : Font.Normal
                                         text: "+"
                                         color: root.fgColor
                                         font.family: root.baseFont
@@ -1373,17 +1481,18 @@ ShellRoot {
                             Row {
                                 width: parent.width
                                 visible: root.sessionControlsEnabled
-                                height: visible ? 28 : 0
+                                height: visible ? (root.themed ? 32 : 28) : 0
                                 spacing: 6
 
-                                Rectangle {
-                                    width: 92
+                                MenuButton {
+                                    width: root.themed ? (parent.width - parent.spacing * 2) / 3 : 92
                                     height: parent.height
-                                    radius: 4
+
                                     color: root.chipColor
 
                                     Text {
                                         anchors.centerIn: parent
+                                        font.weight: root.themed ? Font.DemiBold : Font.Normal
                                         text: "bright -"
                                         color: root.fgColor
                                         font.family: root.baseFont
@@ -1396,14 +1505,15 @@ ShellRoot {
                                     }
                                 }
 
-                                Rectangle {
-                                    width: 92
+                                MenuButton {
+                                    width: root.themed ? (parent.width - parent.spacing * 2) / 3 : 92
                                     height: parent.height
-                                    radius: 4
+
                                     color: root.chipColor
 
                                     Text {
                                         anchors.centerIn: parent
+                                        font.weight: root.themed ? Font.DemiBold : Font.Normal
                                         text: "bright +"
                                         color: root.fgColor
                                         font.family: root.baseFont
@@ -1416,14 +1526,15 @@ ShellRoot {
                                     }
                                 }
 
-                                Rectangle {
-                                    width: 92
+                                MenuButton {
+                                    width: root.themed ? (parent.width - parent.spacing * 2) / 3 : 92
                                     height: parent.height
-                                    radius: 4
+
                                     color: root.chipColor
 
                                     Text {
                                         anchors.centerIn: parent
+                                        font.weight: root.themed ? Font.DemiBold : Font.Normal
                                         text: root.powerProfileGlyph()
                                         color: root.fgColor
                                         font.family: root.baseFont
@@ -1440,17 +1551,18 @@ ShellRoot {
                             Row {
                                 width: parent.width
                                 visible: root.sessionControlsEnabled
-                                height: visible ? 28 : 0
+                                height: visible ? (root.themed ? 32 : 28) : 0
                                 spacing: 6
 
-                                Rectangle {
-                                    width: 70
+                                MenuButton {
+                                    width: root.themed ? (parent.width - parent.spacing * 3) / 4 : 70
                                     height: parent.height
-                                    radius: 4
+
                                     color: Networking.wifiEnabled ? root.chipColor : root.warningFill
 
                                     Text {
                                         anchors.centerIn: parent
+                                        font.weight: root.themed ? Font.DemiBold : Font.Normal
                                         text: Networking.wifiEnabled ? "wifi on" : "wifi off"
                                         color: root.fgColor
                                         font.family: root.baseFont
@@ -1463,14 +1575,15 @@ ShellRoot {
                                     }
                                 }
 
-                                Rectangle {
-                                    width: 70
+                                MenuButton {
+                                    width: root.themed ? (parent.width - parent.spacing * 3) / 4 : 70
                                     height: parent.height
-                                    radius: 4
+
                                     color: root.chipColor
 
                                     Text {
                                         anchors.centerIn: parent
+                                        font.weight: root.themed ? Font.DemiBold : Font.Normal
                                         text: "lock"
                                         color: root.fgColor
                                         font.family: root.baseFont
@@ -1483,14 +1596,15 @@ ShellRoot {
                                     }
                                 }
 
-                                Rectangle {
-                                    width: 70
+                                MenuButton {
+                                    width: root.themed ? (parent.width - parent.spacing * 3) / 4 : 70
                                     height: parent.height
-                                    radius: 4
+
                                     color: root.chipColor
 
                                     Text {
                                         anchors.centerIn: parent
+                                        font.weight: root.themed ? Font.DemiBold : Font.Normal
                                         text: "suspend"
                                         color: root.fgColor
                                         font.family: root.baseFont
@@ -1503,14 +1617,15 @@ ShellRoot {
                                     }
                                 }
 
-                                Rectangle {
-                                    width: 70
+                                MenuButton {
+                                    width: root.themed ? (parent.width - parent.spacing * 3) / 4 : 70
                                     height: parent.height
-                                    radius: 4
+
                                     color: root.warningFill
 
                                     Text {
                                         anchors.centerIn: parent
+                                        font.weight: root.themed ? Font.DemiBold : Font.Normal
                                         text: "shutdown"
                                         color: root.fgColor
                                         font.family: root.baseFont
@@ -1641,6 +1756,7 @@ ShellRoot {
                                 }
                             }
                         }
+                        }
                     }
                 }
 
@@ -1658,9 +1774,8 @@ ShellRoot {
                         rect.y: Math.max(16, Math.round((panel.height - powerActionPopup.implicitHeight) / 2))
                     }
 
-                    Rectangle {
+                    MenuCard {
                         anchors.fill: parent
-                        radius: root.panelRadius
                         color: root.themed ? root.surfaceColor : "#ee050508"
                         border.width: 1
                         border.color: root.accentColor
@@ -1791,7 +1906,7 @@ ShellRoot {
                                         IconImage {
                                             anchors.centerIn: parent
                                             width: 28
-                                            height: 28
+                                            height: root.themed ? 32 : 28
                                             source: modelData.icon || ""
                                         }
                                     }

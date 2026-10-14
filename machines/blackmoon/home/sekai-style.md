@@ -11,13 +11,17 @@ Quickshell sidebar's Nix template. It is not a new shell or theme service.
   rounding, 4px inner/6px outer gaps, and low-opacity teal shadows. Shorter
   window/fade/workspace transitions replace the slow default movement; there
   is no looping border animation. Blur and layout policy stay unchanged.
-- Existing sidebar: cream backing, dark teal text, mint active workspace pills,
+- Existing sidebar: separate rounded, outlined cream modules for workspaces,
+  title, tray, status and clock; dark teal text, mint active workspace pills,
   lavender inactive pills, and pink urgent states. Width, exclusive zone,
   status visibility, scripts, service subscriptions and interaction handlers
   are unchanged.
 - Existing control/audio popups: cream surfaces, teal outlines, lavender
   buttons, mint selected states, pink caution states and a small three-color
-  header rule. No controls or new widgets are introduced.
+  header rule. Rounded buttons have dark outlines and light inset edges,
+  larger padding and stronger typography. No controls or new widgets are introduced.
+  The rail remains 22px wide; on short screens the rail and popup contents scroll
+  while retaining usable control sizes.
 - Mako: opaque cream normal/low notifications, teal/lavender borders, and pink
   critical notifications with dark text. The existing output, anchor, font,
   notification ownership and behavior remain in place.
@@ -34,6 +38,10 @@ sidebar and control popup QML rendered on an isolated RTX 4090/Xvfb display
 with explicitly seeded sample state and disabled helper processes. The
 non-themed popup matched the previous rendering apart from <=1/255 rounding
 in 37 color channels; live status/tray values can vary between renders.
+The modular refinement passed mocked click/geometry tests at 850px, 420px and
+220px heights, including all ten control actions, workspace selection, audio
+selection, and scrolling to the last of 40 audio outputs. These tests exercise
+actual QML handlers with side effects replaced by recorded calls.
 Helper functions, click handlers and tray long-press handlers were compared
 against the parent commit and are unchanged. Main text/background pairs meet
 4.5:1 contrast; warning text on pink is about 4.96:1.
