@@ -4,6 +4,8 @@ import Quickshell
 Item {
     id: stage
     signal dismissed()
+    signal actionRequested(string action)
+    property var services: null
     signal launchRequested(var app)
     // Explicit opt-out for motion sensitivity and simpler renderers.
     property bool flat: Quickshell.env("SEKAI_LAUNCHER_FLAT") === "1"
@@ -49,7 +51,8 @@ Item {
         id: closeTimer
         interval: stage.flat ? 0 : 200
         onTriggered: {
-            if (stage.pendingApp) stage.launchRequested(stage.pendingApp);
+            if (stage.pendingApp && stage.pendingApp.action) stage.actionRequested(stage.pendingApp.action);
+            else if (stage.pendingApp) stage.launchRequested(stage.pendingApp);
             else stage.dismissed();
         }
     }
@@ -57,8 +60,9 @@ Item {
         id: phone
         objectName: "phone"
         depth: !stage.flat
-        width: Math.min(356, stage.width - 100)
-        height: Math.min(640, stage.height - 100)
+        services: stage.services
+        width: Math.min(400, stage.width - 100)
+        height: Math.min(720, stage.height - 100)
         // A shallow curved path and linked wrist rotation, not a scale change.
         x: (stage.width - width) / 2 + (stage.flat ? 0 :
             12 * stage.travel - 28 * Math.sin(Math.PI * stage.travel))
@@ -95,6 +99,7 @@ Item {
                     u, v, 0, 1 - u * cx - v * centerY);
             }
         }
+        onActionRequested: action => stage.finish({action})
         onDismissed: stage.finish(null)
         onLaunchRequested: app => stage.finish(app)
     }

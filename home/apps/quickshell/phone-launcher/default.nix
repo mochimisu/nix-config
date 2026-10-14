@@ -7,6 +7,8 @@ in {
   config = lib.mkIf enabled {
     home.packages = [launcher];
     home.file = {
+      ".config/quickshell/phone-launcher/Status.qml".source = ./Status.qml;
+      ".config/quickshell/phone-launcher/HomeControls.qml".source = ./HomeControls.qml;
       ".config/quickshell/phone-launcher/shell.qml".source = ./shell.qml;
       ".config/quickshell/phone-launcher/Presentation.qml".source = ./Presentation.qml;
       ".config/quickshell/phone-launcher/Phone.qml".source = ./Phone.qml;

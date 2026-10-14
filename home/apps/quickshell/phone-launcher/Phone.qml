@@ -5,6 +5,9 @@ import Quickshell
 FocusScope {
     id: phone
     signal dismissed()
+    signal actionRequested(string action)
+    property var services: null
+    readonly property bool searching: search.text.length > 0
     signal launchRequested(var app)
     property bool depth: true
     property bool interactive: true
@@ -21,7 +24,7 @@ FocusScope {
     onResultsChanged: grid.currentIndex = results.length ? 0 : -1
 
     function moveSelection(delta) {
-        if (!interactive || !results.length) return;
+        if (!interactive || !searching || !results.length) return;
         grid.currentIndex = Math.max(0, Math.min(results.length - 1, grid.currentIndex + delta));
         grid.positionViewAtIndex(grid.currentIndex, GridView.Contain);
         // The output crops the lower part of this viewport. Scroll selection
@@ -30,10 +33,10 @@ FocusScope {
         grid.contentY = Math.max(grid.contentY, rowBottom - grid.height + grid.bottomMargin);
     }
     function launchSelected() {
-        if (interactive && grid.currentIndex >= 0 && grid.currentIndex < results.length)
+        if (interactive && searching && grid.currentIndex >= 0 && grid.currentIndex < results.length)
             launchRequested(results[grid.currentIndex]);
     }
-    Keys.onEscapePressed: dismissed()
+    Keys.onEscapePressed: { if (searching) search.clear(); else dismissed(); }
 
     // Layered low-opacity silhouettes soften the shadow without a blur pass.
     Repeater {
@@ -111,14 +114,14 @@ FocusScope {
                 width: parent.width - 36
                 spacing: 2
                 Text {
-                    text: "PHONE  /  LAUNCHER"
+                    text: phone.searching ? "PHONE  /  LAUNCHER" : "PHONE  /  CONTROL"
                     color: "#648f91"
                     font { family: "Montserrat"; pixelSize: 9; bold: true; letterSpacing: 1.1 }
                 }
                 Row {
                     spacing: 8
                     Text {
-                        text: "Applications"
+                        text: phone.searching ? "Applications" : "Your phone"
                         color: phone.ink
                         font { family: "Montserrat"; pixelSize: phone.width < 320 ? 18 : 22; bold: true; italic: true }
                     }
@@ -158,8 +161,8 @@ FocusScope {
             width: parent.width
             height: 40
             focus: true
-            readOnly: !phone.interactive
-            placeholderText: "Search apps…"
+            readOnly: false // Accept the first keystroke even while the phone enters.
+            placeholderText: "Type to find an app…"
             Accessible.name: "Search apps"
             color: phone.ink
             placeholderTextColor: "#618083"
@@ -189,13 +192,40 @@ FocusScope {
             Keys.onBacktabPressed: phone.moveSelection(-1)
             Keys.onReturnPressed: phone.launchSelected()
             Keys.onEnterPressed: phone.launchSelected()
-            Keys.onEscapePressed: phone.dismissed()
+            Keys.onEscapePressed: { if (phone.searching) search.clear(); else phone.dismissed(); }
             Component.onCompleted: forceActiveFocus()
         }
     }
 
+    Flickable {
+        id: homeView
+        objectName: "homeView"
+        anchors { top: header.bottom; bottom: parent.bottom; left: parent.left; right: parent.right; topMargin: 17; leftMargin: 25; rightMargin: 25 }
+        contentWidth: width
+        contentHeight: controls.height
+        bottomMargin: 110
+        clip: true
+        boundsBehavior: Flickable.StopAtBounds
+        interactive: phone.interactive && !phone.searching
+        opacity: phone.searching ? 0 : 1
+        visible: opacity > 0
+        transform: Translate { x: phone.searching ? -12 : 0; Behavior on x { NumberAnimation { duration: 140 } } }
+        Behavior on opacity { NumberAnimation { duration: 140 } }
+        HomeControls {
+            id: controls
+            width: homeView.width
+            services: phone.services
+            interactive: phone.interactive && !phone.searching
+            onActionRequested: action => phone.actionRequested(action)
+        }
+    }
     GridView {
         id: grid
+        opacity: phone.searching ? 1 : 0
+        visible: opacity > 0
+        enabled: phone.searching
+        transform: Translate { x: phone.searching ? 0 : 12; Behavior on x { NumberAnimation { duration: 140 } } }
+        Behavior on opacity { NumberAnimation { duration: 140 } }
         objectName: "apps"
         anchors { top: header.bottom; bottom: parent.bottom; left: parent.left; right: parent.right; topMargin: 17; bottomMargin: 0; leftMargin: 22; rightMargin: 22 }
         readonly property int columns: width < 300 ? 3 : 4

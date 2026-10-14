@@ -5,6 +5,7 @@ import Quickshell.Hyprland
 import Quickshell.Wayland
 
 ShellRoot {
+    Status { id: status }
     PanelWindow {
         id: window
         visible: true
@@ -28,6 +29,16 @@ ShellRoot {
 
         Presentation {
             id: presentation
+            services: status
+            onActionRequested: action => {
+                window.visible = false;
+                const command = action === "network" ? ["nm-connection-editor"]
+                    : action === "bluetooth" ? ["blueman-manager"]
+                    : action === "capture" ? ["sh", "-c", 'sleep 0.2; exec "$HOME/.config/hypr/screenshot.sh"'] : null;
+                if (!command) { Qt.quit(); return; }
+                Quickshell.execDetached(command);
+                Qt.quit();
+            }
             anchors.fill: parent
             onDismissed: Qt.quit()
             onLaunchRequested: app => {

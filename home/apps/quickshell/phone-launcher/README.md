@@ -11,7 +11,7 @@ qs -n -p "$PWD/home/apps/quickshell/phone-launcher"
 
 Type to search application names, generic names, and keywords. Use Up/Down to move
 between rows, Tab/Shift+Tab between applications, and Enter to launch. Left/Right
-remain available for editing the search text. Escape or the close button exits
+remain available for editing the search text. Escape clears search back to home, then exits; the close button always exits
 the launcher process. Missing icons display the application's initial.
 
 The Nix module is enabled only for Blackmoon. After a future normal activation,
@@ -80,3 +80,32 @@ phone transform and bottom crop are unchanged. Search, transformed clicks,
 compact last-row visibility/launch and early Escape passed offscreen regression
 checks. The close-up is an untransformed component render; absent offscreen
 platform icon themes still cause graceful initial-letter fallbacks.
+
+
+## Home controls and search
+
+The phone is now up to 400×720 logical pixels (about 12% larger), retaining the
+approved perspective, bottom crop and 260ms rigid entrance. Empty input shows
+home controls; typing keeps the first character and transitions to app results
+in 140ms. Clearing input returns home. Escape clears a query first, then closes.
+The home view scrolls on short screens, including its capture button.
+
+Status.qml uses the same Quickshell Networking, Bluetooth and PipeWire services
+as the sidebar. The header shows the local configured dusk wallpaper, actual
+clock/date and receive/transmit byte rates from /proc/net/dev for connected
+NetworkManager interfaces. The reference's corner arrows are transfer rates.
+A first sample or unavailable backend shows an em dash/Unavailable, never mock
+live data. Network and Bluetooth buttons dismiss the phone and open the existing
+nm-connection-editor and blueman-manager. Speaker toggles mute and its slider
+adjusts the default output from 0–100%. Screen capture dismisses the phone and
+runs the existing ~/.config/hypr/screenshot.sh after a short compositor delay;
+that script selects an area, saves it under ~/screenshots and copies it.
+
+Tests: first keystroke (including during entrance), query/clear transitions,
+Escape, mock control routing/mute/volume/capture, transformed app clicks,
+compact last-row accessibility, and normal/compact geometry passed. The
+sandbox cannot connect to desktop DBus or PipeWire, so live status updates,
+audio writes, manager windows, screenshot execution and Wayland focus/masking
+remain unverified. No connectivity, pairing, audio or screenshot side effects
+were executed in testing. Preview screenshots show actual unavailable-service
+states, with real local wallpaper/time; mocked state is confined to tests.
