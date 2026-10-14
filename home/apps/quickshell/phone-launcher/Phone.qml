@@ -111,14 +111,28 @@ FocusScope {
                 width: parent.width - 36
                 spacing: 2
                 Text {
-                    text: "APPLICATIONS  /  " + phone.results.length
+                    text: "PHONE  /  LAUNCHER"
                     color: "#648f91"
-                    font { family: "Montserrat"; pixelSize: 9; bold: true; letterSpacing: 1.4 }
+                    font { family: "Montserrat"; pixelSize: 9; bold: true; letterSpacing: 1.1 }
                 }
-                Text {
-                    text: "Your apps"
-                    color: phone.ink
-                    font { family: "Montserrat"; pixelSize: 25; bold: true; italic: true }
+                Row {
+                    spacing: 8
+                    Text {
+                        text: "Applications"
+                        color: phone.ink
+                        font { family: "Montserrat"; pixelSize: phone.width < 320 ? 18 : 22; bold: true; italic: true }
+                    }
+                    Rectangle {
+                        width: 32; height: 21; radius: 10
+                        color: phone.mint
+                        border { width: 1; color: phone.ink }
+                        Text {
+                            anchors.centerIn: parent
+                            text: phone.results.length
+                            color: phone.ink
+                            font { pixelSize: 10; bold: true }
+                        }
+                    }
                 }
                 Row {
                     spacing: 3
@@ -152,8 +166,22 @@ FocusScope {
             selectionColor: phone.mint
             selectedTextColor: phone.ink
             font.pixelSize: 15
-            leftPadding: 15
-            background: Rectangle { radius: 20; color: "#f9ffff"; border.width: 2; border.color: phone.ink }
+            leftPadding: 36
+            rightPadding: 12
+            font.weight: Font.DemiBold
+            Item {
+                x: 13; y: 12; width: 16; height: 16
+                Rectangle { width: 10; height: 10; radius: 5; color: "transparent"; border { width: 2; color: phone.ink } }
+                Rectangle { x: 9; y: 9; width: 7; height: 2; rotation: 45; color: phone.ink }
+            }
+            background: Rectangle {
+                radius: 18; color: "#f6fffd"; border.width: 2; border.color: phone.ink
+                Rectangle {
+                    anchors.fill: parent; anchors.margins: 4
+                    radius: 14; color: "transparent"
+                    border.width: 1; border.color: search.activeFocus ? "#86c8c4" : "#c8ded9"
+                }
+            }
             Keys.onDownPressed: phone.moveSelection(grid.columns)
             Keys.onUpPressed: phone.moveSelection(-grid.columns)
             // Leave left/right available for editing the search text.
@@ -186,25 +214,31 @@ FocusScope {
             required property int index
             width: grid.cellWidth
             height: grid.cellHeight
+            readonly property bool selected: tile.index === grid.currentIndex
+            Rectangle {
+                x: (parent.width - 60) / 2 + 1; y: 3
+                width: 60; height: 60; radius: 21
+                color: "#78aaa8"
+            }
             Rectangle {
                 anchors { top: parent.top; horizontalCenter: parent.horizontalCenter }
-                width: 58; height: 58; radius: 20
-                color: tile.index === grid.currentIndex ? phone.mint : (tile.index % 2 ? "#f9edf4" : "#edf7f3")
+                width: 60; height: 60; radius: 21
+                color: hit.containsMouse ? "#d6e9fb" : (tile.selected ? "#a7dfd7" : ["#e0f1ed", "#eee5f3", "#f6e6ee", "#f6f0d8"][tile.index % 4])
                 border.color: phone.ink
-                border.width: 2
+                border.width: tile.selected ? 3 : 2
                 Rectangle {
                     anchors.fill: parent
-                    anchors.margins: 4
+                    anchors.margins: 5
                     radius: 16
                     color: "transparent"
                     border.width: 1
-                    border.color: tile.index === grid.currentIndex ? "#faffff" : "#c4ded9"
+                    border.color: "#faffff"
                 }
                 Behavior on color { ColorAnimation { duration: 100 } }
                 Image {
                     id: icon
                     anchors.centerIn: parent
-                    width: 34; height: 34
+                    width: 36; height: 36
                     source: tile.modelData.icon ? Quickshell.iconPath(tile.modelData.icon, true) : ""
                     fillMode: Image.PreserveAspectFit
                     sourceSize { width: 48; height: 48 }
@@ -221,19 +255,23 @@ FocusScope {
                 anchors { top: parent.top; topMargin: 64; left: parent.left; right: parent.right; leftMargin: 3; rightMargin: 3 }
                 text: tile.modelData.name
                 color: phone.ink
-                font.pixelSize: 11
+                font { pixelSize: 11; weight: tile.selected ? Font.Bold : Font.DemiBold }
+                lineHeight: 1.05
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.Wrap
                 maximumLineCount: 2
                 elide: Text.ElideRight
             }
-            Text {
-                anchors { right: parent.right; top: parent.top; rightMargin: 8; topMargin: 3 }
-                text: String(tile.index + 1).padStart(2, "0")
-                color: "#719f9f"
-                font { pixelSize: 9; bold: true }
+            Rectangle {
+                visible: tile.selected
+                x: (parent.width + 60) / 2 - 8; y: 0
+                width: 10; height: 10; radius: 3
+                color: "#f1d17e"
+                border { width: 1; color: phone.ink }
+                rotation: 45
             }
             MouseArea {
+                id: hit
                 enabled: phone.interactive
                 anchors.fill: parent
                 hoverEnabled: true

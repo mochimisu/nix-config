@@ -70,3 +70,13 @@ scroll margin allows the last row to move clear of the output crop. Keyboard
 navigation explicitly scrolls the selected row above that hidden area, keeping
 clipped apps reachable. Last-row visibility and Enter launch pass at normal
 and compact sizes; search, transformed clicks and rapid Escape still pass.
+
+Screen-content styling now uses a compact count badge, inset search field with
+a magnifier, coordinated mint/lilac/rose/cream tiles, fine white insets and a
+slight raised edge. Icons are 36px with readable semibold labels. Keyboard
+selection uses a thicker outline and small gold marker; pointer hover uses a
+blue tint. No new widgets or settings integrations are added. The 260ms motion,
+phone transform and bottom crop are unchanged. Search, transformed clicks,
+compact last-row visibility/launch and early Escape passed offscreen regression
+checks. The close-up is an untransformed component render; absent offscreen
+platform icon themes still cause graceful initial-letter fallbacks.
