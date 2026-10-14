@@ -11,12 +11,27 @@ Item {
     property bool closing: false
     property var pendingApp: null
     readonly property bool interactive: opened && !closing && !slide.running
-    readonly property real restingTop: (height - phone.height) / 2
+    // Hide the whole lower rounded edge, including its raised far corner.
+    // Use the settled projection rather than the untransformed rectangle.
+    readonly property real restingTop: height + 8 - Math.min(
+        settledY(6, phone.height - 42),
+        settledY(phone.width - 6, phone.height - 42))
+    function settledY(x, y) {
+        if (flat) return y;
+        const yaw = -30 * Math.PI / 180, pitch = 18 * Math.PI / 180;
+        const roll = -4 * Math.PI / 180;
+        const dx = x - phone.width / 2, dy = y - phone.height / 2;
+        const b = Math.sin(roll) * Math.cos(yaw);
+        const d = Math.sin(roll) * Math.sin(yaw) * Math.sin(pitch)
+                + Math.cos(roll) * Math.cos(pitch);
+        const z = -Math.sin(yaw) * dx + Math.cos(yaw) * Math.sin(pitch) * dy;
+        return phone.height / 2 + 0.94 * (b * dx + d * dy) / (1 - z / 5000);
+    }
     property real travel: opened ? 0 : 1
     Behavior on travel {
         NumberAnimation {
             id: slide
-            duration: stage.flat ? 0 : (stage.closing ? 320 : 460)
+            duration: stage.flat ? 0 : (stage.closing ? 320 : 520)
             easing.type: stage.closing ? Easing.InCubic : Easing.OutCubic
         }
     }
@@ -44,16 +59,18 @@ Item {
         depth: !stage.flat
         width: Math.min(356, stage.width - 100)
         height: Math.min(640, stage.height - 100)
-        x: (stage.width - width) / 2
+        // A shallow curved path and linked wrist rotation, not a scale change.
+        x: (stage.width - width) / 2 + (stage.flat ? 0 :
+            12 * stage.travel - 28 * Math.sin(Math.PI * stage.travel))
         y: stage.restingTop + (stage.flat ? 0 : stage.travel * (stage.height + height / 4 - stage.restingTop))
         interactive: stage.interactive
         opacity: 1
         scale: stage.flat ? 1 : 0.94
         // Match the reference's almost-parallel long edges. Separate Rotation
         // items each add Qt's short default perspective, exaggerating taper.
-        property real yaw: stage.flat ? 0 : -35
-        property real pitch: stage.flat ? 0 : 25
-        property real roll: stage.flat ? 0 : (-4 - stage.travel * 7)
+        property real yaw: stage.flat ? 0 : -30 - 6 * Math.sin(Math.PI * stage.travel)
+        property real pitch: stage.flat ? 0 : 18 + 10 * stage.travel
+        property real roll: stage.flat ? 0 : -4 - 2 * stage.travel - 8 * Math.sin(Math.PI * stage.travel)
         transform: Matrix4x4 {
             matrix: {
                 const y = phone.yaw * Math.PI / 180;

@@ -31,15 +31,17 @@ desktop trial: the isolated headless compositor could not initialize its backend
 
 
 The launcher keeps the reference-inspired portrait pose with mild perspective
-(pitch 25°, yaw -35°, roll -4°). These are visual-fit parameters, not recovered
+(pitch 18°, yaw -30°, roll -4°). These are visual-fit parameters, not recovered
 author settings. A thicker stepped chassis sits behind the unchanged screen.
 The UI uses a count/status eyebrow, italic heading, pastel accent strip, inset
 tile outlines, rounded search field and the existing installed-icon fallback.
 
-Entry is a rigid 460ms upward translation from below the output, with only 7°
-of settling rotation. Exit slides down in 320ms. Scale is constant (0.94) and
+Entry is a rigid 520ms lift from below the output. A shallow horizontal arc
+coordinates yaw, pitch and roll as the phone settles toward the viewer. Exit slides down in 320ms. Scale is constant (0.94) and
 opacity stays 1. The layer surface anchors to the output's top and bottom, so
-its lower clipping edge is the actual screen edge. Its pointer input region
+its lower clipping edge is the actual screen edge. The resting position uses
+projected lower-corner bounds to hide the rounded bottom below that edge, with
+8px of extra crop. The footer is raised into the usable screen area. Its pointer input region
 is empty during travel and limited to the phone area after settling. Escape
 works during entry, repeated close requests are ignored, and launching waits
 until exit completes. The compositor keyboard grab lasts until process exit.
@@ -54,3 +56,11 @@ layout, flat mode and repeated early Escape. Pixel checks across 64 nonempty
 normal/compact frames found no top/side clipping; only the intended bottom-edge
 crossing occurs during travel. Native Wayland focus, output anchoring and input
 mask behavior still require a live trial; offscreen Qt cannot verify those.
+
+Updated validation: keyboard and transformed-click regressions pass at normal
+and compact sizes; early repeated Escape still dismisses exactly once. Animated
+geometry checks at 560×1080, 400×580 and 360×480 keep both lower rounded-edge
+endpoints below the viewport while scale/opacity remain constant; flat mode
+passes the same checks. Pixel bounds at 560×900 and 400×580 confirm no top/side
+clipping and continuous bottom cropping once settled. These are offscreen
+checks, not verification of the live compositor's output anchoring or focus.

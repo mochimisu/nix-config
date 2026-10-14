@@ -247,7 +247,7 @@ FocusScope {
     }
     Column {
         id: footer
-        anchors { bottom: parent.bottom; horizontalCenter: parent.horizontalCenter; bottomMargin: 24 }
+        anchors { bottom: parent.bottom; horizontalCenter: parent.horizontalCenter; bottomMargin: 100 }
         spacing: 13
         Text {
             text: "↑ ↓ rows  ·  Tab next  ·  Enter open  ·  Esc close"
