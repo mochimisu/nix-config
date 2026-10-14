@@ -7,6 +7,7 @@ FocusScope {
     signal dismissed()
     signal launchRequested(var app)
     property bool depth: true
+    property bool interactive: true
     property alias query: search.text
     readonly property var results: DesktopEntries.applications.values.filter(app => {
         const terms = search.text.trim().toLowerCase().split(/\s+/);
@@ -20,12 +21,12 @@ FocusScope {
     onResultsChanged: grid.currentIndex = results.length ? 0 : -1
 
     function moveSelection(delta) {
-        if (!results.length) return;
+        if (!interactive || !results.length) return;
         grid.currentIndex = Math.max(0, Math.min(results.length - 1, grid.currentIndex + delta));
         grid.positionViewAtIndex(grid.currentIndex, GridView.Contain);
     }
     function launchSelected() {
-        if (grid.currentIndex >= 0 && grid.currentIndex < results.length)
+        if (interactive && grid.currentIndex >= 0 && grid.currentIndex < results.length)
             launchRequested(results[grid.currentIndex]);
     }
     Keys.onEscapePressed: dismissed()
@@ -47,7 +48,7 @@ FocusScope {
     // The offset rear shell and stepped rim expose a restrained side wall.
     Rectangle {
         visible: phone.depth
-        x: 14; y: 11
+        x: 28; y: 17
         width: phone.width - 12; height: phone.height - 12
         radius: 36
         color: "#183d43"
@@ -61,10 +62,10 @@ FocusScope {
     }
     Rectangle {
         visible: phone.depth
-        x: 10; y: 8
+        x: 17; y: 11
         width: phone.width - 12; height: phone.height - 12
         radius: 36
-        color: "#47767a"
+        color: "#32686d"
         border.color: "#91b4b3"
         border.width: 1
     }
@@ -80,7 +81,11 @@ FocusScope {
             anchors.fill: parent
             anchors.margins: phone.depth ? 6 : 5
             radius: 31
-            color: "#f8fcfa"
+            gradient: Gradient {
+                GradientStop { position: 0; color: "#e2f6f0" }
+                GradientStop { position: 0.35; color: "#fbfcfa" }
+                GradientStop { position: 1; color: "#e9f5f2" }
+            }
             border.width: 2
             border.color: phone.depth ? "#86b8b2" : phone.mint
         }
@@ -98,13 +103,29 @@ FocusScope {
         spacing: 14
         Row {
             width: parent.width
-            Text {
+            Column {
                 width: parent.width - 36
-                text: "Your apps"
-                color: phone.ink
-                font { family: "Montserrat"; pixelSize: 23; bold: true }
+                spacing: 2
+                Text {
+                    text: "APPLICATIONS  /  " + phone.results.length
+                    color: "#648f91"
+                    font { family: "Montserrat"; pixelSize: 9; bold: true; letterSpacing: 1.4 }
+                }
+                Text {
+                    text: "Your apps"
+                    color: phone.ink
+                    font { family: "Montserrat"; pixelSize: 25; bold: true; italic: true }
+                }
+                Row {
+                    spacing: 3
+                    Repeater {
+                        model: ["#72c9c1", "#b7a7d8", "#e7b5cf", "#e6d891"]
+                        Rectangle { required property color modelData; width: 17; height: 3; radius: 1; color: modelData }
+                    }
+                }
             }
             ToolButton {
+                enabled: phone.interactive
                 width: 32; height: 32
                 text: "×"
                 Accessible.name: "Close launcher"
@@ -117,8 +138,9 @@ FocusScope {
             id: search
             objectName: "search"
             width: parent.width
-            height: 44
+            height: 40
             focus: true
+            readOnly: !phone.interactive
             placeholderText: "Search apps…"
             Accessible.name: "Search apps"
             color: phone.ink
@@ -127,7 +149,7 @@ FocusScope {
             selectedTextColor: phone.ink
             font.pixelSize: 15
             leftPadding: 15
-            background: Rectangle { radius: 16; color: "white"; border.width: 2; border.color: phone.ink }
+            background: Rectangle { radius: 20; color: "#f9ffff"; border.width: 2; border.color: phone.ink }
             Keys.onDownPressed: phone.moveSelection(grid.columns)
             Keys.onUpPressed: phone.moveSelection(-grid.columns)
             // Leave left/right available for editing the search text.
@@ -160,10 +182,18 @@ FocusScope {
             height: grid.cellHeight
             Rectangle {
                 anchors { top: parent.top; horizontalCenter: parent.horizontalCenter }
-                width: 58; height: 58; radius: 18
+                width: 58; height: 58; radius: 20
                 color: tile.index === grid.currentIndex ? phone.mint : (tile.index % 2 ? "#f9edf4" : "#edf7f3")
                 border.color: phone.ink
-                border.width: tile.index === grid.currentIndex ? 3 : 1
+                border.width: 2
+                Rectangle {
+                    anchors.fill: parent
+                    anchors.margins: 4
+                    radius: 16
+                    color: "transparent"
+                    border.width: 1
+                    border.color: tile.index === grid.currentIndex ? "#faffff" : "#c4ded9"
+                }
                 Behavior on color { ColorAnimation { duration: 100 } }
                 Image {
                     id: icon
@@ -191,7 +221,14 @@ FocusScope {
                 maximumLineCount: 2
                 elide: Text.ElideRight
             }
+            Text {
+                anchors { right: parent.right; top: parent.top; rightMargin: 8; topMargin: 3 }
+                text: String(tile.index + 1).padStart(2, "0")
+                color: "#719f9f"
+                font { pixelSize: 9; bold: true }
+            }
             MouseArea {
+                enabled: phone.interactive
                 anchors.fill: parent
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor

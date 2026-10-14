@@ -10,6 +10,16 @@ Item {
     property bool opened: false
     property bool closing: false
     property var pendingApp: null
+    readonly property bool interactive: opened && !closing && !slide.running
+    readonly property real restingTop: (height - phone.height) / 2
+    property real travel: opened ? 0 : 1
+    Behavior on travel {
+        NumberAnimation {
+            id: slide
+            duration: stage.flat ? 0 : (stage.closing ? 320 : 460)
+            easing.type: stage.closing ? Easing.InCubic : Easing.OutCubic
+        }
+    }
     readonly property alias phone: phone
 
     function finish(app) {
@@ -19,10 +29,10 @@ Item {
         opened = false;
         closeTimer.start();
     }
-    Component.onCompleted: opened = true
+    Component.onCompleted: { if (!closing) opened = true; }
     Timer {
         id: closeTimer
-        interval: stage.flat ? 0 : 180
+        interval: stage.flat ? 0 : 340
         onTriggered: {
             if (stage.pendingApp) stage.launchRequested(stage.pendingApp);
             else stage.dismissed();
@@ -34,16 +44,16 @@ Item {
         depth: !stage.flat
         width: Math.min(356, stage.width - 100)
         height: Math.min(640, stage.height - 100)
-        anchors.centerIn: parent
-        enabled: !stage.closing
-        opacity: stage.flat || stage.opened ? 1 : 0
-        scale: stage.flat ? 1 : (stage.opened ? 0.94 : 0.60)
+        x: (stage.width - width) / 2
+        y: stage.restingTop + (stage.flat ? 0 : stage.travel * (stage.height + height / 4 - stage.restingTop))
+        interactive: stage.interactive
+        opacity: 1
+        scale: stage.flat ? 1 : 0.94
         // Match the reference's almost-parallel long edges. Separate Rotation
         // items each add Qt's short default perspective, exaggerating taper.
         property real yaw: stage.flat ? 0 : -35
         property real pitch: stage.flat ? 0 : 25
-        property real roll: stage.flat ? 0 : (stage.opened ? -4 : -84)
-        Behavior on roll { NumberAnimation { duration: stage.closing ? 180 : 420; easing.type: Easing.OutCubic } }
+        property real roll: stage.flat ? 0 : (-4 - stage.travel * 7)
         transform: Matrix4x4 {
             matrix: {
                 const y = phone.yaw * Math.PI / 180;
@@ -68,8 +78,6 @@ Item {
                     u, v, 0, 1 - u * cx - v * centerY);
             }
         }
-        Behavior on opacity { NumberAnimation { duration: stage.flat ? 0 : 180 } }
-        Behavior on scale { NumberAnimation { duration: stage.flat ? 0 : (stage.closing ? 180 : 420); easing.type: Easing.OutCubic } }
         onDismissed: stage.finish(null)
         onLaunchRequested: app => stage.finish(app)
     }

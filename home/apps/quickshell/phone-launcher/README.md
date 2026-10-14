@@ -29,30 +29,28 @@ layouts passed. Blackmoon Nix evaluation and the declared QML outputs passed.
 Live layer-shell focus, monitor placement and compositor scaling still need a
 desktop trial: the isolated headless compositor could not initialize its backend.
 
-The phone now turns into a shallow perspective tilt over 420ms and turns away
-on dismissal (180ms). QtQuick transforms apply to both drawing and input.
-The panel reserves 50 logical pixels around the phone for the rotated edges;
-its contents shrink on smaller outputs. Set `SEKAI_LAUNCHER_FLAT=1` before
-running the same trial command to disable tilt and entrance/exit motion.
 
-Offscreen validation covers transformed pointer selection as well as search,
-keyboard navigation and launch signals. Actual compositor focus and output
-placement still require a live trial. The animation preview uses offscreen
-icons, which can fall back to initials when platform icon themes are unavailable.
+The launcher keeps the reference-inspired portrait pose with mild perspective
+(pitch 25°, yaw -35°, roll -4°). These are visual-fit parameters, not recovered
+author settings. A thicker stepped chassis sits behind the unchanged screen.
+The UI uses a count/status eyebrow, italic heading, pastel accent strip, inset
+tile outlines, rounded search field and the existing installed-icon fallback.
 
+Entry is a rigid 460ms upward translation from below the output, with only 7°
+of settling rotation. Exit slides down in 320ms. Scale is constant (0.94) and
+opacity stays 1. The layer surface anchors to the output's top and bottom, so
+its lower clipping edge is the actual screen edge. Its pointer input region
+is empty during travel and limited to the phone area after settling. Escape
+works during entry, repeated close requests are ignored, and launching waits
+until exit completes. The compositor keyboard grab lasts until process exit.
 
-The pose is fitted visually to the original video at 0:13, with its top leaning
-right and its top edge rising right. A single mild-perspective matrix combines
-pitch 25°, yaw -35° and roll -4° (5000px focal distance), replacing stacked
-Rotation items that exaggerated perspective. These are visual-fit parameters,
-not recovered author settings. The 356px phone width retains four app columns.
-The entrance makes an 80° clockwise turn from a landscape-like pose, as observed
-at approximately 8.9–9.1s. This launcher has no landscape settings page, so the
-entrance is an adaptation, not a recreation of that page transition.
+Set `SEKAI_LAUNCHER_FLAT=1` for an immediate flat presentation with no travel,
+rotation or chassis depth. Search, app selection and Rofi fallback remain.
 
 Reference: https://www.reddit.com/r/LinuxPorn/comments/1x36scr/project_sekai_inspired_rice/
 
-Transformed clicks, keyboard search/navigation/Enter/Escape, compact layout and
-flat fallback passed offscreen tests. Fifty-nine nonempty captured frames across
-normal/compact entrance and exit passed pixel-bound checks. Live Wayland focus
-and placement remain unverified.
+Offscreen verification covers keyboard controls, transformed clicks, compact
+layout, flat mode and repeated early Escape. Pixel checks across 64 nonempty
+normal/compact frames found no top/side clipping; only the intended bottom-edge
+crossing occurs during travel. Native Wayland focus, output anchoring and input
+mask behavior still require a live trial; offscreen Qt cannot verify those.
