@@ -1,6 +1,10 @@
 {
   description = "my flake";
   inputs = {
+    skwd-wall = {
+      url = "github:liixini/skwd-wall/nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     # Published File Dispatch source, pinned to the reviewed revision.
     gaia-file-dispatch.url = "github:mochimisu/file-dispatch/ad0637c65b5d6d880040c01046c4c0db97e91e10";
     wikimem-skill = {
@@ -64,6 +68,7 @@
     packages.x86_64-linux = {
       default = self.nixosConfigurations.oasis.config.system.build.toplevel;
       chatgpt = pkgsX86Linux.callPackage ./pkgs/chatgpt/package.nix {};
+      skwd-wall = inputs.skwd-wall.packages.x86_64-linux.default;
       update-chatgpt = pkgsX86Linux.callPackage ./pkgs/chatgpt/update.nix {};
 
       gaia-iso = let
@@ -245,6 +250,7 @@
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
             home-manager.users.brandon = {
+              _module.args.skwdSuite = inputs.skwd-wall.packages.x86_64-linux.default;
               imports = [
                 inputs.catppuccin.homeModules.catppuccin
                 ./machines/blackmoon/home

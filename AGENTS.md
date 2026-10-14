@@ -90,3 +90,5 @@
 - ChatGPT app upgrades can rename minified symbols and trip the guarded ASAR patch in `pkgs/chatgpt/patch-bundled-copy.py`. Its anchors were reviewed against 26.1007.21434 on 2026-10-10. Inspect both bundled-plugin customization and executor-copy helpers before updating anchors; preserve exact-match guards, ASAR integrity checks, and the narrow writable-file policy.
 
 - Home Manager conditional file overrides must gate the file entry (or `xdg.configFile`), not only its `onChange` leaf. The latter leaves an empty `mako/config` entry on headless Gaia and fails evaluation with a missing `source`. Keep the Mako reload override gated by both `isLinuxGui` and `nestedDesktop`.
+
+- Blackmoon wallpapers use the pinned upstream `skwd-wall` Nix input and `machines/blackmoon/home/wallpaper.nix`, replacing mpvpaper. Keep the ignored cat MP4, DP-3 bottom layer, mute/fill policy, Hyprpaper fallback, and fullscreen Kitty exception. Skwd's pause API is global; revisit it before adding animated secondary outputs. Automatic recoloring is disabled. See `docs/skwd-wall.md` for activation and rollback; do not add a custom Rust package or broad input update for this integration.
