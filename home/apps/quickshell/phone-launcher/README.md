@@ -109,3 +109,23 @@ audio writes, manager windows, screenshot execution and Wayland focus/masking
 remain unverified. No connectivity, pairing, audio or screenshot side effects
 were executed in testing. Preview screenshots show actual unavailable-service
 states, with real local wallpaper/time; mocked state is confined to tests.
+
+## Clean header and outside dismissal
+
+Home now starts with the wallpaper/time/rate header; the notch, home title and
+home search box are removed. Compact 64px control buttons sit immediately below
+it. A focused home input item captures printable text (excluding Ctrl/Alt/Meta),
+reveals search and transfers focus with the first character intact. It does not
+intercept keys sent to a focused control. Clearing returns focus to home.
+
+The layer surface now covers the entire focused output and consumes pointer
+input. A background shield maps each press through the inverse phone transform
+and tests rounded front/rear chassis bounds. Inside controls retain their normal
+hit testing; outside presses dismiss. The shield waits for the pointer release
+before allowing exit, preventing click-through even on a held dismissal press.
+This replaces the earlier limited input-region behavior described above.
+
+Offscreen tests passed first-character entry, focus isolation, query clearing,
+compact controls, transformed app/control clicks, and outside press/release with
+an underlying test MouseArea receiving zero clicks. Live compositor routing
+across actual desktop apps and multiple outputs remains unverified.

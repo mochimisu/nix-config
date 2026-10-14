@@ -12,15 +12,8 @@ ShellRoot {
         focusable: true
         // A single panel follows the focused output, in logical (scaled) pixels.
         screen: Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) ?? Quickshell.screens[0]
-        implicitWidth: Math.min(560, screen?.width ?? 560)
-        // Span the output vertically: motion is clipped only at screen edges.
-        anchors { top: true; bottom: true }
-        mask: Region {
-            x: 0
-            y: Math.max(0, presentation.restingTop - 40)
-            width: presentation.interactive ? window.width : 0
-            height: presentation.phone.height + 80
-        }
+        // Full-output input shield prevents the outside click reaching apps.
+        anchors { top: true; bottom: true; left: true; right: true }
         color: "transparent"
         exclusionMode: ExclusionMode.Ignore
         WlrLayershell.layer: WlrLayer.Overlay

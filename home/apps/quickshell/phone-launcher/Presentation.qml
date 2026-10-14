@@ -11,6 +11,7 @@ Item {
     property bool flat: Quickshell.env("SEKAI_LAUNCHER_FLAT") === "1"
     property bool opened: false
     property bool closing: false
+    property bool pointerHeld: false
     property var pendingApp: null
     readonly property bool interactive: opened && !closing && !slide.running
     // Hide the whole lower rounded edge, including its raised far corner.
@@ -51,10 +52,37 @@ Item {
         id: closeTimer
         interval: stage.flat ? 0 : 200
         onTriggered: {
+            if (stage.pointerHeld) { restart(); return; }
             if (stage.pendingApp && stage.pendingApp.action) stage.actionRequested(stage.pendingApp.action);
             else if (stage.pendingApp) stage.launchRequested(stage.pendingApp);
             else stage.dismissed();
         }
+    }
+    function roundedContains(point, x, y, width, height, radius) {
+        const px = point.x - x, py = point.y - y;
+        if (px < 0 || py < 0 || px > width || py > height) return false;
+        const dx = Math.max(radius - px, 0, px - (width - radius));
+        const dy = Math.max(radius - py, 0, py - (height - radius));
+        return dx * dx + dy * dy <= radius * radius;
+    }
+    function insidePhone(x, y) {
+        const point = phone.mapFromItem(stage, x, y);
+        return roundedContains(point, 6, 6, phone.width - 12, phone.height - 12, 36)
+            || (!flat && roundedContains(point, 28, 17, phone.width - 12, phone.height - 12, 36));
+    }
+    // Full-output input shield consumes the dismissal press and release.
+    // Controls above this layer receive inside clicks normally.
+    MouseArea {
+        anchors.fill: parent
+        acceptedButtons: Qt.AllButtons
+        onPressed: event => {
+            stage.pointerHeld = true;
+            if (!stage.insidePhone(event.x, event.y)) stage.finish(null);
+            event.accepted = true;
+        }
+        onReleased: event => { stage.pointerHeld = false; event.accepted = true; }
+        onCanceled: stage.pointerHeld = false
+        onWheel: event => event.accepted = true
     }
     Phone {
         id: phone

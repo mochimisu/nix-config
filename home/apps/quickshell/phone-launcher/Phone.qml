@@ -96,17 +96,28 @@ FocusScope {
             border.width: 2
             border.color: phone.depth ? "#86b8b2" : phone.mint
         }
-        Rectangle {
-            width: 92; height: 17; radius: 9
-            anchors.top: parent.top
-            anchors.horizontalCenter: parent.horizontalCenter
-            color: phone.ink
-        }
+
     }
 
+    Item {
+        id: homeInput
+        focus: true
+        Keys.onPressed: event => {
+            if (event.key === Qt.Key_Escape) { phone.dismissed(); event.accepted = true; return; }
+            if (event.text.length && !/[\x00-\x1f\x7f]/.test(event.text)
+                    && !(event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier))) {
+                search.text = event.text;
+                search.forceActiveFocus();
+                event.accepted = true;
+            }
+        }
+        Component.onCompleted: forceActiveFocus()
+    }
+    onSearchingChanged: { if (!searching) homeInput.forceActiveFocus(); }
     Column {
         id: header
-        anchors { top: parent.top; left: parent.left; right: parent.right; topMargin: 43; leftMargin: 25; rightMargin: 25 }
+        visible: phone.searching
+        anchors { top: parent.top; left: parent.left; right: parent.right; topMargin: 25; leftMargin: 25; rightMargin: 25 }
         spacing: 14
         Row {
             width: parent.width
@@ -160,7 +171,8 @@ FocusScope {
             objectName: "search"
             width: parent.width
             height: 40
-            focus: true
+            visible: phone.searching
+            focus: phone.searching
             readOnly: false // Accept the first keystroke even while the phone enters.
             placeholderText: "Type to find an app…"
             Accessible.name: "Search apps"
@@ -193,14 +205,13 @@ FocusScope {
             Keys.onReturnPressed: phone.launchSelected()
             Keys.onEnterPressed: phone.launchSelected()
             Keys.onEscapePressed: { if (phone.searching) search.clear(); else phone.dismissed(); }
-            Component.onCompleted: forceActiveFocus()
         }
     }
 
     Flickable {
         id: homeView
         objectName: "homeView"
-        anchors { top: header.bottom; bottom: parent.bottom; left: parent.left; right: parent.right; topMargin: 17; leftMargin: 25; rightMargin: 25 }
+        anchors { top: parent.top; bottom: parent.bottom; left: parent.left; right: parent.right; topMargin: 25; leftMargin: 25; rightMargin: 25 }
         contentWidth: width
         contentHeight: controls.height
         bottomMargin: 110

@@ -7,10 +7,10 @@ Column {
     property var services: null
     property bool interactive: true
     signal actionRequested(string action)
-    spacing: 12
+    spacing: 9
     readonly property color ink: "#28585c"
     Rectangle {
-        width: parent.width; height: 135; radius: 20
+        width: parent.width; height: 115; radius: 20
         color: "#d1eae4"; border { color: home.ink; width: 2 }
         Image { anchors.fill: parent; anchors.margins: 6; source: home.services ? home.services.wallpaper : ""; fillMode: Image.PreserveAspectCrop }
         Rectangle { anchors.fill: parent; anchors.margins: 3; color: "#aaf1fff9"; radius: 17 }
@@ -24,7 +24,7 @@ Column {
             Text { text: "↓ " + (home.services ? home.services.download : "—"); color: home.ink; font { pixelSize: 10; bold: true } }
             Text { text: "↑ " + (home.services ? home.services.upload : "—"); color: home.ink; font { pixelSize: 10; bold: true } }
         }
-        Text { x: 13; anchors.bottom: parent.bottom; anchors.bottomMargin: 14; text: "YOUR PHONE"; color: home.ink; font { pixelSize: 10; bold: true; letterSpacing: 2 } }
+        Text { x: 13; anchors.bottom: parent.bottom; anchors.bottomMargin: 14; text: "QUICK CONTROLS"; color: home.ink; font { pixelSize: 10; bold: true; letterSpacing: 2 } }
     }
     Row {
         width: parent.width; spacing: 7
@@ -38,17 +38,17 @@ Column {
                 focusPolicy: Qt.NoFocus
                 required property var modelData
                 objectName: modelData.key
-                width: (home.width - 14) / 3; height: 92
+                width: (home.width - 14) / 3; height: 64
                 enabled: home.interactive && !!home.services && (modelData.key !== "mute" || home.services.audioReady)
                 Accessible.name: modelData.title + ": " + modelData.value
                 onClicked: modelData.key === "mute" ? home.services.toggleMute() : home.actionRequested(modelData.key)
-                background: Rectangle { radius: 18; color: parent.hovered ? "#bedfdc" : parent.modelData.color; border { width: 2; color: home.ink } }
+                background: Rectangle { radius: 15; color: parent.hovered ? "#bedfdc" : parent.modelData.color; border { width: 2; color: home.ink } }
                 contentItem: Column {
-                    spacing: 5
+                    spacing: 2
                     Item {
-                        anchors.horizontalCenter: parent.horizontalCenter; width: 23; height: 23
+                        anchors.horizontalCenter: parent.horizontalCenter; width: 18; height: 18
                         Image { id: controlIcon; anchors.fill: parent; source: Quickshell.iconPath(modelData.icon, true); fillMode: Image.PreserveAspectFit }
-                        Text { anchors.centerIn: parent; visible: !controlIcon.source.toString() || controlIcon.status === Image.Error; text: modelData.glyph; color: home.ink; font { pixelSize: 23; bold: true } }
+                        Text { anchors.centerIn: parent; visible: !controlIcon.source.toString() || controlIcon.status === Image.Error; text: modelData.glyph; color: home.ink; font { pixelSize: 18; bold: true } }
                     }
                     Text { width: parent.width; text: modelData.title; horizontalAlignment: Text.AlignHCenter; color: home.ink; font { pixelSize: 11; bold: true } }
                     Text { width: parent.width; text: modelData.value; elide: Text.ElideRight; horizontalAlignment: Text.AlignHCenter; color: home.ink; font.pixelSize: 9 }
@@ -57,7 +57,7 @@ Column {
         }
     }
     Rectangle {
-        width: parent.width; height: 54; radius: 18; color: "#e5f2ee"; border { width: 2; color: home.ink }
+        width: parent.width; height: 40; radius: 18; color: "#e5f2ee"; border { width: 2; color: home.ink }
         Text { x: 12; anchors.verticalCenter: parent.verticalCenter; text: "VOL"; color: home.ink; font { pixelSize: 10; bold: true } }
         Slider {
             focusPolicy: Qt.NoFocus
@@ -73,7 +73,7 @@ Column {
     Button {
         focusPolicy: Qt.NoFocus
         objectName: "capture"
-        width: parent.width; height: 45; enabled: home.interactive
+        width: parent.width; height: 36; enabled: home.interactive
         text: "Screen capture  ↗"
         onClicked: home.actionRequested("capture")
         background: Rectangle { radius: 17; color: parent.hovered ? "#b8ded8" : "#d8eae6"; border { width: 2; color: home.ink } }
