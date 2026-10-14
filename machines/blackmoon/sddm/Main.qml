@@ -37,31 +37,57 @@ Rectangle {
         function onLoginSucceeded() { root.message = qsTr("Starting your session…"); }
         function onInformationMessage(message) { root.message = message; }
     }
-    // Quiet native geometry: no image asset, network request or wallpaper dependency.
+    // Graphic motifs from the reference: slanted pastel bands and outlined modules.
     Item {
-        anchors.fill: parent
-        clip: true
+        anchors.fill: parent; clip: true
         Rectangle {
-            width: Math.min(root.width * 0.55, 680); height: width; radius: width / 2
-            x: root.width - width * 0.58; y: -height * 0.58
-            color: config.Lavender; opacity: 0.55
+            width: root.width * 0.6; height: root.compact ? 70 : 130
+            x: -width * 0.22; y: root.height * 0.79; rotation: -14
+            color: config.Mint; border.width: 2; border.color: config.Ink; opacity: 0.45
         }
         Rectangle {
-            width: Math.min(root.width * 0.62, 760); height: width; radius: width / 2
-            x: -width * 0.5; y: root.height - height * 0.3
-            color: config.Mint; opacity: 0.35
+            width: root.width * 0.5; height: 28
+            x: root.width * 0.73; y: root.height * 0.12; rotation: -14
+            color: config.Lavender; border.width: 2; border.color: config.Ink; opacity: 0.65
         }
         Rectangle {
-            visible: !root.compact
-            x: root.width * 0.46; y: root.height * 0.32
-            width: 1; height: root.height * 0.36
-            color: config.Ink; opacity: 0.12
+            width: root.compact ? 140 : 230; height: width; radius: width / 2
+            x: root.width - width * 0.55; y: -height * 0.52
+            color: "transparent"; border.width: 14; border.color: config.Lavender
         }
     }
 
     component Card: Rectangle {
-        color: config.Surface; radius: 24; border.width: 2; border.color: config.Ink
-        Rectangle { anchors.fill: parent; anchors.margins: 5; radius: 19; color: "transparent"; border.width: 1; border.color: "white" }
+        property bool stacked: false
+        color: config.Surface; radius: 24; border.width: 3; border.color: config.Ink
+        Rectangle {
+            z: -1; visible: parent.stacked
+            x: 10; y: 10; width: parent.width; height: parent.height
+            radius: parent.radius; color: config.Lavender; border.width: 3; border.color: config.Ink
+        }
+        Rectangle { anchors.fill: parent; anchors.margins: 6; radius: 18; color: "transparent"; border.width: 2; border.color: "white" }
+    }
+    component ClockGlyph: Item {
+        id: digit
+        property string glyph
+        property color tint
+        property real size: root.compact ? 62 : Math.min(118, root.width / 11)
+        implicitWidth: face.implicitWidth + 2
+        implicitHeight: face.implicitHeight + 8
+        Repeater {
+            model: [[-3,-3],[0,-3],[3,-3],[-3,0],[3,0],[-3,3],[0,3],[3,3],[4,6]]
+            Text {
+                required property var modelData
+                x: modelData[0]; y: modelData[1]
+                text: digit.glyph; font.family: config.Font; font.pixelSize: digit.size; font.weight: Font.Black
+                color: config.Ink; renderType: Text.CurveRendering
+            }
+        }
+        Text {
+            id: face; text: digit.glyph
+            font.family: config.Font; font.pixelSize: digit.size; font.weight: Font.Black
+            color: digit.tint; style: Text.Outline; styleColor: "white"; renderType: Text.CurveRendering
+        }
     }
     component Label: Text {
         color: config.Ink; font.family: config.Font; font.pixelSize: 14
@@ -70,16 +96,27 @@ Rectangle {
     component Pill: Button {
         id: button
         onActiveFocusChanged: if (activeFocus) root.reveal(button)
-        implicitHeight: 40
+        property bool primary: false
+        implicitHeight: primary ? 52 : 42
         font.family: config.Font; font.pixelSize: 14; font.bold: true
         palette.buttonText: config.Ink
         Accessible.name: text
-        background: Rectangle {
-            radius: 13; color: button.down ? config.Mint : config.Lavender
-            border.width: button.activeFocus ? 3 : 2; border.color: config.Ink
-            Rectangle { anchors.fill: parent; anchors.margins: 4; radius: 9; color: "transparent"; border.width: 1; border.color: "white" }
+        contentItem: Text {
+            text: button.text + (button.primary ? "   →" : "")
+            color: config.Ink; font: button.font
+            horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
         }
-        opacity: enabled ? 1 : 0.55
+        background: Rectangle {
+            radius: button.primary ? 20 : 14
+            color: button.down ? config.Pink : button.primary ? config.Mint : config.Lavender
+            border.width: button.activeFocus ? 4 : 3; border.color: config.Ink
+            Rectangle {
+                z: -1; x: 0; y: button.down ? 0 : 4; width: parent.width; height: parent.height
+                radius: parent.radius; color: config.Ink
+            }
+            Rectangle { anchors.fill: parent; anchors.margins: 5; radius: parent.radius - 5; color: "transparent"; border.width: 2; border.color: "white" }
+        }
+        opacity: enabled ? 1 : 0.65
     }
     component Entry: TextField {
         id: entry
@@ -91,7 +128,7 @@ Rectangle {
         selectByMouse: true
         leftPadding: 14; rightPadding: 14
         background: Rectangle {
-            radius: 12; color: "white"; border.width: entry.activeFocus ? 3 : 1; border.color: config.Ink
+            radius: 12; color: "white"; border.width: entry.activeFocus ? 4 : 2; border.color: config.Ink
         }
     }
     component Choice: ComboBox {
@@ -103,53 +140,87 @@ Rectangle {
         palette.base: config.Surface; palette.highlight: config.Mint
         palette.highlightedText: config.Ink
         background: Rectangle {
-            radius: 12; color: config.Lavender; border.width: choice.activeFocus ? 3 : 1; border.color: config.Ink
+            radius: 12; color: config.Lavender; border.width: choice.activeFocus ? 4 : 2; border.color: config.Ink
         }
     }
 
     // Scroll rather than scale controls below comfortable keyboard/touch sizes.
     Flickable {
         id: viewport
-        anchors.fill: parent; anchors.margins: root.compact ? 20 : 48
-        contentWidth: width; contentHeight: Math.max(height, layout.implicitHeight)
+        anchors.fill: parent; anchors.margins: root.compact ? 24 : 56
+        contentWidth: width; contentHeight: Math.max(height, layout.implicitHeight + 24)
         clip: true; boundsBehavior: Flickable.StopAtBounds
         ScrollBar.vertical: ScrollBar {}
         GridLayout {
             id: layout
-            width: parent.width
-            y: Math.max(0, (parent.height - implicitHeight) / 2)
+            width: parent.width - 12
+            y: Math.max(8, (parent.height - implicitHeight - 12) / 2)
             columns: root.compact ? 1 : 2
             columnSpacing: 72; rowSpacing: 20
             ColumnLayout {
                 Layout.fillWidth: true; Layout.alignment: Qt.AlignVCenter
-                spacing: 10
-                Label { text: "BLACKMOON"; font.bold: true; font.letterSpacing: 5; color: config.Ink }
-                Text {
-                    text: Qt.formatTime(root.now, "hh:mm")
-                    font.family: config.Font; font.pixelSize: root.compact ? 64 : Math.min(132, root.width / 11)
-                    font.bold: true; color: config.Mint; style: Text.Outline; styleColor: config.Ink
-                    renderType: Text.CurveRendering
+                spacing: root.compact ? 12 : 22
+                Card {
+                    implicitWidth: brand.implicitWidth + 40; implicitHeight: 40; radius: 14
+                    color: config.Mint
+                    Label { id: brand; anchors.centerIn: parent; text: "BLACKMOON"; font.bold: true; font.letterSpacing: 4 }
+                }
+                Item {
+                    Layout.fillWidth: true
+                    implicitHeight: clockRow.implicitHeight + (root.compact ? 16 : 30)
+                    Rectangle {
+                        x: 12; y: parent.height * 0.63
+                        width: Math.min(parent.width - 24, clockRow.implicitWidth + 20); height: root.compact ? 22 : 36
+                        rotation: -5; radius: 8; color: config.Pink
+                        border.width: 2; border.color: config.Ink
+                    }
+                    Row {
+                        id: clockRow; x: 4; spacing: 2
+                        Repeater {
+                            model: Qt.formatTime(root.now, "hh:mm").split("")
+                            ClockGlyph {
+                                required property string modelData
+                                required property int index
+                                glyph: modelData
+                                tint: index % 2 ? config.Lavender : config.Mint
+                                rotation: index === 2 ? 0 : index % 2 ? 3 : -3
+                            }
+                        }
+                    }
                 }
                 Card {
                     implicitWidth: dateLabel.implicitWidth + 36; implicitHeight: 42; radius: 15
+                    stacked: !root.compact
                     Label { id: dateLabel; anchors.centerIn: parent; text: Qt.formatDate(root.now, "dddd, MMMM d"); font.bold: true }
+                }
+                Row {
+                    visible: !root.compact; spacing: 12; topPadding: 10
+                    Repeater {
+                        model: [config.Mint, config.Lavender, config.Pink]
+                        Rectangle {
+                            required property color modelData
+                            width: 14; height: 14; rotation: 45; radius: 3
+                            color: modelData; border.width: 2; border.color: config.Ink
+                        }
+                    }
                 }
             }
             Card {
+                stacked: true
                 color: "#fcfdfb"
                 Layout.preferredWidth: 420; Layout.maximumWidth: 460
                 Layout.fillWidth: true; Layout.alignment: Qt.AlignHCenter
-                implicitHeight: form.implicitHeight + 48
+                implicitHeight: form.implicitHeight + 56
                 ColumnLayout {
                     id: form
                     anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top
-                    anchors.margins: 24; spacing: 10
-                    Label { text: qsTr("Welcome back"); font.pixelSize: 28; font.bold: true; font.italic: true }
+                    anchors.margins: 28; spacing: 10
+                    Label { text: qsTr("Welcome back"); font.pixelSize: 30; font.bold: true; font.italic: true }
                     Row {
-                        Layout.fillWidth: true; height: 4
-                        Rectangle { width: parent.width / 3; height: 4; color: config.Mint }
-                        Rectangle { width: parent.width / 3; height: 4; color: config.Lavender }
-                        Rectangle { width: parent.width / 3; height: 4; color: config.Pink }
+                        Layout.fillWidth: true; height: 8
+                        Rectangle { width: parent.width / 3; height: 8; color: config.Mint }
+                        Rectangle { width: parent.width / 3; height: 8; color: config.Lavender }
+                        Rectangle { width: parent.width / 3; height: 8; color: config.Pink }
                     }
                     Label { text: qsTr("Username"); font.bold: true }
                     Entry {
@@ -186,6 +257,7 @@ Rectangle {
                         Accessible.name: text
                     }
                     Pill {
+                        primary: true
                         Layout.fillWidth: true; text: root.busy ? qsTr("Signing in…") : qsTr("Sign in")
                         enabled: !root.busy && username.text.trim() !== "" && sessions.currentIndex >= 0
                         onClicked: root.login()

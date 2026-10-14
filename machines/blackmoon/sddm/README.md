@@ -1,9 +1,12 @@
 # Blackmoon greeter and media cards
 
 This branch opts Blackmoon into `sekai-blackmoon`, a small Qt 6 SDDM theme.
-The background is wallpaper-free: a cream surface, two quiet pastel corner
-circles and a subtle separator are drawn directly in QML. The login card and
-outlined mint clock establish the hierarchy. No image asset, wallpaper setting
+The background is wallpaper-free: a cream surface, clipped/slanted pastel
+bands and an open lavender ring are drawn directly in QML. The clock uses
+individually tilted mint/lavender numerals with thick dark outlines, pale inset
+edges and an offset silhouette. Outlined capsules, offset lavender card layers,
+a slanted pink underline and chunky buttons echo the saved reference frame
+without copying its wallpaper or introducing a new rendering dependency. No image asset, wallpaper setting
 or Home Manager wallpaper dependency is included in the SDDM theme. The palette
 comes from `home/theme/sekai-palette.json`.
 
@@ -40,9 +43,14 @@ The OSD includes local outlined SVG icons and Mako's supported value fill;
 Mako does not implement entry animation or the sidebar's nested inset border.
 No notification-stack replacement is included.
 
-The wallpaper-free refinement changes only background geometry and clock/card
-colors. Session/login handlers, control sizing and keyboard navigation remain
-unchanged. Actual SDDM test-mode previews were repeated at both sizes.
+The stronger graphic refinement changes the visual components and spacing;
+session/login handlers remain unchanged. Controls retain 40px+ targets, obvious
+keyboard focus and compact scrolling. Blackmoon evaluation, the focused theme
+build, mocked greeter behavior tests and actual SDDM test-mode previews passed
+at 1280×800 and 800×600. The visual reference is the previously inspected
+Project Sekai rice video frame, especially its tilted outlined clock, inset
+module rims and capsule controls. The slanted bands and offset layers are an
+interpretation for the wallpaper-free login composition.
 
 ## Validation and deployment
 
