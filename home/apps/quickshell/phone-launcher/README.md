@@ -136,3 +136,32 @@ there is no wash, image padding or header border. White text uses a fine dark
 outline for contrast. Header expansion preserves the controls' previous size
 and vertical position. Normal/compact home input/control tests and transformed
 inside/outside-click tests pass; the real wallpaper render was inspected.
+
+
+## Larger presentation and filtered edges
+
+The normal depth presentation uses scale 1.41, exactly 1.5 times the previous
+0.94. A width/height fit cap reduces this on smaller outputs (about 0.765 at
+400×580 and 0.762 at 360×480). The rigid 260ms entrance and bottom-crop invariant
+use the same final scale throughout; no scale animation was added.
+
+The phone alone renders into a padded 2x-resolution layer with linear/mipmap
+filtering and a four-sample MSAA request. Explicit chassis antialiasing and a
+2x Canvas raster improve the rounded wallpaper clip. Padding preserves the
+shadow and existing input coordinate system. Qt's software scenegraph bypasses
+the layer because it drops Canvas content in that cache; its wallpaper still
+uses the higher-resolution raster. The entire output is never supersampled.
+
+The launcher heading reads the kernel hostname and uppercases it, producing
+BLACKMOON / LAUNCHER here without hardcoding a host name.
+
+Validation: normal/compact home controls and search, transformed app/control
+clicks, held outside dismissal with zero underlying clicks, and 1200×1080,
+400×580 and 360×480 geometry tests passed. Software-offscreen early typing and
+repeated Escape passed; isolated OpenGL early-input tests passed after explicit
+fixture focus (the virtual display has no window manager). Matching before/after
+renders used Qt OpenGL on the RTX 4090 driver in an isolated Xvfb display. The
+6x edge comparison enlarges pixels with nearest-neighbor filtering and applies
+no screenshot antialiasing. Live Hyprland/Wayland input/focus, fractional output
+scaling and animation performance remain unverified. No activation or rebuild
+was performed, and tests invoked no real control actions.

@@ -13,6 +13,10 @@ Item {
     property bool closing: false
     property bool pointerHeld: false
     property var pendingApp: null
+    // 1.5× the previous 0.94 scale; fit only when output space requires it.
+    readonly property real displayScale: Math.min(flat ? 1.5 : 1.41,
+        (width - 48) / (phone.width + phone.height * 0.25 + 40),
+        (height - 24) / (phone.height * 0.95))
     readonly property bool interactive: opened && !closing && !slide.running
     // Hide the whole lower rounded edge, including its raised far corner.
     // Use the settled projection rather than the untransformed rectangle.
@@ -20,7 +24,7 @@ Item {
         settledY(6, phone.height - 42),
         settledY(phone.width - 6, phone.height - 42))
     function settledY(x, y) {
-        if (flat) return y;
+        if (flat) return phone.height / 2 + displayScale * (y - phone.height / 2);
         const yaw = -30 * Math.PI / 180, pitch = 18 * Math.PI / 180;
         const roll = -4 * Math.PI / 180;
         const dx = x - phone.width / 2, dy = y - phone.height / 2;
@@ -28,7 +32,7 @@ Item {
         const d = Math.sin(roll) * Math.sin(yaw) * Math.sin(pitch)
                 + Math.cos(roll) * Math.cos(pitch);
         const z = -Math.sin(yaw) * dx + Math.cos(yaw) * Math.sin(pitch) * dy;
-        return phone.height / 2 + 0.94 * (b * dx + d * dy) / (1 - z / 5000);
+        return phone.height / 2 + displayScale * (b * dx + d * dy) / (1 - z / 5000);
     }
     property real travel: opened ? 0 : 1
     Behavior on travel {
@@ -97,7 +101,7 @@ Item {
         y: stage.restingTop + (stage.flat ? 0 : stage.travel * (stage.height + height / 4 - stage.restingTop))
         interactive: stage.interactive
         opacity: 1
-        scale: stage.flat ? 1 : 0.94
+        scale: stage.displayScale
         // Match the reference's almost-parallel long edges. Separate Rotation
         // items each add Qt's short default perspective, exaggerating taper.
         property real yaw: stage.flat ? 0 : -30 - 6 * Math.sin(Math.PI * stage.travel)

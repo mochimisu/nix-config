@@ -13,7 +13,12 @@ Column {
         width: parent.width; height: 128
         Canvas {
             id: wallpaper
-            anchors.fill: parent
+            width: parent.width * 2; height: parent.height * 2
+            scale: 0.5
+            transformOrigin: Item.TopLeft
+            // Rasterize the rounded wallpaper clip at the phone layer's density.
+            smooth: true
+            antialiasing: true
             property string imageUrl: home.services ? home.services.wallpaper : ""
             onImageUrlChanged: { if (imageUrl) loadImage(imageUrl); requestPaint(); }
             onImageLoaded: requestPaint()
@@ -23,18 +28,20 @@ Column {
             onPaint: {
                 const ctx = getContext("2d");
                 ctx.reset();
+                ctx.scale(2, 2);
+                const paintWidth = width / 2, paintHeight = height / 2;
                 const r = 31;
                 ctx.beginPath();
-                ctx.moveTo(0, height); ctx.lineTo(0, r);
+                ctx.moveTo(0, paintHeight); ctx.lineTo(0, r);
                 ctx.quadraticCurveTo(0, 0, r, 0);
-                ctx.lineTo(width - r, 0); ctx.quadraticCurveTo(width, 0, width, r);
-                ctx.lineTo(width, height); ctx.closePath(); ctx.clip();
-                ctx.fillStyle = "#d1eae4"; ctx.fillRect(0, 0, width, height);
+                ctx.lineTo(paintWidth - r, 0); ctx.quadraticCurveTo(paintWidth, 0, paintWidth, r);
+                ctx.lineTo(paintWidth, paintHeight); ctx.closePath(); ctx.clip();
+                ctx.fillStyle = "#d1eae4"; ctx.fillRect(0, 0, paintWidth, paintHeight);
                 if (imageUrl && isImageLoaded(imageUrl)) {
                     const image = ctx.createImageData(imageUrl);
-                    const scale = Math.max(width / image.width, height / image.height);
+                    const scale = Math.max(paintWidth / image.width, paintHeight / image.height);
                     const w = image.width * scale, h = image.height * scale;
-                    ctx.drawImage(imageUrl, (width - w) / 2, (height - h) / 2, w, h);
+                    ctx.drawImage(imageUrl, (paintWidth - w) / 2, (paintHeight - h) / 2, w, h);
                 }
             }
         }

@@ -23,6 +23,11 @@ Item {
     readonly property real volume: audioReady ? sink.audio.volume : 0
     readonly property string audioLabel: audioReady ? (muted ? "Muted" : Math.round(volume * 100) + "%") : "Unavailable"
     readonly property string wallpaper: "file://" + Quickshell.env("HOME") + "/.config/hypr/dusk.jpg"
+    property string hostname: ""
+    FileView {
+        path: "/proc/sys/kernel/hostname"
+        onLoaded: status.hostname = text().trim().toUpperCase()
+    }
     property date now: new Date()
     property string download: "—"
     property string upload: "—"
