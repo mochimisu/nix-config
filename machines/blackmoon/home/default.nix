@@ -30,6 +30,7 @@ in {
     ./eww-sysmon.nix
     ./fastfetch.nix
     ./wallpaper.nix
+    ./sekai-style.nix
   ];
 
   home.packages = with pkgs; [

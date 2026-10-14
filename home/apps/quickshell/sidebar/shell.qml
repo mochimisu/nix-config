@@ -40,11 +40,21 @@ ShellRoot {
     // Keep panel width in sync with content scaling from icon/text size.
     readonly property int sidebarWidth: Math.max(20, Math.round(Math.max(iconSize * 1.35, fontSizePx * 1.5)))
 
+    // A small shared palette is injected only for Blackmoon.
+    readonly property var theme: (@themePaletteJson@)
+    readonly property bool themed: !!theme.ink
+    readonly property color surfaceColor: themed ? theme.surface : "#cc11111b"
+    readonly property color chipColor: themed ? theme.lavender : "#22ffffff"
+    readonly property color selectedColor: themed ? theme.mint : "#33ffffff"
+    readonly property color warningFill: themed ? theme.pink : "#33f38ba8"
+    readonly property color edgeColor: themed ? theme.ink : "#80ffffff"
+    readonly property int panelRadius: themed ? 12 : 8
+
     // ----- Derived sizing / style -----
-    readonly property color fgColor: "white"
-    readonly property color mutedColor: "#a6adc8"
-    readonly property color accentColor: "#a6e3a1"
-    readonly property color urgentColor: "#f38ba8"
+    readonly property color fgColor: themed ? theme.ink : "white"
+    readonly property color mutedColor: themed ? theme.muted : "#a6adc8"
+    readonly property color accentColor: themed ? theme.ink : "#a6e3a1"
+    readonly property color urgentColor: themed ? theme.urgent : "#f38ba8"
     readonly property var blockedAudioDescriptions: hostName === "blackmoon" ? [
         "AD102 High Definition Audio Controller Digital Stereo (HDMI)",
         "USB Audio Front Headphones",
@@ -699,7 +709,9 @@ ShellRoot {
             Rectangle {
                 id: contentRoot
                 anchors.fill: parent
-                color: "transparent"
+                color: root.themed ? root.surfaceColor : "transparent"
+                border.width: root.themed ? 1 : 0
+                border.color: root.themed ? root.theme.inactive : "transparent"
 
                 readonly property string monitorName: panel.modelData.name
                 readonly property var monitorWorkspaces: root.monitorWorkspaces(monitorName)
@@ -731,13 +743,16 @@ ShellRoot {
                                     anchors.centerIn: parent
                                     width: parent.width - 4
                                     height: parent.height - 2
-                                    radius: 3
-                                    color: modelData.urgent ? "#33f38ba8" : "transparent"
+                                    radius: root.themed ? 5 : 3
+                                    color: modelData.urgent ? root.warningFill
+                                        : root.themed ? (modelData.active ? root.selectedColor : root.chipColor) : "transparent"
+                                    border.width: root.themed && modelData.active ? 1 : 0
+                                    border.color: root.fgColor
                                 }
 
                                 Text {
                                     anchors.centerIn: parent
-                                    text: modelData.urgent ? ("!" + modelData.name + "!") : (modelData.active ? ("-" + modelData.name + "-") : String(modelData.name))
+                                    text: modelData.urgent ? ("!" + modelData.name + "!") : (modelData.active && !root.themed ? ("-" + modelData.name + "-") : String(modelData.name))
                                     color: modelData.urgent ? root.urgentColor : root.fgColor
                                     font.family: root.baseFont
                                     font.pixelSize: Math.max(8, root.fontSizePx - 2)
@@ -967,7 +982,7 @@ ShellRoot {
 
                                 Text {
                                     text: "󰍬"
-                                    color: "#a6e3a1"
+                                    color: root.accentColor
                                     font.family: root.baseFont
                                     font.pixelSize: 9
                                     horizontalAlignment: Text.AlignHCenter
@@ -975,7 +990,7 @@ ShellRoot {
 
                                 Text {
                                     text: "PTT"
-                                    color: "#a6e3a1"
+                                    color: root.accentColor
                                     font.family: root.baseFont
                                     font.pixelSize: 8
                                     horizontalAlignment: Text.AlignHCenter
@@ -995,7 +1010,7 @@ ShellRoot {
 
                                 Text {
                                     text: "KEY"
-                                    color: "#a6e3a1"
+                                    color: root.accentColor
                                     font.family: root.baseFont
                                     font.pixelSize: 8
                                     horizontalAlignment: Text.AlignHCenter
@@ -1003,7 +1018,7 @@ ShellRoot {
 
                                 Text {
                                     text: "QWER"
-                                    color: "#a6e3a1"
+                                    color: root.accentColor
                                     font.family: root.baseFont
                                     font.pixelSize: 8
                                     horizontalAlignment: Text.AlignHCenter
@@ -1160,10 +1175,10 @@ ShellRoot {
 
                     Rectangle {
                         anchors.fill: parent
-                        radius: 8
-                        color: "#99000000"
-                        border.width: 1
-                        border.color: "#80ffffff"
+                        radius: root.panelRadius
+                        color: root.themed ? root.surfaceColor : "#99000000"
+                        border.width: root.themed ? 2 : 1
+                        border.color: root.edgeColor
 
                         Column {
                             id: sinksColumn
@@ -1186,9 +1201,9 @@ ShellRoot {
                                     height: audioOutput ? 24 : 0
                                     radius: 4
                                     visible: audioOutput
-                                    color: isDefaultOutput ? "#33ffffff" : (hovered ? "#22ffffff" : "transparent")
+                                    color: isDefaultOutput ? root.selectedColor : (hovered ? root.chipColor : "transparent")
                                     border.width: hovered ? 1 : 0
-                                    border.color: "#55ffffff"
+                                    border.color: root.themed ? root.theme.inactive : "#55ffffff"
 
                                     Text {
                                         anchors.verticalCenter: parent.verticalCenter
@@ -1236,10 +1251,10 @@ ShellRoot {
 
                     Rectangle {
                         anchors.fill: parent
-                        radius: 8
-                        color: "#cc11111b"
-                        border.width: 1
-                        border.color: "#80ffffff"
+                        radius: root.panelRadius
+                        color: root.themed ? root.surfaceColor : "#cc11111b"
+                        border.width: root.themed ? 2 : 1
+                        border.color: root.edgeColor
 
                         Column {
                             id: controlCenterColumn
@@ -1258,8 +1273,15 @@ ShellRoot {
 
                             Rectangle {
                                 width: parent.width
-                                height: 1
-                                color: "#33ffffff"
+                                height: root.themed ? 3 : 1
+                                color: root.selectedColor
+                                Row {
+                                    anchors.fill: parent
+                                    visible: root.themed
+                                    Rectangle { width: parent.width / 3; height: parent.height; color: root.themed ? root.theme.teal : root.selectedColor }
+                                    Rectangle { width: parent.width / 3; height: parent.height; color: root.themed ? root.theme.lavenderEdge : root.selectedColor }
+                                    Rectangle { width: parent.width / 3; height: parent.height; color: root.warningFill }
+                                }
                             }
 
                             Row {
@@ -1271,7 +1293,7 @@ ShellRoot {
                                     width: 92
                                     height: parent.height
                                     radius: 4
-                                    color: root.audioMuted ? "#33f38ba8" : "#22ffffff"
+                                    color: root.audioMuted ? root.warningFill : root.chipColor
 
                                     Text {
                                         anchors.centerIn: parent
@@ -1291,7 +1313,7 @@ ShellRoot {
                                     width: 42
                                     height: parent.height
                                     radius: 4
-                                    color: "#22ffffff"
+                                    color: root.chipColor
 
                                     Text {
                                         anchors.centerIn: parent
@@ -1322,7 +1344,7 @@ ShellRoot {
                                     width: 42
                                     height: parent.height
                                     radius: 4
-                                    color: "#22ffffff"
+                                    color: root.chipColor
 
                                     Text {
                                         anchors.centerIn: parent
@@ -1358,7 +1380,7 @@ ShellRoot {
                                     width: 92
                                     height: parent.height
                                     radius: 4
-                                    color: "#22ffffff"
+                                    color: root.chipColor
 
                                     Text {
                                         anchors.centerIn: parent
@@ -1378,7 +1400,7 @@ ShellRoot {
                                     width: 92
                                     height: parent.height
                                     radius: 4
-                                    color: "#22ffffff"
+                                    color: root.chipColor
 
                                     Text {
                                         anchors.centerIn: parent
@@ -1398,7 +1420,7 @@ ShellRoot {
                                     width: 92
                                     height: parent.height
                                     radius: 4
-                                    color: "#22ffffff"
+                                    color: root.chipColor
 
                                     Text {
                                         anchors.centerIn: parent
@@ -1425,7 +1447,7 @@ ShellRoot {
                                     width: 70
                                     height: parent.height
                                     radius: 4
-                                    color: Networking.wifiEnabled ? "#22ffffff" : "#33f38ba8"
+                                    color: Networking.wifiEnabled ? root.chipColor : root.warningFill
 
                                     Text {
                                         anchors.centerIn: parent
@@ -1445,7 +1467,7 @@ ShellRoot {
                                     width: 70
                                     height: parent.height
                                     radius: 4
-                                    color: "#22ffffff"
+                                    color: root.chipColor
 
                                     Text {
                                         anchors.centerIn: parent
@@ -1465,7 +1487,7 @@ ShellRoot {
                                     width: 70
                                     height: parent.height
                                     radius: 4
-                                    color: "#22ffffff"
+                                    color: root.chipColor
 
                                     Text {
                                         anchors.centerIn: parent
@@ -1485,7 +1507,7 @@ ShellRoot {
                                     width: 70
                                     height: parent.height
                                     radius: 4
-                                    color: "#33f38ba8"
+                                    color: root.warningFill
 
                                     Text {
                                         anchors.centerIn: parent
@@ -1549,7 +1571,7 @@ ShellRoot {
                                         width: controlCenterColumn.width
                                         height: Math.max(58, notificationHistoryContent.implicitHeight + 12)
                                         radius: 5
-                                        color: "#22ffffff"
+                                        color: root.chipColor
                                         border.width: modelData.urgency === NotificationUrgency.Critical ? 1 : 0
                                         border.color: root.urgentColor
 
@@ -1638,8 +1660,8 @@ ShellRoot {
 
                     Rectangle {
                         anchors.fill: parent
-                        radius: 8
-                        color: "#ee050508"
+                        radius: root.panelRadius
+                        color: root.themed ? root.surfaceColor : "#ee050508"
                         border.width: 1
                         border.color: root.accentColor
 
@@ -1663,7 +1685,7 @@ ShellRoot {
                                     width: 14
                                     height: 14
                                     radius: 7
-                                    color: "#ee050508"
+                                    color: root.themed ? root.surfaceColor : "#ee050508"
                                     anchors.right: parent.right
                                     anchors.top: parent.top
                                 }
@@ -1743,12 +1765,12 @@ ShellRoot {
 
                                 width: toastStack.width
                                 height: Math.max(76, toastContent.implicitHeight + 16)
-                                radius: 8
-                                color: "#dd11111b"
+                                radius: root.panelRadius
+                                color: root.themed ? root.surfaceColor : "#dd11111b"
                                 border.width: 1
                                 border.color: modelData.critical
                                     ? root.urgentColor
-                                    : "#80ffffff"
+                                    : root.edgeColor
 
                                 Row {
                                     id: toastContent
@@ -1763,7 +1785,7 @@ ShellRoot {
                                         height: visible ? 38 : 0
                                         anchors.verticalCenter: parent.verticalCenter
                                         radius: 6
-                                        color: "#22ffffff"
+                                        color: root.chipColor
                                         clip: true
 
                                         IconImage {

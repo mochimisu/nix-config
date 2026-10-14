@@ -84,6 +84,8 @@ in {
       ".config/quickshell/sidebar/shell.qml".source = pkgs.replaceVars ./shell.qml {
         sidebarScreensJson = builtins.toJSON sidebarScreens;
         inherit hostName;
+        themePaletteJson = builtins.toJSON (if hostName == "blackmoon"
+          then lib.importJSON ../../../theme/sekai-palette.json else {});
         sessionControlsEnabled = if nestedDesktop then "false" else "true";
         fontSize = variables.ewwSidebarFontSize or "13px";
         iconSize = variables.ewwSidebarIconSize or "16";
