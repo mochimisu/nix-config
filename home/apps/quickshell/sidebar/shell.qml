@@ -255,10 +255,18 @@ ShellRoot {
     }
 
     function adjustVolume(delta) {
+        if (root.themed) {
+            Quickshell.execDetached(["@mediaOsdBin@", "volume", delta > 0 ? "up" : "down"]);
+            return;
+        }
         setVolumePercent(volumePercent + delta);
     }
 
     function toggleMute() {
+        if (root.themed) {
+            Quickshell.execDetached(["@mediaOsdBin@", "volume", "mute"]);
+            return;
+        }
         if (!defaultSinkReady) {
             return;
         }
@@ -311,6 +319,10 @@ ShellRoot {
 
     function adjustBrightness(delta) {
         if (!sessionControlsEnabled) return;
+        if (root.themed) {
+            Quickshell.execDetached(["@mediaOsdBin@", "brightness", delta > 0 ? "up" : "down"]);
+            return;
+        }
         const op = delta > 0 ? "5%+" : "5%-";
         Quickshell.execDetached(["brightnessctl", "set", op]);
     }

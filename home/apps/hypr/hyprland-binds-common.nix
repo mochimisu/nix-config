@@ -1,5 +1,9 @@
-{lib, config, ...}: let
+{lib, config, pkgs, osConfig ? null, ...}: let
   lua = lib.generators.mkLuaInline;
+  blackmoon = osConfig != null && osConfig.networking.hostName == "blackmoon";
+  mediaOsd = import ../../theme/media-osd {inherit pkgs;};
+  media = kind: action: fallback:
+    if blackmoon then "${mediaOsd}/bin/sekai-media-osd ${kind} ${action}" else fallback;
 in {
   wayland.windowManager.hyprland.settings = {
     bind = [
@@ -76,11 +80,11 @@ in {
       {_args = [(lua "mod .. \" + F1\"") (lua "hl.dsp.exec_cmd(\"~/.config/hypr/gamemode.sh\")")];}
       {_args = [(lua "mod .. \" + F5\"") (lua "hl.dsp.exec_cmd(\"~/.config/hypr/keyboard-toggle.sh\")")];}
 
-      {_args = ["XF86MonBrightnessDown" (lua "hl.dsp.exec_cmd(\"brightnessctl set 5%-\")")];}
-      {_args = ["XF86MonBrightnessUp" (lua "hl.dsp.exec_cmd(\"brightnessctl set +5%\")")];}
-      {_args = ["XF86AudioLowerVolume" (lua "hl.dsp.exec_cmd(\"wpctl set-volume @DEFAULT_SINK@ 5%-\")")];}
-      {_args = ["XF86AudioRaiseVolume" (lua "hl.dsp.exec_cmd(\"wpctl set-volume @DEFAULT_SINK@ 5%+\")")];}
-      {_args = ["XF86AudioMute" (lua "hl.dsp.exec_cmd(\"wpctl set-mute @DEFAULT_SINK@ toggle\")")];}
+      {_args = ["XF86MonBrightnessDown" (lua "hl.dsp.exec_cmd(\"${media "brightness" "down" "brightnessctl set 5%-"}\")")];}
+      {_args = ["XF86MonBrightnessUp" (lua "hl.dsp.exec_cmd(\"${media "brightness" "up" "brightnessctl set +5%"}\")")];}
+      {_args = ["XF86AudioLowerVolume" (lua "hl.dsp.exec_cmd(\"${media "volume" "down" "wpctl set-volume @DEFAULT_SINK@ 5%-"}\")")];}
+      {_args = ["XF86AudioRaiseVolume" (lua "hl.dsp.exec_cmd(\"${media "volume" "up" "wpctl set-volume @DEFAULT_SINK@ 5%+"}\")")];}
+      {_args = ["XF86AudioMute" (lua "hl.dsp.exec_cmd(\"${media "volume" "mute" "wpctl set-mute @DEFAULT_SINK@ toggle"}\")")];}
       {_args = ["XF86KbdLightOnOff" (lua "hl.dsp.exec_cmd('brightnessctl --device *kbd_backlight* set +1')")];}
       {_args = ["SHIFT + XF86KbdLightOnOff" (lua "hl.dsp.exec_cmd('brightnessctl --device *kbd_backlight* set 1-')")];}
       # Move/resize windows with mod + LMB/RMB and dragging

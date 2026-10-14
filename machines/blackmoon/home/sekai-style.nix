@@ -1,4 +1,4 @@
-{lib, ...}: let
+{lib, pkgs, ...}: let
   p = lib.importJSON ../../../home/theme/sekai-palette.json;
   rgba = color: alpha: "rgba(${lib.removePrefix "#" color}${alpha})";
 in {
@@ -36,14 +36,43 @@ in {
     ];
   };
 
+  home.packages = [ (import ../../../home/theme/media-osd {inherit pkgs;}) ];
+
   services.mako.settings = {
+    width = 340;
+    height = 140;
+    max-icon-size = 32;
+    icon-border-radius = 8;
+    format = "<b>%s</b>\\n%b";
     background-color = lib.mkForce p.surface;
     text-color = lib.mkForce p.ink;
-    border-color = lib.mkForce p.teal;
+    border-color = lib.mkForce p.ink;
     border-size = lib.mkForce 2;
-    border-radius = lib.mkForce 12;
+    border-radius = lib.mkForce 16;
     padding = "12,14";
     progress-color = lib.mkForce "over ${p.mint}";
+    "category=sekai.volume" = {
+      anchor = "bottom-center";
+      output = "";
+      width = 280;
+      height = 70;
+      margin = "24";
+      padding = "14,18";
+      font = "Montserrat Semi-Bold 12";
+      format = "%s";
+      history = false;
+    };
+    "category=sekai.brightness" = {
+      anchor = "bottom-center";
+      output = "";
+      width = 280;
+      height = 90;
+      margin = "24";
+      padding = "14,18";
+      font = "Montserrat Semi-Bold 12";
+      progress-color = "over ${p.lavender}";
+      history = false;
+    };
     "urgency=low" = {
       background-color = lib.mkForce p.surface;
       text-color = lib.mkForce p.ink;

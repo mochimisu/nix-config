@@ -84,6 +84,8 @@ in {
       ".config/quickshell/sidebar/shell.qml".source = pkgs.replaceVars ./shell.qml {
         sidebarScreensJson = builtins.toJSON sidebarScreens;
         inherit hostName;
+        mediaOsdBin = if hostName == "blackmoon"
+          then "${import ../../../theme/media-osd {inherit pkgs;}}/bin/sekai-media-osd" else "";
         themePaletteJson = builtins.toJSON (if hostName == "blackmoon"
           then lib.importJSON ../../../theme/sekai-palette.json else {});
         sessionControlsEnabled = if nestedDesktop then "false" else "true";

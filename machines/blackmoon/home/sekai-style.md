@@ -28,7 +28,9 @@ Quickshell sidebar's Nix template. It is not a new shell or theme service.
 
 The style module is imported only by Blackmoon. Other hosts receive an empty
 sidebar palette and retain the previous values. Phone launcher files, wallpaper
-selection, lock/authentication configuration and service setup are not changed.
+selection, lock/authentication configuration and service setup are not changed
+by the sidebar pass. The subsequent [SDDM and media-card pass](../sddm/README.md)
+adds a Blackmoon-only greeter appearance and Mako-based media feedback.
 
 ## Verification and previews
 

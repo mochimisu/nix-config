@@ -30,6 +30,7 @@
 in {
 
   imports = [
+    ./sddm
     ../../nvidia.nix
     ./scanner.nix
     ./uni-sync.nix
