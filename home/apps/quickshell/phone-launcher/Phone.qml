@@ -24,6 +24,10 @@ FocusScope {
         if (!interactive || !results.length) return;
         grid.currentIndex = Math.max(0, Math.min(results.length - 1, grid.currentIndex + delta));
         grid.positionViewAtIndex(grid.currentIndex, GridView.Contain);
+        // The output crops the lower part of this viewport. Scroll selection
+        // above that hidden area without shortening the painted app grid.
+        const rowBottom = (Math.floor(grid.currentIndex / grid.columns) + 1) * grid.cellHeight;
+        grid.contentY = Math.max(grid.contentY, rowBottom - grid.height + grid.bottomMargin);
     }
     function launchSelected() {
         if (interactive && grid.currentIndex >= 0 && grid.currentIndex < results.length)
@@ -165,13 +169,15 @@ FocusScope {
     GridView {
         id: grid
         objectName: "apps"
-        anchors { top: header.bottom; bottom: footer.top; left: parent.left; right: parent.right; topMargin: 17; bottomMargin: 12; leftMargin: 22; rightMargin: 22 }
+        anchors { top: header.bottom; bottom: parent.bottom; left: parent.left; right: parent.right; topMargin: 17; bottomMargin: 0; leftMargin: 22; rightMargin: 22 }
         readonly property int columns: width < 300 ? 3 : 4
         cellWidth: width / columns
         cellHeight: 104
         clip: true
         model: phone.results
         currentIndex: count ? 0 : -1
+        // Extra scroll travel lets the last row clear the screen-edge crop.
+        bottomMargin: 110
         boundsBehavior: Flickable.StopAtBounds
         ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
         delegate: Item {
@@ -244,16 +250,5 @@ FocusScope {
             horizontalAlignment: Text.AlignHCenter
             font.pixelSize: 15
         }
-    }
-    Column {
-        id: footer
-        anchors { bottom: parent.bottom; horizontalCenter: parent.horizontalCenter; bottomMargin: 100 }
-        spacing: 13
-        Text {
-            text: "↑ ↓ rows  ·  Tab next  ·  Enter open  ·  Esc close"
-            color: "#618083"
-            font.pixelSize: 10
-        }
-        Rectangle { width: 78; height: 4; radius: 2; color: phone.ink; anchors.horizontalCenter: parent.horizontalCenter }
     }
 }

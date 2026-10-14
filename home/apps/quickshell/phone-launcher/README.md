@@ -36,12 +36,12 @@ author settings. A thicker stepped chassis sits behind the unchanged screen.
 The UI uses a count/status eyebrow, italic heading, pastel accent strip, inset
 tile outlines, rounded search field and the existing installed-icon fallback.
 
-Entry is a rigid 520ms lift from below the output. A shallow horizontal arc
-coordinates yaw, pitch and roll as the phone settles toward the viewer. Exit slides down in 320ms. Scale is constant (0.94) and
+Entry is a rigid 260ms lift from below the output. A shallow horizontal arc
+coordinates yaw, pitch and roll as the phone settles toward the viewer. Exit slides down in 180ms. Scale is constant (0.94) and
 opacity stays 1. The layer surface anchors to the output's top and bottom, so
 its lower clipping edge is the actual screen edge. The resting position uses
 projected lower-corner bounds to hide the rounded bottom below that edge, with
-8px of extra crop. The footer is raised into the usable screen area. Its pointer input region
+8px of extra crop. The footer and home indicator are removed; the app grid extends below the output and is cropped naturally. Its pointer input region
 is empty during travel and limited to the phone area after settling. Escape
 works during entry, repeated close requests are ignored, and launching waits
 until exit completes. The compositor keyboard grab lasts until process exit.
@@ -64,3 +64,9 @@ endpoints below the viewport while scale/opacity remain constant; flat mode
 passes the same checks. Pixel bounds at 560×900 and 400×580 confirm no top/side
 clipping and continuous bottom cropping once settled. These are offscreen
 checks, not verification of the live compositor's output anchoring or focus.
+
+The grid paints to the phone bottom without a footer strip. Its 110px bottom
+scroll margin allows the last row to move clear of the output crop. Keyboard
+navigation explicitly scrolls the selected row above that hidden area, keeping
+clipped apps reachable. Last-row visibility and Enter launch pass at normal
+and compact sizes; search, transformed clicks and rapid Escape still pass.

@@ -31,7 +31,7 @@ Item {
     Behavior on travel {
         NumberAnimation {
             id: slide
-            duration: stage.flat ? 0 : (stage.closing ? 320 : 520)
+            duration: stage.flat ? 0 : (stage.closing ? 180 : 260)
             easing.type: stage.closing ? Easing.InCubic : Easing.OutCubic
         }
     }
@@ -47,7 +47,7 @@ Item {
     Component.onCompleted: { if (!closing) opened = true; }
     Timer {
         id: closeTimer
-        interval: stage.flat ? 0 : 340
+        interval: stage.flat ? 0 : 200
         onTriggered: {
             if (stage.pendingApp) stage.launchRequested(stage.pendingApp);
             else stage.dismissed();
