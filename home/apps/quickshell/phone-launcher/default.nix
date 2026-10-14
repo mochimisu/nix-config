@@ -8,6 +8,7 @@ in {
     home.packages = [launcher];
     home.file = {
       ".config/quickshell/phone-launcher/shell.qml".source = ./shell.qml;
+      ".config/quickshell/phone-launcher/Presentation.qml".source = ./Presentation.qml;
       ".config/quickshell/phone-launcher/Phone.qml".source = ./Phone.qml;
     };
     # Keep Super+Space and Super+Shift+Space on Rofi during the trial.

@@ -16,9 +16,6 @@ FocusScope {
     readonly property color mint: "#b8ece6"
     readonly property color pink: "#f5dbe9"
     focus: true
-    opacity: 0
-    Component.onCompleted: opacity = 1
-    Behavior on opacity { NumberAnimation { duration: 140 } }
     onResultsChanged: grid.currentIndex = results.length ? 0 : -1
 
     function moveSelection(delta) {

@@ -28,3 +28,14 @@ Escape, and safe desktop-entry execution. Repeated runs and 392×640 / 300×480
 layouts passed. Blackmoon Nix evaluation and the declared QML outputs passed.
 Live layer-shell focus, monitor placement and compositor scaling still need a
 desktop trial: the isolated headless compositor could not initialize its backend.
+
+The phone now turns into a shallow perspective tilt over 420ms and turns away
+on dismissal (180ms). QtQuick transforms apply to both drawing and input.
+The panel reserves 50 logical pixels around the phone for the rotated edges;
+its contents shrink on smaller outputs. Set `SEKAI_LAUNCHER_FLAT=1` before
+running the same trial command to disable tilt and entrance/exit motion.
+
+Offscreen validation covers transformed pointer selection as well as search,
+keyboard navigation and launch signals. Actual compositor focus and output
+placement still require a live trial. The animation preview uses offscreen
+icons, which can fall back to initials when platform icon themes are unavailable.
