@@ -1,5 +1,6 @@
 {lib, pkgs, ...}: let
   p = lib.importJSON ../../../home/theme/sekai-palette.json;
+  app = lib.importJSON ./app-palette.json;
   rgba = color: alpha: "rgba(${lib.removePrefix "#" color}${alpha})";
 in {
   # Imported only by Blackmoon; shared desktop defaults remain unchanged.
@@ -48,13 +49,13 @@ in {
     max-icon-size = 32;
     icon-border-radius = 8;
     format = "<b>%s</b>\\n%b";
-    background-color = lib.mkForce p.surface;
-    text-color = lib.mkForce p.ink;
-    border-color = lib.mkForce p.ink;
+    background-color = lib.mkForce app.surface;
+    text-color = lib.mkForce app.text;
+    border-color = lib.mkForce app.teal;
     border-size = lib.mkForce 2;
     border-radius = lib.mkForce 16;
     padding = "12,14";
-    progress-color = lib.mkForce "over ${p.mint}";
+    progress-color = lib.mkForce "over ${app.teal}";
     "category=sekai.volume" = {
       anchor = "bottom-center";
       output = "";
@@ -74,18 +75,18 @@ in {
       margin = "24";
       padding = "14,18";
       font = "Montserrat Semi-Bold 12";
-      progress-color = "over ${p.lavender}";
+      progress-color = "over ${app.lavender}";
       history = false;
     };
     "urgency=low" = {
-      background-color = lib.mkForce p.surface;
-      text-color = lib.mkForce p.ink;
-      border-color = p.lavenderEdge;
+      background-color = lib.mkForce app.surface;
+      text-color = lib.mkForce app.text;
+      border-color = app.lavender;
     };
     "urgency=critical" = {
-      background-color = lib.mkForce p.pink;
-      text-color = lib.mkForce p.ink;
-      border-color = lib.mkForce p.urgent;
+      background-color = lib.mkForce app.surface;
+      text-color = lib.mkForce app.text;
+      border-color = lib.mkForce app.red;
       border-size = lib.mkForce 2;
     };
   };

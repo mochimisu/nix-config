@@ -31,6 +31,7 @@ in {
     ./fastfetch.nix
     ./wallpaper.nix
     ./sekai-style.nix
+    ./app-style.nix
   ];
 
   home.packages = with pkgs; [
