@@ -17,8 +17,10 @@ Coverage:
   hooks and all non-appearance settings remain unchanged.
 - Rofi: imports the existing mochi layout and overrides only palette variables;
   menu background is 93% opaque.
-- Mako: charcoal/white notifications, teal borders/progress, lavender low-priority
-  accent and red critical border; notification routing and controls unchanged.
+- Mako: #181d21 backgrounds at 60% opacity, matching Kitty, with opaque white
+  text/icons and a Hyprland blur rule scoped to the verified `notifications`
+  namespace. Teal borders/progress, lavender low-priority accent and red critical
+  border remain opaque; notification routing and controls are unchanged.
 - Neovim: retains Ayu and plugins, overriding content/selection/popup colors and
   selected syntax groups. Airline retains its existing theme.
 
@@ -38,3 +40,11 @@ Existing app processes can retain old settings/environment; reopen them as neede
 GTK4/libadwaita was not visually checked. Self-themed apps, browser content and
 sandboxed apps may ignore these desktop colors. Existing Kitty windows are not
 force-reloaded because that could disturb SSH-specific color distinctions.
+
+Blackmoon motion: window entry uses `popin 88%` at 320 ms, exit `popin 94%`
+at 200 ms, layout moves 380 ms, and workspace `slidefade 30%` at 400 ms.
+The easing curve `(0.22, 1, 0.36, 1)` settles without overshoot. The phone
+launcher retains its own rigid pull-in; these changes do not alter its QML.
+The generated Lua passed the installed Hyprland parser and a configuration-only
+live reload; effective animation values were checked after reload. A synthetic
+Mako notification confirmed the background treatment with no private content.

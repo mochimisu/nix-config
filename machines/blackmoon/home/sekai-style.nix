@@ -27,21 +27,27 @@ in {
         };
       };
     };
+    layer_rule = [{
+      name = "blackmoon-notification-blur";
+      match.namespace = "^(notifications)$";
+      blur = true;
+      ignore_alpha = 0;
+    }];
     curve = lib.mkForce {
-      _args = ["sekaiEase" {type = "bezier"; points = [[0.16 1.0] [0.3 1.0]];}];
+      _args = ["sekaiEase" {type = "bezier"; points = [[0.22 1.0] [0.36 1.0]];}];
     };
-    # Keep movement short and predictable; no looping border animation.
+    # Visible, quick settling without overshoot; the phone layer keeps its own animation.
     animation = lib.mkForce [
-      {leaf = "windows"; enabled = true; speed = 2.5; bezier = "sekaiEase"; style = "popin 100%";}
-      {leaf = "windowsIn"; enabled = true; speed = 2; bezier = "sekaiEase"; style = "popin 100%";}
-      {leaf = "windowsMove"; enabled = true; speed = 2.5; bezier = "sekaiEase";}
-      {leaf = "windowsOut"; enabled = true; speed = 1.5; bezier = "default"; style = "popin 100%";}
+      {leaf = "windows"; enabled = true; speed = 3.2; bezier = "sekaiEase"; style = "popin 88%";}
+      {leaf = "windowsIn"; enabled = true; speed = 3.2; bezier = "sekaiEase"; style = "popin 88%";}
+      {leaf = "windowsMove"; enabled = true; speed = 3.8; bezier = "sekaiEase";}
+      {leaf = "windowsOut"; enabled = true; speed = 2; bezier = "default"; style = "popin 94%";}
       {leaf = "border"; enabled = true; speed = 3; bezier = "default";}
       {leaf = "borderangle"; enabled = false; speed = 1; bezier = "default";}
       {leaf = "fade"; enabled = true; speed = 3; bezier = "default";}
-      {leaf = "fadeIn"; enabled = true; speed = 1.6; bezier = "default";}
-      {leaf = "fadeOut"; enabled = true; speed = 1.3; bezier = "default";}
-      {leaf = "workspaces"; enabled = true; speed = 2.5; bezier = "sekaiEase"; style = "slidefade 10%";}
+      {leaf = "fadeIn"; enabled = true; speed = 2.2; bezier = "default";}
+      {leaf = "fadeOut"; enabled = true; speed = 1.8; bezier = "default";}
+      {leaf = "workspaces"; enabled = true; speed = 4; bezier = "sekaiEase"; style = "slidefade 30%";}
     ];
   };
 
@@ -53,7 +59,7 @@ in {
     max-icon-size = 32;
     icon-border-radius = 8;
     format = "<b>%s</b>\\n%b";
-    background-color = lib.mkForce app.surface;
+    background-color = lib.mkForce "${app.background}99";
     text-color = lib.mkForce app.text;
     border-color = lib.mkForce app.teal;
     border-size = lib.mkForce 2;
@@ -83,12 +89,12 @@ in {
       history = false;
     };
     "urgency=low" = {
-      background-color = lib.mkForce app.surface;
+      background-color = lib.mkForce "${app.background}99";
       text-color = lib.mkForce app.text;
       border-color = app.lavender;
     };
     "urgency=critical" = {
-      background-color = lib.mkForce app.surface;
+      background-color = lib.mkForce "${app.background}99";
       text-color = lib.mkForce app.text;
       border-color = lib.mkForce app.red;
       border-size = lib.mkForce 2;
