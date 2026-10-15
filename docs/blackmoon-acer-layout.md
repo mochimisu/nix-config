@@ -37,7 +37,7 @@ The bar is display-only: there are no click actions to change. Sensor updates,
 clock and process content remain active. Hyprland's parser and Home Manager's
 link-collision validation passed.
 
-## SDDM only: staged rotation
+## SDDM only: display rotation
 
 `machines/blackmoon/sddm/rotate-displays.py` parses `xrandr --props` inside SDDM's
 X11 setup hook. It identifies the Acer XB271HU and Dell AW3423DW by SHA-256 of
@@ -52,7 +52,9 @@ GRUB, kernel console rotation, authentication and Hyprland output settings are
 unchanged. Parser/selection tests include arbitrary connector names and missing
 or duplicate identities. No SDDM server was restarted to test the real layout.
 
-To install the built configuration for a later normal boot without switching
+The October 15 audit found this hook in the installed SDDM configuration.
+Actual greeter execution/orientation was not exercised by that audit.
+To install a future built configuration for a later normal boot without switching
 or restarting the current desktop:
 
 ```sh

@@ -1,7 +1,7 @@
 # Blackmoon boot appearance
 
 `machines/blackmoon/boot-style/default.nix` styles GRUB and the Linux virtual
-console using `machines/blackmoon/home/app-palette.json`: charcoal, neutral white,
+console using `home/theme/app-palette.json`: charcoal, neutral white,
 teal selection and lavender accents. The GRUB theme uses the bootloader's bundled
 Unifont and tiny deterministic PNGs generated locally with Python's standard
 library. It has no downloaded artwork or runtime dependencies.

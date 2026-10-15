@@ -1,252 +1,32 @@
 # Phone launcher
 
-A small Project Sekai-inspired launcher using the existing Quickshell package and
-its desktop-entry service. It stays loaded as a hidden daemon, independently of the sidebar.
+The shared Home Manager module is imported by `home/theme/default.nix` and enabled
+with `variables.desktopStyle.launcher.enable`. Only Blackmoon currently opts in.
+The optional `launcher.wallpaperPackage` supplies Skwd; an absent/unavailable
+provider gives a neutral header. Other machines do not need a Skwd argument.
 
-From this checkout, try it without rebuilding or restarting the desktop:
+The persistent `sekai-launcher.service` starts hidden with the graphical session.
+Super+Space and Super+Alt+Space toggle the same instance through IPC; other Rofi
+menus are unchanged. `KillMode=process` preserves applications launched from the
+phone during a launcher-only restart. Files, wrapper and unit are Nix-store owned;
+there is no workspace script or runtime keybinding override to maintain.
 
-```sh
-qs -n -d -p "$PWD/home/apps/quickshell/phone-launcher"
-qs ipc -p "$PWD/home/apps/quickshell/phone-launcher" call launcher toggle
-```
+Each show resolves the current pointer output, accounting for scale, rotation and
+negative coordinates. A canceled/superseded context query cannot reopen an old
+request. Outside dismissal consumes both press and release; reopening cancels an
+in-progress close. Search ranks exact names before prefixes, metadata and fuzzy
+matches. Escape returns from search, then closes from home.
 
-Type to search application names, generic names, and keywords. Use Up/Down to move
-between rows, Left/Right or Tab/Shift+Tab between applications, and Enter to
-launch. Escape clears search back to home, then hides the phone; the close button
-always hides it. The daemon stays running and releases keyboard focus when hidden. Missing icons display the application's initial.
+The header follows the selected output's current image/video. Its separate muted
+video decoder pauses while hidden. Text stays outside the 3× media/mask texture.
+`SEKAI_LAUNCHER_FLAT=1` removes perspective and entrance motion; it does **not**
+remove QtMultimedia or the mask effect and is not a software-renderer compatibility
+mode. Nested desktop enablement is guarded pending renderer and lifecycle testing.
 
-The Nix module is enabled only for Blackmoon. After a future normal activation,
-`sekai-launcher`, Super+Space or Super+Alt+Space toggles it. The other Rofi shortcuts remain
-unchanged. No activation is required for the command above.
+Run the reproducible checks in [tests/desktop](../../../../tests/desktop/README.md).
+They exercise actual QML on private displays with side effects disabled, plus
+pointer geometry and search ranking. Prior live Blackmoon validation and media
+behavior are recorded in [Blackmoon launcher](../../../../docs/blackmoon-phone-launcher.md).
+Intermediate experiments are preserved in the [historical notes](../../../../docs/history/blackmoon-style-trials-2026-10.md).
 
-The panel selects the focused Hyprland monitor and caps its size to that output's
-logical dimensions. It uses four columns, or three in a narrow panel. The trial
-does not change wallpaper, the sidebar, login, or locking.
-
-Validation: rendered with the pinned Quickshell 0.3.1; offscreen Qt key events
-verified initial search focus, filtering/empty results, selection, Enter and
-Escape, and safe desktop-entry execution. Repeated runs and 392×640 / 300×480
-layouts passed. Blackmoon Nix evaluation and the declared QML outputs passed.
-Live layer-shell focus, monitor placement and compositor scaling still need a
-desktop trial: the isolated headless compositor could not initialize its backend.
-
-
-The launcher keeps the reference-inspired portrait pose with mild perspective
-(pitch 18°, yaw -30°, roll -4°). These are visual-fit parameters, not recovered
-author settings. A thicker stepped chassis sits behind the unchanged screen.
-The UI uses a count/status eyebrow, italic heading, pastel accent strip, inset
-tile outlines, rounded search field and the existing installed-icon fallback.
-
-Entry is a rigid 260ms lift from below the output. A shallow horizontal arc
-coordinates yaw, pitch and roll as the phone settles toward the viewer. Exit slides down in 180ms. Scale is constant (0.94) and
-opacity stays 1. The layer surface anchors to the output's top and bottom, so
-its lower clipping edge is the actual screen edge. The resting position uses
-projected lower-corner bounds to hide the rounded bottom below that edge, with
-8px of extra crop. The footer and home indicator are removed; the app grid extends below the output and is cropped naturally. Its pointer input region
-is empty during travel and limited to the phone area after settling. Escape
-works during entry, repeated close requests are ignored, and launching waits
-until exit completes. The compositor keyboard grab lasts until the window hides after exit animation.
-
-Set `SEKAI_LAUNCHER_FLAT=1` for an immediate flat presentation with no travel,
-rotation or chassis depth. Search, app selection and Rofi fallback remain.
-
-Reference: https://www.reddit.com/r/LinuxPorn/comments/1x36scr/project_sekai_inspired_rice/
-
-Offscreen verification covers keyboard controls, transformed clicks, compact
-layout, flat mode and repeated early Escape. Pixel checks across 64 nonempty
-normal/compact frames found no top/side clipping; only the intended bottom-edge
-crossing occurs during travel. Native Wayland focus, output anchoring and input
-mask behavior still require a live trial; offscreen Qt cannot verify those.
-
-Updated validation: keyboard and transformed-click regressions pass at normal
-and compact sizes; early repeated Escape still dismisses exactly once. Animated
-geometry checks at 560×1080, 400×580 and 360×480 keep both lower rounded-edge
-endpoints below the viewport while scale/opacity remain constant; flat mode
-passes the same checks. Pixel bounds at 560×900 and 400×580 confirm no top/side
-clipping and continuous bottom cropping once settled. These are offscreen
-checks, not verification of the live compositor's output anchoring or focus.
-
-The grid paints to the phone bottom without a footer strip. Its 110px bottom
-scroll margin allows the last row to move clear of the output crop. Keyboard
-navigation explicitly scrolls the selected row above that hidden area, keeping
-clipped apps reachable. Last-row visibility and Enter launch pass at normal
-and compact sizes; search, transformed clicks and rapid Escape still pass.
-
-Screen-content styling now uses a compact count badge, inset search field with
-a magnifier, coordinated mint/lilac/rose/cream tiles, fine white insets and a
-slight raised edge. Icons are 36px with readable semibold labels. Keyboard
-selection uses a thicker outline and small gold marker; pointer hover uses a
-blue tint. No new widgets or settings integrations are added. The 260ms motion,
-phone transform and bottom crop are unchanged. Search, transformed clicks,
-compact last-row visibility/launch and early Escape passed offscreen regression
-checks. The close-up is an untransformed component render; absent offscreen
-platform icon themes still cause graceful initial-letter fallbacks.
-
-
-## Home controls and search
-
-The phone is now up to 400×720 logical pixels (about 12% larger), retaining the
-approved perspective, bottom crop and 260ms rigid entrance. Empty input shows
-home controls; typing keeps the first character and transitions to app results
-in 140ms. Clearing input returns home. Escape clears a query first, then closes.
-The home view scrolls on short screens, including its capture button.
-
-Status.qml uses the same Quickshell Networking, Bluetooth and PipeWire services
-as the sidebar. The header shows the local configured dusk wallpaper, actual
-clock/date and receive/transmit byte rates from /proc/net/dev for connected
-NetworkManager interfaces. The reference's corner arrows are transfer rates.
-A first sample or unavailable backend shows an em dash/Unavailable, never mock
-live data. Network and Bluetooth buttons dismiss the phone and open the existing
-nm-connection-editor and blueman-manager. Speaker toggles mute and its slider
-adjusts the default output from 0–100%. Screen capture dismisses the phone and
-runs the existing ~/.config/hypr/screenshot.sh after a short compositor delay;
-that script selects an area, saves it under ~/screenshots and copies it.
-
-Tests: first keystroke (including during entrance), query/clear transitions,
-Escape, mock control routing/mute/volume/capture, transformed app clicks,
-compact last-row accessibility, and normal/compact geometry passed. The
-sandbox cannot connect to desktop DBus or PipeWire, so live status updates,
-audio writes, manager windows, screenshot execution and Wayland focus/masking
-remain unverified. No connectivity, pairing, audio or screenshot side effects
-were executed in testing. Preview screenshots show actual unavailable-service
-states, with real local wallpaper/time; mocked state is confined to tests.
-
-## Clean header and outside dismissal
-
-Home now starts with the wallpaper/time/rate header; the notch, home title and
-home search box are removed. Compact 64px control buttons sit immediately below
-it. A focused home input item captures printable text (excluding Ctrl/Alt/Meta),
-reveals search and transfers focus with the first character intact. It does not
-intercept keys sent to a focused control. Clearing returns focus to home.
-
-The layer surface now covers the entire focused output and consumes pointer
-input. A background shield maps each press through the inverse phone transform
-and tests rounded front/rear chassis bounds. Inside controls retain their normal
-hit testing; outside presses dismiss. The shield waits for the pointer release
-before allowing exit, preventing click-through even on a held dismissal press.
-This replaces the earlier limited input-region behavior described above.
-
-Offscreen tests passed first-character entry, focus isolation, query clearing,
-compact controls, transformed app/control clicks, and outside press/release with
-an underlying test MouseArea receiving zero clicks. Live compositor routing
-across actual desktop apps and multiple outputs remains unverified.
-
-The wallpaper header is fully opaque and flush with the screen's top and side
-edges. A Canvas clips the source image only at the screen's rounded top corners;
-there is no wash, image padding or header border. White text uses a fine dark
-outline for contrast. Header expansion preserves the controls' previous size
-and vertical position. Normal/compact home input/control tests and transformed
-inside/outside-click tests pass; the real wallpaper render was inspected.
-
-
-## Larger presentation and filtered edges
-
-The normal depth presentation uses scale 1.41, exactly 1.5 times the previous
-0.94. A width/height fit cap reduces this on smaller outputs (about 0.765 at
-400×580 and 0.762 at 360×480). The rigid 260ms entrance and bottom-crop invariant
-use the same final scale throughout; no scale animation was added.
-
-The phone alone renders into a padded 2x-resolution layer with linear/mipmap
-filtering and a four-sample MSAA request. Explicit chassis antialiasing and a
-2x Canvas raster improve the rounded wallpaper clip. Padding preserves the
-shadow and existing input coordinate system. Qt's software scenegraph bypasses
-the layer because it drops Canvas content in that cache; its wallpaper still
-uses the higher-resolution raster. The entire output is never supersampled.
-
-The launcher heading reads the kernel hostname and uppercases it, producing
-BLACKMOON / LAUNCHER here without hardcoding a host name.
-
-Validation: normal/compact home controls and search, transformed app/control
-clicks, held outside dismissal with zero underlying clicks, and 1200×1080,
-400×580 and 360×480 geometry tests passed. Software-offscreen early typing and
-repeated Escape passed; isolated OpenGL early-input tests passed after explicit
-fixture focus (the virtual display has no window manager). Matching before/after
-renders used Qt OpenGL on the RTX 4090 driver in an isolated Xvfb display. The
-6x edge comparison enlarges pixels with nearest-neighbor filtering and applies
-no screenshot antialiasing. Live Hyprland/Wayland input/focus, fractional output
-scaling and animation performance remain unverified. No activation or rebuild
-was performed, and tests invoked no real control actions.
-
-
-## Default launcher and sharper text (2026-10-14)
-
-On Blackmoon, `menu` now points to `sekai-launcher`, so the existing Super+Space
-application binding uses this phone. The host gate remains unchanged. Rofi is
-still installed for Super+Shift+Space/run, clipboard dmenu, and other utilities.
-The wrapper serializes startup with flock, toggles the existing instance
-through IPC, and otherwise starts Quickshell with no-duplicate mode. It uses the
-stable Home Manager configuration directory after deployment.
-
-Text and controls now render outside the filtered chassis layer. Text uses
-Qt's hardware curve renderer instead of being rasterized and mipmapped along
-with the phone. Direct high-quality distance-field text was compared too, but
-curve rendering avoided its colored fringes on the rotated letters. The chassis
-keeps its 2x/MSAA/mipmap treatment; only the wallpaper has a separate small 2x
-filtered layer. No whole-output supersampling or larger phone texture was added.
-Perspective and small letters still require antialiasing, but the extra blur
-from resampling an already-rendered text texture is gone.
-
-Blackmoon evaluation passed. Isolated RTX 4090 rendering, normal/compact controls,
-search, transformed app clicks, and early input tests passed. Live Wayland tests
-verified startup on DP-3, IPC toggle close/reopen, six concurrent invocations
-without duplicates, typing followed by Escape to home then Escape to close,
-and outside press/release dismissal. Hyprland synthetic pointer buttons require
-a motion frame to flush; a held press was observed before release closed it.
-No real service controls or app launch side effects were executed.
-
-For the narrow live trial, only Super+Space was replaced through `hyprctl eval`;
-all other registered bindings were compared and unchanged. The live command is
-`/home/brandon/Documents/Codex/2026-10-14/task-2/sekai-launcher-live`, generated
-from the same wrapper and targeting this isolated checkout. This runtime binding
-lasts until a Hyprland config reload or logout. The durable Nix change is integrated in the main configuration. Normal
-deployment makes the binding and daemon startup persistent; the isolated
-wrapper remains a temporary runtime trial. To restore only the
-live binding: `hyprctl eval 'hl.unbind("SUPER + space"); hl.bind("SUPER + space", hl.dsp.exec_cmd("rofi-toggle -show drun"))'`.
-
-Text-renderer reference: https://doc.qt.io/qt-6/qml-qtquick-text.html#renderType-prop
-
-
-## Persistent daemon and ranked search (2026-10-14)
-
-Blackmoon's `sekai-launcher.service` starts the hidden shell with the graphical
-session and stops it with that session. Super+Space uses IPC to show/hide the same
-instance. The wrapper waits for readiness if it must start a missing daemon;
-`flock` and Quickshell's no-duplicate mode protect concurrent invocations. The
-service and wrapper use `~/.config/quickshell/phone-launcher` as the same identity.
-A normal NixOS activation installs the user unit; no activation is done by tests.
-
-Closing, launching and opening a control hide the window after its existing
-animation. Reopening clears the query and selection. Hidden mode disables the
-clock/network sampling timer, drops the audio-node tracker and keyboard grab,
-and avoids render animation. Desktop-entry and service objects remain loaded.
-An open request during close cancels the pending close; held outside clicks still
-wait for release. The layout and entrance/exit durations are unchanged.
-
-Search sorts normalized exact names first, then name prefixes, token prefixes,
-name substrings, metadata matches, and fuzzy name subsequences. Case, accents,
-spacing and common name separators are normalized. Ties sort by name then ID.
-Left/Right now navigate applications; Up/Down navigate rows. Pointer movement
-changes selection, but a stationary pointer must not steal the top search match.
-Run `node home/apps/quickshell/phone-launcher/test-search.cjs` for ranking tests.
-
-Isolated Qt/OpenGL tests verified arrows, Tab/Backtab, actual Steam ranking,
-Escape twice, launch dispatch (mocked), fresh reopen, held outside dismissal,
-reopening during exit, stopped hidden clock updates, ten repeated toggles,
-eight concurrent toggles, one remaining instance, and absent-daemon fallback.
-Warm command latency was 33–52 ms versus 775 ms cold fallback on this run;
-these are IPC command timings, not first-frame or Wayland measurements, and do
-not include the existing 260 ms entrance. Tests used a private Xvfb display;
-no real application/control was launched and the live desktop was not opened.
-
-## Transformed edge antialiasing
-
-Chassis rectangles stay in the antialiased scene geometry instead of a flattened
-texture quad. Application images explicitly enable edge antialiasing, smoothing
-and mipmaps with 96px source icons. The wallpaper canvas has a one-logical-pixel
-transparent gutter so filtering can cover its transformed boundary. Text remains
-on CurveRendering outside raster layers; palette, pose and motion are unchanged.
-
-Verified with Qt RHI/OpenGL on Blackmoon's RTX 4090 at scale 1, matching both
-outputs, using isolated before/after captures. Keyboard/search, dismissal, repeated
-and concurrent toggles, and daemon recovery passed. Home Manager builds. This
-verification does not claim a live compositor screenshot or pixel-identical text.
+Reference inspiration: https://www.reddit.com/r/LinuxPorn/comments/1x36scr/project_sekai_inspired_rice/

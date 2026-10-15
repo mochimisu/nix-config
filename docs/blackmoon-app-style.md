@@ -1,8 +1,8 @@
 # Blackmoon application palette
 
-`machines/blackmoon/home/app-palette.json` owns the charcoal application surfaces,
+`home/theme/app-palette.json` owns the charcoal application surfaces,
 pure-white normal text, teal selections and lavender secondary accents. Its
-`app-style.nix` module is imported only by Blackmoon. The illustrated Sekai
+`home/theme/apps.nix` module is enabled only by Blackmoon through a typed opt-in. The illustrated Sekai
 phone/sidebar/Hyprland/SDDM palette remains separate.
 
 Coverage:
@@ -29,7 +29,7 @@ renders were inspected on an isolated display. Effective Rofi theme parsing and
 Neovim Normal/Visual highlight reads passed. White text contrast is 16.98:1 on
 background, 14.39:1 on surface and 6.42:1 on selection.
 
-The initial live application linked only the generated appearance files, shell
+Historical deployment: the initial live application linked only the generated appearance files, shell
 session-variable files and theme assets, updated four desktop-interface dconf
 keys, and set Qt environment values in Hyprland and the user manager. Mako was
 reloaded; the hidden phone daemon was restarted to inherit the Qt environment.
