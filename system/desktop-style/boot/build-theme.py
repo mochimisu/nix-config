@@ -5,7 +5,8 @@ import struct
 import sys
 import zlib
 
-palette_path, template_path, output_path = map(Path, sys.argv[1:])
+palette_path, template_path, output_path = map(Path, sys.argv[1:4])
+hostname = sys.argv[4]
 palette = json.loads(palette_path.read_text())
 output_path.mkdir(parents=True, exist_ok=True)
 
@@ -28,7 +29,7 @@ png("background.png", palette["background"])
 for tile in ("nw", "n", "ne", "w", "c", "e", "sw", "s", "se"):
     png(f"select_{tile}.png", palette["selection"], tile in ("nw", "w", "sw"))
 
-theme = template_path.read_text()
+theme = template_path.read_text().replace("@hostname@", " ".join(hostname.upper()))
 for name, value in palette.items():
     theme = theme.replace(f"@{name}@", value)
 assert "@" not in theme, "Unresolved palette placeholder"

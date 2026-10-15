@@ -9,6 +9,14 @@ in {
     ./mounts.nix
     ./power.nix
   ];
+  # SteamOS owns the desktop and native Qt plugin environment. Share only
+  # managed app colors (and existing private Mako on Comet), not session components.
+  variables.desktopStyle = {
+    apps.desktopIntegration.enable = false;
+    shell.enable = false;
+    launcher.enable = false;
+    mediaFeedback.enable = false;
+  };
   home.username = "deck";
   home.homeDirectory = "/home/deck";
   home.stateVersion = lib.mkForce "26.05";

@@ -46,6 +46,7 @@
 in {
   imports = [
     ./keymap.nix
+    ./system/desktop-style
     inputs.catppuccin.nixosModules.catppuccin
   ];
 

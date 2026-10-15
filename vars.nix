@@ -12,7 +12,11 @@ in {
     isGui = bool true "Enable graphical Home Manager settings.";
     nestedDesktop = bool false "Run desktop settings inside an existing host session.";
     desktopStyle = {
-      apps.enable = bool false "Use the shared charcoal application style.";
+      apps = {
+        enable = bool false "Use the shared charcoal style for managed applications.";
+        desktopIntegration.enable = bool false "Manage GTK/Qt desktop integration; disabled on externally owned desktops.";
+      };
+      notifications.enable = bool false "Style an already-owned Mako notification server.";
       shell.enable = bool false "Use the illustrated shell style and motion.";
       launcher = {
         enable = bool false "Use the phone launcher in a native Hyprland session.";

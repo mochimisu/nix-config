@@ -2,7 +2,7 @@
 let
   flake = builtins.getFlake (toString ../..);
   lib = flake.inputs.nixpkgs.lib;
-  keys = ["apps" "shell" "launcher" "mediaFeedback"];
+  keys = ["apps" "notifications" "shell" "launcher" "mediaFeedback"];
   eval = values: (lib.evalModules {modules = [../../vars.nix {variables.desktopStyle = values;}];}).config.variables.desktopStyle;
   enabled = cfg: builtins.filter (key: cfg.${key}.enable) keys;
   defaults = eval {};
@@ -10,6 +10,7 @@ let
   invalid = builtins.tryEval (builtins.deepSeq (enabled (eval {apps.enable = "yes";})) true);
 in
 assert enabled defaults == [];
+assert !defaults.apps.desktopIntegration.enable;
 assert defaults.launcher.wallpaperPackage == null;
 assert independent;
 assert !invalid.success;

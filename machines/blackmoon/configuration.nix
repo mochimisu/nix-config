@@ -30,7 +30,6 @@
 in {
 
   imports = [
-    ./boot-style
     ./sddm
     ../../nvidia.nix
     ./scanner.nix

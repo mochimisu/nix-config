@@ -1,8 +1,20 @@
-{config, pkgs, ...}: let
+{config, lib, pkgs, ...}: let
   style = config.variables.desktopStyle;
-  anyStyle = style.apps.enable || style.shell.enable || style.launcher.enable || style.mediaFeedback.enable;
+  linuxGui = pkgs.stdenv.hostPlatform.isLinux && config.variables.isGui;
+  externalDesktop = config.targets.genericLinux.enable || config.variables.nestedDesktop;
+  nativeHyprland = linuxGui && config.wayland.windowManager.hyprland.enable && !externalDesktop;
+  anyStyle = style.apps.enable || style.notifications.enable || style.shell.enable || style.launcher.enable || style.mediaFeedback.enable;
 in {
-  imports = [./apps.nix ./shell.nix ./media-feedback.nix ../apps/quickshell/phone-launcher];
+  imports = [./apps.nix ./notifications.nix ./shell.nix ./media-feedback.nix ../apps/quickshell/phone-launcher];
+  # Capability defaults do not install a compositor, greeter, or notification owner.
+  variables.desktopStyle = {
+    apps.enable = lib.mkDefault linuxGui;
+    apps.desktopIntegration.enable = lib.mkDefault (linuxGui && config.gtk.enable && !externalDesktop);
+    notifications.enable = lib.mkDefault (linuxGui && config.services.mako.enable);
+    shell.enable = lib.mkDefault nativeHyprland;
+    launcher.enable = lib.mkDefault nativeHyprland;
+    mediaFeedback.enable = lib.mkDefault (nativeHyprland && config.services.mako.enable);
+  };
   assertions = [
     { assertion = !anyStyle || (pkgs.stdenv.hostPlatform.isLinux && config.variables.isGui);
       message = "Desktop style features require a Linux GUI home."; }

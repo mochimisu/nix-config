@@ -13,10 +13,7 @@
 
 in {
   variables.desktopStyle = {
-    apps.enable = true;
-    shell.enable = true;
-    launcher = {enable = true; wallpaperPackage = skwdSuite;};
-    mediaFeedback.enable = true;
+    launcher.wallpaperPackage = skwdSuite;
   };
   variables.quickshellSidebar.blockedAudioDescriptions = [
     "AD102 High Definition Audio Controller Digital Stereo (HDMI)"

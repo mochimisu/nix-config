@@ -1,6 +1,12 @@
 # Blackmoon greeter and media cards
 
-This branch opts Blackmoon into `sekai-blackmoon`, a small Qt 6 SDDM theme.
+The shared `system/desktop-style/greeter.nix` selects `sekai-blackmoon`, a small
+Qt 6 SDDM theme, for managed desktop greeters. Source QML lives in
+`system/desktop-style/sddm`; this host directory owns only EDID-based X11 rotation.
+See `docs/desktop-style.md` for current enablement and rollout policy.
+The hostname label is configured per host; touchscreen hosts retain their existing
+Qt Virtual Keyboard with the login form scrolling above it.
+The following records the original Blackmoon implementation and validation.
 The background is wallpaper-free: a cream surface, clipped/slanted pastel
 bands and an open lavender ring are drawn directly in QML. The clock uses
 individually tilted mint/lavender numerals with thick dark outlines, pale inset
