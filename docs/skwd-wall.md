@@ -64,3 +64,16 @@ user service. Its mpvpaper wrapper is
 After a system switch, standard NixOS generation rollback also restores the old
 package profile. Restore the repository's wallpaper change separately before a
 future rebuild; keep the cat asset and any saved Skwd configuration.
+
+
+## Both connected outputs (2026-10-15)
+
+DP-3 and portrait DP-1 now each restore their saved Skwd selection, muted.
+The seed keeps both cache entries, and startup snapshots the cache before applying
+either output so the first apply cannot erase the other selection. Disconnected
+outputs are skipped. Both currently use the local 3840×2160 Snowfall in Forest
+MP4 from https://motionbgs.com/snowfall-in-forest, retained in untracked-assets.
+The previous cat video remains the fallback and is unchanged. Fill mode and
+monitor layout are unchanged. The existing DP-3 fullscreen/Kitty policy remains;
+Skwd's global pause/resume affects both animated outputs.
+This supersedes the DP-3-only restoration notes above.

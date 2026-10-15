@@ -35,12 +35,12 @@ let
       ' "$settings" > "$tmp"
       mv "$tmp" "$settings"
       # Upstream's default restore copies the last wallpaper to unassigned outputs.
-      # This host owns only DP-3; retain its choice and leave the others to Hyprpaper.
+      # This host owns DP-3 and DP-1; preserve their independent selections.
       outputs=${lib.escapeShellArg "${cacheDir}/outputs.json"}
       if [[ -f "$outputs" ]]; then
         [[ -e "$outputs.before-nix" ]] || cp -p "$outputs" "$outputs.before-nix"
         tmp=$(mktemp "$outputs.XXXXXX")
-        jq 'with_entries(select(.key == "DP-3"))' "$outputs" > "$tmp"
+        jq 'with_entries(select(.key == "DP-3" or .key == "DP-1"))' "$outputs" > "$tmp"
         mv "$tmp" "$outputs"
       fi
     '';
@@ -54,12 +54,7 @@ let
       until [[ -f "$wallpaper" ]] && hyprctl -j monitors 2>/dev/null | jq -e 'any(.[]; .name == "DP-3")' >/dev/null; do
         sleep 1
       done
-      selected="$wallpaper"
       outputs=${lib.escapeShellArg "${cacheDir}/outputs.json"}
-      if [[ -f "$outputs" ]]; then
-        saved=$(jq -r '.["DP-3"] | if .type == "we" then "we:" + .we_id else .path // empty end' "$outputs")
-        [[ -z "$saved" ]] || selected="$saved"
-      fi
       skwd-walld &
       daemon_pid=$!
       trap 'kill "$daemon_pid" 2>/dev/null || true' EXIT
@@ -74,11 +69,19 @@ let
         sleep 1
       done
       [[ "$ready" == 1 ]] || exit 1
-      # Restore just DP-3, never the upstream all-output fallback.
-      if ! skwd-helm apply "$selected" --output DP-3 --mute; then
-        skwd-helm apply "$wallpaper" --output DP-3 --mute
-      fi
-      skwd-helm mute --output DP-3
+      # Restore each configured connected output, never the all-output fallback.
+      # Snapshot before apply, since the daemon writes its output cache on apply.
+      saved_outputs="{}"
+      [[ ! -f "$outputs" ]] || saved_outputs=$(cat "$outputs")
+      for output in DP-3 DP-1; do
+        hyprctl -j monitors | jq -e --arg output "$output" 'any(.[]; .name == $output)' >/dev/null || continue
+        selected=$(printf '%s' "$saved_outputs" | jq -r --arg output "$output" '.[$output] | if .type == "we" then "we:" + .we_id else .path // empty end')
+        [[ -n "$selected" ]] || selected="$wallpaper"
+        if ! skwd-helm apply "$selected" --output "$output" --mute; then
+          skwd-helm apply "$wallpaper" --output "$output" --mute
+        fi
+        skwd-helm mute --output "$output"
+      done
       previous=""
       while kill -0 "$daemon_pid" 2>/dev/null; do
         monitor=$(hyprctl -j monitors | jq -r '.[] | select(.name == "DP-3") | .id')
@@ -96,7 +99,7 @@ let
           state=pause
         fi
         # Skwd pauses decoding in place, avoiding a decoder restart every time.
-        # The control API pauses all animated outputs; this host starts only DP-3.
+        # The control API pauses both animated outputs; retain DP-3 fullscreen policy.
         if [[ "$state" != "$previous" ]]; then
           skwd-helm "$state"
           previous="$state"
