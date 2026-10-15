@@ -8,6 +8,11 @@ import Quickshell.Services.Pipewire
 Item {
     id: status
     visible: false
+    property bool active: true
+    onActiveChanged: {
+        previous = null;
+        if (active) { now = new Date(); counters.reload(); }
+    }
     readonly property var devices: Networking.devices.values
     readonly property var connected: devices.filter(d => d.connected)
     readonly property string networkLabel: Networking.backend === NetworkBackendType.None ? "Unavailable" : connected.length ? connected.map(d => {
@@ -32,7 +37,7 @@ Item {
     property string download: "—"
     property string upload: "—"
     property var previous: null
-    PwObjectTracker { objects: status.sink ? [status.sink] : [] }
+    PwObjectTracker { objects: status.active && status.sink ? [status.sink] : [] }
     function toggleMute() { if (audioReady) sink.audio.muted = !sink.audio.muted; }
     function setVolume(value) { if (audioReady) sink.audio.volume = Math.max(0, Math.min(1, value)); }
     function rate(bytes) {
@@ -59,5 +64,5 @@ Item {
         path: "/proc/net/dev"
         onLoaded: status.sample(text())
     }
-    Timer { interval: 1000; running: true; repeat: true; onTriggered: { status.now = new Date(); counters.reload(); } }
+    Timer { interval: 1000; running: status.active; repeat: true; onTriggered: { status.now = new Date(); counters.reload(); } }
 }

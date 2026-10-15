@@ -9,6 +9,7 @@ Item {
     signal launchRequested(var app)
     // Explicit opt-out for motion sensitivity and simpler renderers.
     property bool flat: Quickshell.env("SEKAI_LAUNCHER_FLAT") === "1"
+    property bool autoOpen: true
     property bool opened: false
     property bool closing: false
     property bool pointerHeld: false
@@ -36,6 +37,7 @@ Item {
     }
     property real travel: opened ? 0 : 1
     Behavior on travel {
+        enabled: stage.visible
         NumberAnimation {
             id: slide
             duration: stage.flat ? 0 : (stage.closing ? 180 : 260)
@@ -51,7 +53,21 @@ Item {
         opened = false;
         closeTimer.start();
     }
-    Component.onCompleted: { if (!closing) opened = true; }
+    function open() {
+        closeTimer.stop();
+        pendingApp = null;
+        closing = false;
+        phone.reset();
+        opened = true;
+    }
+    function suspend() {
+        closeTimer.stop();
+        pendingApp = null;
+        opened = false;
+        closing = false;
+        pointerHeld = false;
+    }
+    Component.onCompleted: { if (autoOpen && !closing) open(); }
     Timer {
         id: closeTimer
         interval: stage.flat ? 0 : 200

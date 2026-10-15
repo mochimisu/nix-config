@@ -1,18 +1,19 @@
-# Phone launcher trial
+# Phone launcher
 
 A small Project Sekai-inspired launcher using the existing Quickshell package and
-its desktop-entry service. It runs on demand, independently of the sidebar.
+its desktop-entry service. It stays loaded as a hidden daemon, independently of the sidebar.
 
 From this checkout, try it without rebuilding or restarting the desktop:
 
 ```sh
-qs -n -p "$PWD/home/apps/quickshell/phone-launcher"
+qs -n -d -p "$PWD/home/apps/quickshell/phone-launcher"
+qs ipc -p "$PWD/home/apps/quickshell/phone-launcher" call launcher toggle
 ```
 
 Type to search application names, generic names, and keywords. Use Up/Down to move
-between rows, Tab/Shift+Tab between applications, and Enter to launch. Left/Right
-remain available for editing the search text. Escape clears search back to home, then exits; the close button always exits
-the launcher process. Missing icons display the application's initial.
+between rows, Left/Right or Tab/Shift+Tab between applications, and Enter to
+launch. Escape clears search back to home, then hides the phone; the close button
+always hides it. The daemon stays running and releases keyboard focus when hidden. Missing icons display the application's initial.
 
 The Nix module is enabled only for Blackmoon. After a future normal activation,
 `sekai-launcher`, Super+Space or Super+Alt+Space toggles it. The other Rofi shortcuts remain
@@ -44,7 +45,7 @@ projected lower-corner bounds to hide the rounded bottom below that edge, with
 8px of extra crop. The footer and home indicator are removed; the app grid extends below the output and is cropped naturally. Its pointer input region
 is empty during travel and limited to the phone area after settling. Escape
 works during entry, repeated close requests are ignored, and launching waits
-until exit completes. The compositor keyboard grab lasts until process exit.
+until exit completes. The compositor keyboard grab lasts until the window hides after exit animation.
 
 Set `SEKAI_LAUNCHER_FLAT=1` for an immediate flat presentation with no travel,
 rotation or chassis depth. Search, app selection and Rofi fallback remain.
@@ -172,9 +173,9 @@ was performed, and tests invoked no real control actions.
 On Blackmoon, `menu` now points to `sekai-launcher`, so the existing Super+Space
 application binding uses this phone. The host gate remains unchanged. Rofi is
 still installed for Super+Shift+Space/run, clipboard dmenu, and other utilities.
-The wrapper serializes startup with flock, asks the existing instance to close
-through IPC, and otherwise starts Quickshell with no-duplicate mode. It uses an
-immutable source path in the Nix store after normal deployment.
+The wrapper serializes startup with flock, toggles the existing instance
+through IPC, and otherwise starts Quickshell with no-duplicate mode. It uses the
+stable Home Manager configuration directory after deployment.
 
 Text and controls now render outside the filtered chassis layer. Text uses
 Qt's hardware curve renderer instead of being rasterized and mipmapped along
@@ -197,9 +198,42 @@ For the narrow live trial, only Super+Space was replaced through `hyprctl eval`;
 all other registered bindings were compared and unchanged. The live command is
 `/home/brandon/Documents/Codex/2026-10-14/task-2/sekai-launcher-live`, generated
 from the same wrapper and targeting this isolated checkout. This runtime binding
-lasts until a Hyprland config reload or logout. The branch contains the durable
-Nix change; it has not been merged, broadly rebuilt, or activated. A later normal
-deployment of this branch makes the binding persistent. To restore only the
+lasts until a Hyprland config reload or logout. The durable Nix change is integrated in the main configuration. Normal
+deployment makes the binding and daemon startup persistent; the isolated
+wrapper remains a temporary runtime trial. To restore only the
 live binding: `hyprctl eval 'hl.unbind("SUPER + space"); hl.bind("SUPER + space", hl.dsp.exec_cmd("rofi-toggle -show drun"))'`.
 
 Text-renderer reference: https://doc.qt.io/qt-6/qml-qtquick-text.html#renderType-prop
+
+
+## Persistent daemon and ranked search (2026-10-14)
+
+Blackmoon's `sekai-launcher.service` starts the hidden shell with the graphical
+session and stops it with that session. Super+Space uses IPC to show/hide the same
+instance. The wrapper waits for readiness if it must start a missing daemon;
+`flock` and Quickshell's no-duplicate mode protect concurrent invocations. The
+service and wrapper use `~/.config/quickshell/phone-launcher` as the same identity.
+A normal NixOS activation installs the user unit; no activation is done by tests.
+
+Closing, launching and opening a control hide the window after its existing
+animation. Reopening clears the query and selection. Hidden mode disables the
+clock/network sampling timer, drops the audio-node tracker and keyboard grab,
+and avoids render animation. Desktop-entry and service objects remain loaded.
+An open request during close cancels the pending close; held outside clicks still
+wait for release. The layout and entrance/exit durations are unchanged.
+
+Search sorts normalized exact names first, then name prefixes, token prefixes,
+name substrings, metadata matches, and fuzzy name subsequences. Case, accents,
+spacing and common name separators are normalized. Ties sort by name then ID.
+Left/Right now navigate applications; Up/Down navigate rows. Pointer movement
+changes selection, but a stationary pointer must not steal the top search match.
+Run `node home/apps/quickshell/phone-launcher/test-search.cjs` for ranking tests.
+
+Isolated Qt/OpenGL tests verified arrows, Tab/Backtab, actual Steam ranking,
+Escape twice, launch dispatch (mocked), fresh reopen, held outside dismissal,
+reopening during exit, stopped hidden clock updates, ten repeated toggles,
+eight concurrent toggles, one remaining instance, and absent-daemon fallback.
+Warm command latency was 33–52 ms versus 775 ms cold fallback on this run;
+these are IPC command timings, not first-frame or Wayland measurements, and do
+not include the existing 260 ms entrance. Tests used a private Xvfb display;
+no real application/control was launched and the live desktop was not opened.

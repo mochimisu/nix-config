@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import Quickshell
+import "Search.js" as AppSearch
 
 FocusScope {
     id: phone
@@ -11,12 +12,9 @@ FocusScope {
     signal launchRequested(var app)
     property bool depth: true
     property bool interactive: true
+    property point lastPointerPosition: Qt.point(NaN, NaN)
     property alias query: search.text
-    readonly property var results: DesktopEntries.applications.values.filter(app => {
-        const terms = search.text.trim().toLowerCase().split(/\s+/);
-        const haystack = [app.name, app.genericName, ...(app.keywords ?? [])].join(" ").toLowerCase();
-        return !app.noDisplay && terms.every(term => haystack.includes(term));
-    }).sort((a, b) => a.name.localeCompare(b.name));
+    readonly property var results: AppSearch.rank(DesktopEntries.applications.values, search.text)
     readonly property color ink: "#28585c"
     readonly property color mint: "#b8ece6"
     readonly property color pink: "#f5dbe9"
@@ -24,6 +22,12 @@ FocusScope {
     onSearchingChanged: { if (!searching) homeInput.forceActiveFocus(); }
     onResultsChanged: grid.currentIndex = results.length ? 0 : -1
 
+    function reset() {
+        search.clear();
+        grid.currentIndex = results.length ? 0 : -1;
+        grid.contentY = 0;
+        homeInput.forceActiveFocus();
+    }
     function moveSelection(delta) {
         if (!interactive || !searching || !results.length) return;
         grid.currentIndex = Math.max(0, Math.min(results.length - 1, grid.currentIndex + delta));
@@ -221,7 +225,8 @@ FocusScope {
             }
             Keys.onDownPressed: phone.moveSelection(grid.columns)
             Keys.onUpPressed: phone.moveSelection(-grid.columns)
-            // Leave left/right available for editing the search text.
+            Keys.onRightPressed: event => { phone.moveSelection(1); event.accepted = true; }
+            Keys.onLeftPressed: event => { phone.moveSelection(-1); event.accepted = true; }
             Keys.onTabPressed: phone.moveSelection(1)
             Keys.onBacktabPressed: phone.moveSelection(-1)
             Keys.onReturnPressed: phone.launchSelected()
@@ -339,7 +344,15 @@ FocusScope {
                 anchors.fill: parent
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
-                onEntered: grid.currentIndex = tile.index
+                // A stationary pointer must not override the top search match.
+                onPositionChanged: mouse => {
+                    const point = mapToGlobal(mouse.x, mouse.y);
+                    const previous = phone.lastPointerPosition;
+                    phone.lastPointerPosition = point;
+                    if (containsMouse && !isNaN(previous.x)
+                        && (Math.abs(point.x - previous.x) > 1 || Math.abs(point.y - previous.y) > 1))
+                        grid.currentIndex = tile.index;
+                }
                 onClicked: phone.launchRequested(tile.modelData)
             }
         }
