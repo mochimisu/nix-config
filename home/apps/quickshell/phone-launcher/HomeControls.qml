@@ -1,5 +1,7 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Effects
+import QtMultimedia
 import Quickshell
 
 Column {
@@ -11,45 +13,61 @@ Column {
     readonly property color ink: "#28585c"
     Item {
         width: parent.width; height: 128
-        Canvas {
+        Item {
             id: wallpaper
-            // Transparent texels let filtering cover the transformed outer edge.
-            x: -1; y: -1
-            width: parent.width * 2 + 4; height: parent.height * 2 + 4
-            scale: 0.5
-            transformOrigin: Item.TopLeft
-            // Rasterize the rounded wallpaper clip at the phone layer's density.
-            layer.enabled: wallpaper.GraphicsInfo.api !== GraphicsInfo.Software
-            layer.textureSize: Qt.size(width, height)
+            // Supersample only the media/mask, including a transparent gutter.
+            // Text remains separate native curve-rendered geometry.
+            x: -2; y: -2
+            width: parent.width + 4; height: parent.height + 4
+            layer.enabled: true
+            layer.textureSize: Qt.size(width * 3, height * 3)
             layer.smooth: true
             layer.mipmap: true
-            smooth: true
-            antialiasing: true
-            property string imageUrl: home.services ? home.services.wallpaper : ""
-            onImageUrlChanged: { if (imageUrl) loadImage(imageUrl); requestPaint(); }
-            onImageLoaded: requestPaint()
-            onWidthChanged: requestPaint()
-            onHeightChanged: requestPaint()
-            Component.onCompleted: { if (imageUrl) loadImage(imageUrl); }
-            onPaint: {
-                const ctx = getContext("2d");
-                ctx.reset();
-                ctx.scale(2, 2);
-                ctx.translate(1, 1);
-                const paintWidth = width / 2 - 2, paintHeight = height / 2 - 2;
-                const r = 31;
-                ctx.beginPath();
-                ctx.moveTo(0, paintHeight); ctx.lineTo(0, r);
-                ctx.quadraticCurveTo(0, 0, r, 0);
-                ctx.lineTo(paintWidth - r, 0); ctx.quadraticCurveTo(paintWidth, 0, paintWidth, r);
-                ctx.lineTo(paintWidth, paintHeight); ctx.closePath(); ctx.clip();
-                ctx.fillStyle = "#d1eae4"; ctx.fillRect(0, 0, paintWidth, paintHeight);
-                if (imageUrl && isImageLoaded(imageUrl)) {
-                    const image = ctx.createImageData(imageUrl);
-                    const scale = Math.max(paintWidth / image.width, paintHeight / image.height);
-                    const w = image.width * scale, h = image.height * scale;
-                    ctx.drawImage(imageUrl, (paintWidth - w) / 2, (paintHeight - h) / 2, w, h);
-                }
+            layer.effect: MultiEffect {
+                maskEnabled: true
+                maskSource: wallpaperMask
+                maskThresholdMin: 0.5
+                maskSpreadAtMin: 1.0
+            }
+            Rectangle { x: 2; y: 2; width: parent.width - 4; height: parent.height - 4; color: "#d1eae4" }
+            Image {
+                x: 2; y: 2; width: parent.width - 4; height: parent.height - 4
+                visible: !home.services?.wallpaperVideo
+                source: visible ? (home.services?.wallpaper || "") : ""
+                fillMode: Image.PreserveAspectCrop
+                smooth: true; mipmap: true
+            }
+            MediaPlayer {
+                id: wallpaperPlayer
+                objectName: "wallpaperPlayer"
+                source: home.services?.wallpaperVideo ? home.services.wallpaper : ""
+                loops: MediaPlayer.Infinite
+                videoOutput: wallpaperVideo
+                audioOutput: AudioOutput { muted: true }
+                readonly property bool shouldPlay: !!home.services?.active && home.visible && !!home.services?.wallpaperVideo
+                onShouldPlayChanged: { if (shouldPlay) play(); else pause(); }
+                onSourceChanged: { if (shouldPlay) play(); }
+                Component.onCompleted: { if (shouldPlay) play(); }
+            }
+            VideoOutput {
+                id: wallpaperVideo
+                x: 2; y: 2; width: parent.width - 4; height: parent.height - 4
+                visible: !!home.services?.wallpaperVideo
+                fillMode: VideoOutput.PreserveAspectCrop
+            }
+        }
+        Item {
+            id: wallpaperMask
+            x: -2; y: -2
+            width: parent.width + 4; height: parent.height + 4
+            visible: false
+            layer.enabled: true
+            layer.textureSize: Qt.size(width * 3, height * 3)
+            layer.smooth: true
+            Rectangle {
+                x: 2; y: 2; width: parent.width - 4; height: parent.height - 4
+                color: "white"; antialiasing: true
+                topLeftRadius: 31; topRightRadius: 31
             }
         }
         Column {

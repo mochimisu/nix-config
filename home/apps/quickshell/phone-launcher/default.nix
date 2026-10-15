@@ -1,9 +1,18 @@
-{lib, pkgs, config, osConfig ? null, ...}: let
+{lib, pkgs, config, osConfig ? null, skwdSuite, ...}: let
   enabled = osConfig != null && (osConfig.networking.hostName or "") == "blackmoon";
   configDir = "${config.xdg.configHome}/quickshell/phone-launcher";
+  context = pkgs.writeScript "sekai-launcher-context" ("#!${pkgs.python3}/bin/python3\n" + builtins.replaceStrings
+    ["@hyprctl@" "@skwd@"]
+    ["${config.wayland.windowManager.hyprland.package}/bin/hyprctl" "${skwdSuite}/bin/skwd-helm"]
+    (builtins.readFile ./context.py));
+  quickshell = pkgs.writeShellScript "sekai-quickshell" ''
+    export QML_IMPORT_PATH="${pkgs.qt6.qtmultimedia}/lib/qt-6/qml''${QML_IMPORT_PATH:+:$QML_IMPORT_PATH}"
+    export QT_PLUGIN_PATH="${pkgs.qt6.qtmultimedia}/lib/qt-6/plugins''${QT_PLUGIN_PATH:+:$QT_PLUGIN_PATH}"
+    exec ${pkgs.quickshell}/bin/qs "$@"
+  '';
   launcher = pkgs.writeShellScriptBin "sekai-launcher" (builtins.replaceStrings
     ["@qs@" "@flock@" "@config@" "@sleep@"]
-    ["${pkgs.quickshell}/bin/qs" "${pkgs.util-linux}/bin/flock" (lib.escapeShellArg configDir) "${pkgs.coreutils}/bin/sleep"]
+    ["${quickshell}" "${pkgs.util-linux}/bin/flock" (lib.escapeShellArg configDir) "${pkgs.coreutils}/bin/sleep"]
     (builtins.readFile ./launcher.sh));
 in {
   config = lib.mkIf enabled {
@@ -15,7 +24,10 @@ in {
         PartOf = ["graphical-session.target"];
       };
       Service = {
-        ExecStart = "${pkgs.quickshell}/bin/qs -n -p ${lib.escapeShellArg configDir}";
+        ExecStart = "${quickshell} -n -p ${lib.escapeShellArg configDir}";
+        # Desktop apps launched from the phone can inherit this cgroup.
+        # A launcher-only restart must not terminate those applications.
+        KillMode = "process";
         Restart = "on-failure";
         RestartSec = 1;
       };
@@ -25,7 +37,7 @@ in {
       ".config/quickshell/phone-launcher/Search.js".source = ./Search.js;
       ".config/quickshell/phone-launcher/Status.qml".source = ./Status.qml;
       ".config/quickshell/phone-launcher/HomeControls.qml".source = ./HomeControls.qml;
-      ".config/quickshell/phone-launcher/shell.qml".source = ./shell.qml;
+      ".config/quickshell/phone-launcher/shell.qml".source = pkgs.replaceVars ./shell.qml {inherit context;};
       ".config/quickshell/phone-launcher/Presentation.qml".source = ./Presentation.qml;
       ".config/quickshell/phone-launcher/Phone.qml".source = ./Phone.qml;
     };

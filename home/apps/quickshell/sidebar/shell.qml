@@ -835,7 +835,7 @@ ShellRoot {
                             width: parent.width
                             height: Math.max(0, railViewport.height - workspaceModule.height - bottomSection.implicitHeight - railColumn.spacing * 2)
 
-                            RailCard {
+                            Item {
                                 id: titleCard
                                 anchors.centerIn: parent
                                 width: parent.width
@@ -848,7 +848,7 @@ ShellRoot {
                                 visible: !root.themed || titleCard.visible
                                 width: root.themed ? Math.max(0, titleCard.height - 12) : centerSection.height
                                 text: contentRoot.monitorWindowTitle
-                                color: root.fgColor
+                                color: root.railForeground
                                 font.family: root.baseFont
                                 font.pixelSize: 13
                                 elide: Text.ElideRight

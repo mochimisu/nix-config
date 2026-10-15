@@ -7,23 +7,58 @@ import Quickshell.Wayland
 
 ShellRoot {
     id: root
+    property bool opening: false
+    property int requestSerial: 0
+    property int querySerial: 0
     function hide() {
+        opening = false;
+        requestSerial++;
         window.visible = false;
         presentation.suspend();
     }
     function open() {
-        window.screen = Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) ?? Quickshell.screens[0];
-        window.visible = true;
-        presentation.open();
+        opening = true;
+        requestSerial++;
+        startQuery();
+    }
+    function startQuery() {
+        if (!opening || contextQuery.running) return;
+        querySerial = requestSerial;
+        contextQuery.running = true;
+    }
+    Process {
+        id: contextQuery
+        command: ["@context@"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                if (!root.opening || root.querySerial !== root.requestSerial) return;
+                try {
+                    const context = JSON.parse(text);
+                    const output = Quickshell.screens.find(s => s.name === context.monitor);
+                    if (!output) throw new Error("Pointer output disconnected");
+                    status.wallpaper = context.wallpaper;
+                    status.wallpaperVideo = context.video;
+                    window.screen = output;
+                    window.visible = true;
+                    presentation.open();
+                } catch (error) { console.warn("Launcher context:", error); }
+                root.opening = false;
+            }
+        }
+        onExited: (code, exitStatus) => {
+            if (root.querySerial !== root.requestSerial) Qt.callLater(root.startQuery);
+            else if (code !== 0) { root.opening = false; console.warn("Launcher context query failed:", code); }
+        }
     }
     IpcHandler {
         target: "launcher"
         function toggle(): void {
+            if (root.opening) { root.opening = false; root.requestSerial++; return; }
             if (window.visible && !presentation.closing) presentation.finish(null);
             else root.open();
         }
-        function close(): void { if (window.visible) presentation.finish(null); }
-        function state(): string { return window.visible ? (presentation.closing ? "closing" : "open") : "hidden"; }
+        function close(): void { root.opening = false; root.requestSerial++; if (window.visible) presentation.finish(null); }
+        function state(): string { return root.opening ? "opening" : window.visible ? (presentation.closing ? "closing" : "open") : "hidden"; }
     }
     Status { id: status; active: window.visible }
     PanelWindow {
