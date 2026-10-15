@@ -237,3 +237,16 @@ Warm command latency was 33–52 ms versus 775 ms cold fallback on this run;
 these are IPC command timings, not first-frame or Wayland measurements, and do
 not include the existing 260 ms entrance. Tests used a private Xvfb display;
 no real application/control was launched and the live desktop was not opened.
+
+## Transformed edge antialiasing
+
+Chassis rectangles stay in the antialiased scene geometry instead of a flattened
+texture quad. Application images explicitly enable edge antialiasing, smoothing
+and mipmaps with 96px source icons. The wallpaper canvas has a one-logical-pixel
+transparent gutter so filtering can cover its transformed boundary. Text remains
+on CurveRendering outside raster layers; palette, pose and motion are unchanged.
+
+Verified with Qt RHI/OpenGL on Blackmoon's RTX 4090 at scale 1, matching both
+outputs, using isolated before/after captures. Keyboard/search, dismissal, repeated
+and concurrent toggles, and daemon recovery passed. Home Manager builds. This
+verification does not claim a live compositor screenshot or pixel-identical text.

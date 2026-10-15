@@ -46,14 +46,8 @@ FocusScope {
     Item {
         x: -24; y: -24
         width: phone.width + 64; height: phone.height + 72
-        // Padding belongs to the item geometry, so the filtered layer preserves
-        // the chassis/shadow positions and the root's input coordinates.
-        // Cache only the chassis; keep all text outside this filtered texture.
-        layer.enabled: phone.GraphicsInfo.api !== GraphicsInfo.Software
-        layer.textureSize: Qt.size(Math.ceil(width * 2), Math.ceil(height * 2))
-        layer.smooth: true
-        layer.mipmap: true
-        layer.samples: 4
+        // Keep rounded chassis edges in the antialiased scene geometry.
+        // A transformed texture quad loses edge coverage despite mipmap filtering.
         Item {
             x: 24; y: 24
             width: phone.width; height: phone.height
@@ -309,7 +303,10 @@ FocusScope {
                     width: 36; height: 36
                     source: tile.modelData.icon ? Quickshell.iconPath(tile.modelData.icon, true) : ""
                     fillMode: Image.PreserveAspectFit
-                    sourceSize { width: 48; height: 48 }
+                    antialiasing: true
+                    smooth: true
+                    mipmap: true
+                    sourceSize { width: 96; height: 96 }
                 }
                 Text { renderType: Text.CurveRendering;
                     anchors.centerIn: parent

@@ -13,7 +13,9 @@ Column {
         width: parent.width; height: 128
         Canvas {
             id: wallpaper
-            width: parent.width * 2; height: parent.height * 2
+            // Transparent texels let filtering cover the transformed outer edge.
+            x: -1; y: -1
+            width: parent.width * 2 + 4; height: parent.height * 2 + 4
             scale: 0.5
             transformOrigin: Item.TopLeft
             // Rasterize the rounded wallpaper clip at the phone layer's density.
@@ -33,7 +35,8 @@ Column {
                 const ctx = getContext("2d");
                 ctx.reset();
                 ctx.scale(2, 2);
-                const paintWidth = width / 2, paintHeight = height / 2;
+                ctx.translate(1, 1);
+                const paintWidth = width / 2 - 2, paintHeight = height / 2 - 2;
                 const r = 31;
                 ctx.beginPath();
                 ctx.moveTo(0, paintHeight); ctx.lineTo(0, r);
