@@ -380,6 +380,7 @@ in
 
       .left-label,
       .mid-label {
+       font-weight: bold;
        color: #b9bec2;
       }
 
@@ -409,6 +410,7 @@ in
 
       .section-heading {
         font-family: "Montserrat Semi-Bold";
+        font-weight: bold;
         font-size: 9px;
         letter-spacing: 1.5px;
         color: #b9bec2;
