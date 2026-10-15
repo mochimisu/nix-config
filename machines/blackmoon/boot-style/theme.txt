@@ -1,0 +1,56 @@
+# Blackmoon: native GRUB gfxmenu, using its bundled Unifont.
+title-text: ""
+desktop-image: "background.png"
+desktop-color: "@background@"
+terminal-font: "Unifont Regular 16"
+
++ label {
+  left = 20%
+  top = 20%
+  width = 60%
+  height = 24
+  text = "B L A C K M O O N"
+  font = "Unifont Regular 16"
+  color = "@text@"
+}
++ label {
+  left = 20%
+  top = 26%
+  width = 60%
+  height = 20
+  text = "N I X O S"
+  color = "@lavender@"
+}
++ boot_menu {
+  left = 20%
+  top = 35%
+  width = 60%
+  height = 45%
+  item_font = "Unifont Regular 16"
+  item_color = "@text@"
+  selected_item_color = "@text@"
+  icon_width = 0
+  icon_height = 0
+  item_icon_space = 0
+  item_height = 32
+  item_padding = 8
+  item_spacing = 8
+  selected_item_pixmap_style = "select_*.png"
+}
++ label {
+  left = 20%
+  top = 84%
+  width = 60%
+  height = 20
+  id = "__timeout__"
+  text = "Starting in %d seconds"
+  color = "@teal@"
+}
++ label {
+  left = 20%
+  top = 91%
+  width = 60%
+  height = 20
+  text = "Arrows: select   Enter: boot   e: edit   c: console"
+  color = "@muted@"
+}

@@ -93,3 +93,5 @@
 - Hyprland Lua gradient options require `{ colors = {...}, angle = 45 }`, not legacy multi-color strings. After changing generated Hyprland settings, run the pinned `Hyprland --verify-config -c <generated-file>`; Nix evaluation/build alone does not validate the compositor parser.
 
 - For scoped live Home Manager file deployment, point home symlinks at `/nix/store/*-home-manager-files/<relative-path>`. Resolve only the generation's `home-files` directory, not each leaf: resolving a leaf to `*-shell.qml` or `hm_*` loses Home Manager ownership detection and later activation can fail with “would be clobbered”. Run the generated `check-link-targets.sh` collision check after deployment; do not hide this mistake with broad `force = true` or overwrite policies.
+
+- Blackmoon's boot theme is host-only in `machines/blackmoon/boot-style`, using `home/app-palette.json` and deterministic generated PNGs. Preserve the shared GRUB policy, recovery menu, verbosity and disabled Plymouth. Use `nixos-rebuild boot` to stage a boot-only change without switching the running desktop; firmware/NVIDIA handoff still needs a real boot check. See `docs/blackmoon-boot-style.md`.
