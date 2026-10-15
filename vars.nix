@@ -11,6 +11,15 @@ in {
   options.variables = {
     isGui = bool true "Enable graphical Home Manager settings.";
     nestedDesktop = bool false "Run desktop settings inside an existing host session.";
+    desktopStyle = {
+      apps.enable = bool false "Use the shared charcoal application style.";
+      shell.enable = bool false "Use the illustrated shell style and motion.";
+      launcher = {
+        enable = bool false "Use the phone launcher in a native Hyprland session.";
+        wallpaperPackage = option (types.nullOr types.package) null "Optional Skwd package for the launcher wallpaper context.";
+      };
+      mediaFeedback.enable = bool false "Use Mako volume and brightness feedback.";
+    };
     gitIdentity = bool true "Install the shared Git author identity.";
     keyboardLayout = option (types.enum ["qwerty" "dvorak"]) "qwerty" "Hyprland keyboard binding layout.";
     obsidianVaultPath = option (types.nullOr types.str) null "Vault path; null uses the home-relative default.";
@@ -33,6 +42,7 @@ in {
     ewwSidebarFontSize = str "13px" "Sidebar CSS font size.";
     ewwSidebarIconSize = str "16" "Sidebar icon size.";
     quickshellSidebar = {
+      blockedAudioDescriptions = strings [] "Host-specific audio devices excluded from the sidebar.";
       workspaceHeight = str "18" "Workspace button height in QML.";
       workspaceSpacing = str "2" "Workspace button spacing in QML.";
     };

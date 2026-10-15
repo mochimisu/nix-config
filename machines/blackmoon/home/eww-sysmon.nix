@@ -1,6 +1,6 @@
 { lib, pkgs, ... }:
 let
-  palette = lib.importJSON ./app-palette.json;
+  palette = (import ../../../home/theme/palettes.nix {inherit lib;}).app;
 
 ewwProcs = pkgs.writeShellScriptBin "eww-procs" ''
 #!/usr/bin/env bash

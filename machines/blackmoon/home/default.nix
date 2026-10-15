@@ -1,5 +1,6 @@
 {
   pkgs,
+  skwdSuite,
   config,
   lib,
   ...
@@ -11,6 +12,18 @@
   lua = lib.generators.mkLuaInline;
 
 in {
+  variables.desktopStyle = {
+    apps.enable = true;
+    shell.enable = true;
+    launcher = {enable = true; wallpaperPackage = skwdSuite;};
+    mediaFeedback.enable = true;
+  };
+  variables.quickshellSidebar.blockedAudioDescriptions = [
+    "AD102 High Definition Audio Controller Digital Stereo (HDMI)"
+    "USB Audio Front Headphones"
+    "USB Audio Speakers"
+    "RZ19-0229 Gaming Microphone Analog Stereo"
+  ];
   variables.keyboardLayout = "dvorak";
   variables.hyprpanel = {
     hiddenMonitors = ["0"];
@@ -30,8 +43,6 @@ in {
     ./eww-sysmon.nix
     ./fastfetch.nix
     ./wallpaper.nix
-    ./sekai-style.nix
-    ./app-style.nix
   ];
 
   home.packages = with pkgs; [

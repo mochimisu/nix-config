@@ -1,10 +1,10 @@
 {pkgs, ...}: let
-  palette = builtins.fromJSON (builtins.readFile ../home/app-palette.json);
+  palette = builtins.fromJSON (builtins.readFile ../../../home/theme/app-palette.json);
   hex = builtins.substring 1 6;
   theme = pkgs.runCommand "blackmoon-grub-theme" {
     nativeBuildInputs = [pkgs.python3];
   } ''
-    python ${./build-theme.py} ${../home/app-palette.json} ${./theme.txt} $out
+    python ${./build-theme.py} ${../../../home/theme/app-palette.json} ${./theme.txt} $out
   '';
 in {
   # Only imported by Blackmoon. Keep the shared loader/recovery policy intact.

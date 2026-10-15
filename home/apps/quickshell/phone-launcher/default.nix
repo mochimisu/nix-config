@@ -1,9 +1,11 @@
-{lib, pkgs, config, osConfig ? null, skwdSuite, ...}: let
-  enabled = osConfig != null && (osConfig.networking.hostName or "") == "blackmoon";
+{lib, pkgs, config, ...}: let
+  cfg = config.variables.desktopStyle.launcher;
+  # An absent provider yields a neutral header; no global Skwd dependency.
+  skwd = if cfg.wallpaperPackage == null then "" else "${cfg.wallpaperPackage}/bin/skwd-helm";
   configDir = "${config.xdg.configHome}/quickshell/phone-launcher";
   context = pkgs.writeScript "sekai-launcher-context" ("#!${pkgs.python3}/bin/python3\n" + builtins.replaceStrings
     ["@hyprctl@" "@skwd@"]
-    ["${config.wayland.windowManager.hyprland.package}/bin/hyprctl" "${skwdSuite}/bin/skwd-helm"]
+    ["${config.wayland.windowManager.hyprland.package}/bin/hyprctl" skwd]
     (builtins.readFile ./context.py));
   quickshell = pkgs.writeShellScript "sekai-quickshell" ''
     export QML_IMPORT_PATH="${pkgs.qt6.qtmultimedia}/lib/qt-6/qml''${QML_IMPORT_PATH:+:$QML_IMPORT_PATH}"
@@ -15,7 +17,7 @@
     ["${quickshell}" "${pkgs.util-linux}/bin/flock" (lib.escapeShellArg configDir) "${pkgs.coreutils}/bin/sleep"]
     (builtins.readFile ./launcher.sh));
 in {
-  config = lib.mkIf enabled {
+  config = lib.mkIf cfg.enable {
     home.packages = [launcher];
     systemd.user.services.sekai-launcher = {
       Unit = {

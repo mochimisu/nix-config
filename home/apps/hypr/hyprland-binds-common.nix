@@ -1,9 +1,9 @@
-{lib, config, pkgs, osConfig ? null, ...}: let
+{lib, config, pkgs, ...}: let
   lua = lib.generators.mkLuaInline;
-  blackmoon = osConfig != null && osConfig.networking.hostName == "blackmoon";
+  mediaFeedback = config.variables.desktopStyle.mediaFeedback.enable;
   mediaOsd = import ../../theme/media-osd {inherit pkgs;};
   media = kind: action: fallback:
-    if blackmoon then "${mediaOsd}/bin/sekai-media-osd ${kind} ${action}" else fallback;
+    if mediaFeedback then "${mediaOsd}/bin/sekai-media-osd ${kind} ${action}" else fallback;
 in {
   wayland.windowManager.hyprland.settings = {
     bind = [

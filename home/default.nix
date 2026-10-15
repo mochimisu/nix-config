@@ -20,6 +20,7 @@ in {
   imports = [
     ./wikimem.nix
     ../vars.nix
+    ./theme
     ./apps/tmux.nix
     ./apps/nixvim
     ./apps/zsh

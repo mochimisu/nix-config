@@ -18,7 +18,7 @@ ShellRoot {
     // ----- Config injected from Nix -----
     readonly property bool sessionControlsEnabled: @sessionControlsEnabled@
     property var sidebarScreens: @sidebarScreensJson@
-    readonly property string hostName: "@hostName@"
+    readonly property bool mediaFeedbackEnabled: @mediaFeedbackEnabled@
     readonly property bool pttEnabled: "@pttStateFile@" !== ""
 
     readonly property int iconSize: {
@@ -57,12 +57,7 @@ ShellRoot {
     readonly property color mutedColor: themed ? theme.muted : "#a6adc8"
     readonly property color accentColor: themed ? theme.ink : "#a6e3a1"
     readonly property color urgentColor: themed ? theme.urgent : "#f38ba8"
-    readonly property var blockedAudioDescriptions: hostName === "blackmoon" ? [
-        "AD102 High Definition Audio Controller Digital Stereo (HDMI)",
-        "USB Audio Front Headphones",
-        "USB Audio Speakers",
-        "RZ19-0229 Gaming Microphone Analog Stereo"
-    ] : []
+    readonly property var blockedAudioDescriptions: @blockedAudioDescriptionsJson@
     readonly property string baseFont: "Montserrat Bold"
     readonly property int tinyTextPx: Math.max(8, Math.round(fontSizePx * 0.65))
     readonly property int clockMainPx: Math.max(11, Math.round(fontSizePx * 1.2))
@@ -257,7 +252,7 @@ ShellRoot {
     }
 
     function adjustVolume(delta) {
-        if (root.themed) {
+        if (root.mediaFeedbackEnabled) {
             Quickshell.execDetached(["@mediaOsdBin@", "volume", delta > 0 ? "up" : "down"]);
             return;
         }
@@ -265,7 +260,7 @@ ShellRoot {
     }
 
     function toggleMute() {
-        if (root.themed) {
+        if (root.mediaFeedbackEnabled) {
             Quickshell.execDetached(["@mediaOsdBin@", "volume", "mute"]);
             return;
         }
@@ -321,7 +316,7 @@ ShellRoot {
 
     function adjustBrightness(delta) {
         if (!sessionControlsEnabled) return;
-        if (root.themed) {
+        if (root.mediaFeedbackEnabled) {
             Quickshell.execDetached(["@mediaOsdBin@", "brightness", delta > 0 ? "up" : "down"]);
             return;
         }
