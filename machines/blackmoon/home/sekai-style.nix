@@ -32,12 +32,16 @@ in {
     };
     # Keep movement short and predictable; no looping border animation.
     animation = lib.mkForce [
-      {leaf = "windows"; enabled = true; speed = 4; bezier = "sekaiEase"; style = "popin 96%";}
-      {leaf = "windowsOut"; enabled = true; speed = 3; bezier = "default"; style = "popin 98%";}
+      {leaf = "windows"; enabled = true; speed = 2.5; bezier = "sekaiEase"; style = "popin 100%";}
+      {leaf = "windowsIn"; enabled = true; speed = 2; bezier = "sekaiEase"; style = "popin 100%";}
+      {leaf = "windowsMove"; enabled = true; speed = 2.5; bezier = "sekaiEase";}
+      {leaf = "windowsOut"; enabled = true; speed = 1.5; bezier = "default"; style = "popin 100%";}
       {leaf = "border"; enabled = true; speed = 3; bezier = "default";}
       {leaf = "borderangle"; enabled = false; speed = 1; bezier = "default";}
       {leaf = "fade"; enabled = true; speed = 3; bezier = "default";}
-      {leaf = "workspaces"; enabled = true; speed = 4; bezier = "sekaiEase";}
+      {leaf = "fadeIn"; enabled = true; speed = 1.6; bezier = "default";}
+      {leaf = "fadeOut"; enabled = true; speed = 1.3; bezier = "default";}
+      {leaf = "workspaces"; enabled = true; speed = 2.5; bezier = "sekaiEase"; style = "slidefade 10%";}
     ];
   };
 

@@ -50,7 +50,6 @@ ShellRoot {
     readonly property color edgeColor: themed ? theme.ink : "#80ffffff"
     readonly property color railForeground: themed ? (theme.railForeground || theme.ink) : fgColor
     readonly property color railMuted: themed ? (theme.railMuted || theme.muted) : mutedColor
-    readonly property color railBackground: themed ? (theme.railBackground || theme.surface) : surfaceColor
     readonly property int panelRadius: themed ? 16 : 8
 
     // ----- Derived sizing / style -----
@@ -79,9 +78,8 @@ ShellRoot {
     component RailCard: Rectangle {
         visible: root.themed
         radius: 9
-        property bool dark: false
-        color: dark ? root.railBackground : root.surfaceColor
-        border { width: 1; color: dark && root.themed ? root.theme.teal : root.edgeColor }
+        color: root.surfaceColor
+        border { width: 1; color: root.edgeColor }
         Rectangle {
             anchors.fill: parent; anchors.margins: 2
             radius: 7; color: "transparent"
@@ -785,7 +783,6 @@ ShellRoot {
                             id: workspaceModule
                             width: parent.width
                             height: topSection.implicitHeight + (root.themed ? 8 : 0)
-                            RailCard { anchors.fill: parent; dark: true }
                             // --- Top: workspaces ---
                             Column {
                                 id: topSection
@@ -805,21 +802,10 @@ ShellRoot {
                                         width: topSection.width
                                         height: root.workspaceHeightPx
 
-                                        Rectangle {
-                                            anchors.centerIn: parent
-                                            width: parent.width - 4
-                                            height: parent.height - 2
-                                            radius: root.themed ? 5 : 3
-                                            color: modelData.urgent ? root.warningFill
-                                                : root.themed ? (modelData.active ? root.selectedColor : "transparent") : "transparent"
-                                            border.width: root.themed && modelData.active ? 1 : 0
-                                            border.color: root.fgColor
-                                        }
-
                                         Text {
                                             anchors.centerIn: parent
                                             text: modelData.urgent ? ("!" + modelData.name + "!") : (modelData.active && !root.themed ? ("-" + modelData.name + "-") : String(modelData.name))
-                                            color: modelData.urgent ? root.urgentColor : (modelData.active ? root.fgColor : root.railForeground)
+                                            color: modelData.urgent ? (root.themed ? root.theme.pink : root.urgentColor) : (modelData.active && root.themed ? root.theme.teal : root.railForeground)
                                             font.family: root.baseFont
                                             font.pixelSize: Math.max(8, root.fontSizePx - 2)
                                             font.bold: !!modelData.active || !!modelData.urgent
@@ -883,8 +869,7 @@ ShellRoot {
                                 width: parent.width
                                 visible: trayColumn.implicitHeight > 0
                                 height: visible ? trayColumn.implicitHeight + (root.themed ? 8 : 0) : 0
-                                RailCard { anchors.fill: parent; dark: true }
-                                // System tray
+                                    // System tray
                                 Column {
                                     id: trayColumn
                                     y: root.themed ? 4 : 0
@@ -961,8 +946,7 @@ ShellRoot {
                                 id: statusModule
                                 width: parent.width
                                 height: statusColumn.implicitHeight + (root.themed ? 8 : 0)
-                                RailCard { anchors.fill: parent; dark: true }
-                                Column {
+                                    Column {
                                     id: statusColumn
                                     width: parent.width
                                     y: root.themed ? 4 : 0
@@ -1198,7 +1182,6 @@ ShellRoot {
 
                                 width: parent.width
                                 height: clockColumn.implicitHeight + (root.themed ? 8 : 0)
-                                RailCard { anchors.fill: parent; dark: true }
 
                                 Column {
                                     id: clockColumn

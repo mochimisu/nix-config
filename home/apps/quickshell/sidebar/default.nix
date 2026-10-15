@@ -88,7 +88,7 @@ in {
           then "${import ../../../theme/media-osd {inherit pkgs;}}/bin/sekai-media-osd" else "";
         themePaletteJson = builtins.toJSON (if hostName == "blackmoon"
           then (lib.importJSON ../../../theme/sekai-palette.json) // {
-            railBackground = "#232b30"; railForeground = "#ffffff"; railMuted = "#b8c4c8";
+            railForeground = "#ffffff"; railMuted = "#b8c4c8";
           } else {});
         sessionControlsEnabled = if nestedDesktop then "false" else "true";
         fontSize = variables.ewwSidebarFontSize or "13px";
