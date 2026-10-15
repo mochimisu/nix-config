@@ -1,5 +1,6 @@
 {
   pkgs,
+  skwdSuite,
   config,
   lib,
   ...
@@ -9,85 +10,20 @@
     sha256 = "sha256:1571r0sz1qfz9xdqqkbpzfx8wx22azrhmsmdj14km427qcyiiap6";
   };
   lua = lib.generators.mkLuaInline;
-  catWallpaperPath = "${config.home.homeDirectory}/stuff/nix-config/untracked-assets/cat-in-the-swamp-moewalls-com.mp4";
-  catWallpaperService = pkgs.writeShellScript "blackmoon-cat-wallpaper" ''
-    set -eu
 
-    wallpaper_pid=""
-
-    stop_wallpaper() {
-      if [ -n "$wallpaper_pid" ] && kill -0 "$wallpaper_pid" 2>/dev/null; then
-        kill "$wallpaper_pid" 2>/dev/null || true
-        i=0
-        while [ "$i" -lt 20 ] && kill -0 "$wallpaper_pid" 2>/dev/null; do
-          i=$((i + 1))
-          ${pkgs.coreutils}/bin/sleep 0.1
-        done
-        if kill -0 "$wallpaper_pid" 2>/dev/null; then
-          kill -KILL "$wallpaper_pid" 2>/dev/null || true
-        fi
-        wait "$wallpaper_pid" 2>/dev/null || true
-      fi
-      wallpaper_pid=""
-    }
-
-    start_wallpaper() {
-      if [ -n "$wallpaper_pid" ] && kill -0 "$wallpaper_pid" 2>/dev/null; then
-        return
-      fi
-      ${pkgs.mpvpaper}/bin/mpvpaper -l bottom -o "no-audio loop really-quiet panscan=1 hwdec=auto" DP-3 "${catWallpaperPath}" &
-      wallpaper_pid="$!"
-    }
-
-    trap stop_wallpaper EXIT INT TERM
-
-    i=0
-    while true; do
-      if [ -e "${catWallpaperPath}" ] && ${config.wayland.windowManager.hyprland.package}/bin/hyprctl monitors 2>/dev/null | ${pkgs.gnugrep}/bin/grep -q '^Monitor DP-3 '; then
-        break
-      fi
-      i=$((i + 1))
-      if [ "$i" -eq 1 ] || [ $((i % 30)) -eq 0 ]; then
-        echo "waiting for DP-3 and ${catWallpaperPath}" >&2
-      fi
-      ${pkgs.coreutils}/bin/sleep 1
-    done
-
-    unavailable_count=0
-    while true; do
-      dp3_id="$(${config.wayland.windowManager.hyprland.package}/bin/hyprctl -j monitors | ${pkgs.jq}/bin/jq -r '.[] | select(.name == "DP-3") | .id' | ${pkgs.coreutils}/bin/head -n1)"
-      if [ ! -e "${catWallpaperPath}" ] || [ -z "$dp3_id" ]; then
-        stop_wallpaper
-        unavailable_count=$((unavailable_count + 1))
-        if [ "$unavailable_count" -eq 1 ] || [ $((unavailable_count % 30)) -eq 0 ]; then
-          echo "waiting for DP-3 and ${catWallpaperPath}" >&2
-        fi
-        ${pkgs.coreutils}/bin/sleep 1
-        continue
-      fi
-      unavailable_count=0
-
-      # Kitty is transparent, so keep the video visible behind fullscreen terminals.
-      fullscreen_on_dp3=0
-      if ${config.wayland.windowManager.hyprland.package}/bin/hyprctl -j clients | ${pkgs.jq}/bin/jq -e --argjson monitor "$dp3_id" '
-        any(.[]; .mapped == true and .monitor == $monitor
-          and ((.fullscreen // 0) != 0)
-          and ((.class // "" | ascii_downcase) != "kitty")
-          and ((.initialClass // "" | ascii_downcase) != "kitty"))
-      ' >/dev/null; then
-        fullscreen_on_dp3=1
-      fi
-
-      if [ "$fullscreen_on_dp3" -eq 1 ]; then
-        stop_wallpaper
-      else
-        start_wallpaper
-      fi
-
-      ${pkgs.coreutils}/bin/sleep 1
-    done
-  '';
 in {
+  variables.desktopStyle = {
+    apps.enable = true;
+    shell.enable = true;
+    launcher = {enable = true; wallpaperPackage = skwdSuite;};
+    mediaFeedback.enable = true;
+  };
+  variables.quickshellSidebar.blockedAudioDescriptions = [
+    "AD102 High Definition Audio Controller Digital Stereo (HDMI)"
+    "USB Audio Front Headphones"
+    "USB Audio Speakers"
+    "RZ19-0229 Gaming Microphone Analog Stereo"
+  ];
   variables.keyboardLayout = "dvorak";
   variables.hyprpanel = {
     hiddenMonitors = ["0"];
@@ -106,12 +42,12 @@ in {
     ../../../home/common-linux.nix
     ./eww-sysmon.nix
     ./fastfetch.nix
+    ./wallpaper.nix
   ];
 
   home.packages = with pkgs; [
     wlr-randr
     nvidia-vaapi-driver
-    mpvpaper
   ];
 
   programs.kitty.settings.auto_reload_config = -1;
@@ -139,22 +75,6 @@ in {
     config.lib.file.mkOutOfStoreSymlink
     "${config.home.homeDirectory}/.local/share/Steam/steamapps/common/SteamVR/steamxr_linux64.json";
 
-  systemd.user.services.blackmoon-cat-wallpaper = {
-    Unit = {
-      Description = "Blackmoon animated cat wallpaper";
-      After = ["graphical-session.target"];
-      PartOf = ["graphical-session.target"];
-    };
-
-    Service = {
-      Type = "exec";
-      ExecStart = "${catWallpaperService}";
-      Restart = "on-failure";
-      RestartSec = "2s";
-    };
-
-    Install.WantedBy = ["graphical-session.target"];
-  };
 
   home.shellAliases = {
   };

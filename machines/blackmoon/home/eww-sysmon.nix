@@ -1,16 +1,18 @@
 { lib, pkgs, ... }:
 let
+  palette = (import ../../../home/theme/palettes.nix {inherit lib;}).app;
 
 ewwProcs = pkgs.writeShellScriptBin "eww-procs" ''
 #!/usr/bin/env bash
-# Emits: {"total":618,"running":2,"top1":"foo: 17%", ...}
+# Emits: {"total":618,"running":2,"top1":{"name":"foo","cpu":"17.0"}, ...}
 
 normalize_top() {
   local label="$1"
   local cpu="$2"
-  printf "%-15.15s: %s%%" "$label" "$cpu"
+  ${pkgs.jq}/bin/jq -cn --arg name "$label" --arg cpu "$cpu" '{name: $name, cpu: $cpu}'
 }
 
+cpu_capacity=$(( $(${pkgs.coreutils}/bin/nproc --all) * 100 ))
 while true; do
   ps_output=$(ps -eo stat=,pcpu=,comm= --sort=-pcpu | awk '
     {
@@ -27,18 +29,18 @@ while true; do
   while IFS= read -r line && [ "$idx" -le 7 ]; do
     IFS='|' read -r stat cpu comm <<< "$line"
     [ -z "$stat" ] && continue
-    top_json="$top_json,\"top$idx\":\"$(normalize_top "$comm" "$cpu")\""
+    top_json="$top_json,\"top$idx\":$(normalize_top "$comm" "$cpu")"
     idx=$((idx + 1))
   done <<EOF_TOP
 $ps_output
 EOF_TOP
 
   while [ "$idx" -le 7 ]; do
-    top_json="$top_json,\"top$idx\":\"\""
+    top_json="$top_json,\"top$idx\":{\"name\":\"\",\"cpu\":\"\"}"
     idx=$((idx + 1))
   done
 
-  printf '{"total":%d,"running":%d%s}\n' "$total" "$running" "$top_json"
+  printf '{"total":%d,"running":%d,"capacity":%d%s}\n' "$total" "$running" "$cpu_capacity" "$top_json"
 
   sleep 5
 done
@@ -173,15 +175,12 @@ in
       :interval "5s"
       "awk '{t=$1; d=int(t/86400); h=int((t%86400)/3600); m=int((t%3600)/60); printf \"%dd %dh %dm\", d,h,m}' /proc/uptime")
     (defwidget history-graph [value max class]
-      (graph
-        :value value
-        :max max
-        :time-range "90s"
-        :class class
-        :hexpand true
-        :vexpand false
-        :thickness 2
-      ))
+      (overlay :hexpand true
+        (graph :value value :max max :time-range "90s" :class class
+          :hexpand true :vexpand false :thickness 1 :line-style "round")
+        (box :orientation "h" :space-evenly true :valign "end" :class "graph-ticks"
+          :tooltip "90-second history; ticks divide time into 30-second intervals"
+          (box :class "graph-tick") (box :class "graph-tick") (box))))
     (defpoll swap
       :interval "120s"
       "free -h | awk '/^Swap/ {print $3 \"/\" $2}'")
@@ -199,7 +198,7 @@ in
         :xalign 0.0
       ))
     (defwidget left-value [text]
-      (label :text text :class "left-value" :xalign 0.0))
+      (label :text text :class "left-value" :xalign 1.0))
     (defwidget mid-label [text]
       (label
         :text text
@@ -207,14 +206,15 @@ in
         :xalign 0.0
       ))
     (defwidget mid-value [text]
-      (label :text text :class "mid-value" :xalign 0.0))
-    (defwidget left-row [label value ?subtext]
+      (label :text text :class "mid-value" :xalign 1.0))
+    (defwidget left-row [label value ?unit ?subtext]
       (box
         :orientation "h"
         :class "row"
         :space-evenly false
         (left-label :text label)
         (left-value :text value)
+        (label :text unit :class "metric-unit" :xalign 0.0)
         (label :text subtext
           :class "left-subtext"
           :halign "start"
@@ -224,13 +224,15 @@ in
          :vexpand false
          :width 105
          (children))))
-    (defwidget mid-row [label value]
+    (defwidget mid-row [label value unit ?detail]
       (box
         :orientation "h"
         :class "row"
+        :tooltip "''${label}: ''${detail != "" ? detail : value} ''${unit}"
         :space-evenly false
           (mid-label :text label)
           (mid-value :text value)
+          (label :text unit :class "metric-unit cooling-unit" :xalign 0.0)
           (box
             :hexpand true
             :vexpand false
@@ -238,12 +240,21 @@ in
             (children))))
 
 
+    (defwidget process-row [process]
+      (box :orientation "h" :space-evenly false :class "process-row"
+        :tooltip "''${process.name}: ''${process.cpu}% CPU (ps lifetime average). 100% = one logical CPU; track full scale = ''${procs.capacity}% across all logical CPUs."
+        (label :text {process.name} :tooltip {process.name} :class "process-name"
+          :xalign 0.0 :hexpand false :truncate true :limit-width 16 :width 120)
+        (label :text {process.cpu} :class "process-cpu" :xalign 1.0)
+        (label :text "%" :class "process-unit" :xalign 0.0)
+        (progress :value {process.cpu / procs.capacity * 100}
+          :orientation "h" :hexpand true :valign "center" :class "process-track")))
+
     (defwidget sys-info []
       (box
         :orientation "h"
-        :width 1416
         :height 112
-        :hexpand false
+        :hexpand true
         :vexpand false
         :space-evenly false
         (box
@@ -251,17 +262,17 @@ in
           :vexpand false
           :space-evenly false
           :class "column left"
-          :halign "start"
           :hexpand true
           :valign "start"
+          (label :text "01 COMPUTE" :class "section-heading" :xalign 0.0)
           (left-row :label "Up" :value uptime)
-          (left-row :label "CPU" :value "''${round(EWW_CPU.avg, 1)}%"
+          (left-row :label "CPU" :value "''${round(EWW_CPU.avg, 1)}" :unit "%"
             (history-graph :value "''${EWW_CPU.avg}" :max 100 :class "cpu-history history-graph"))
-          (left-row :label "RAM" :value "''${round(EWW_RAM.used_mem_perc, 1)}%"
+          (left-row :label "RAM" :value "''${round(EWW_RAM.used_mem_perc, 1)}" :unit "%"
             :subtext "''${round(EWW_RAM.used_mem / 1073741824, 1)} / ''${round(EWW_RAM.total_mem / 1073741824, 0)} GB"
             (history-graph :value "''${EWW_RAM.used_mem_perc}" :max 100 :class "ram-history history-graph"))
-          (left-row :label "Swap" :value "''${round((EWW_RAM.total_swap - EWW_RAM.free_swap) / EWW_RAM.total_swap, 0)}%" :subtext "''${round((EWW_RAM.total_swap - EWW_RAM.free_swap) / 1073741824, 1)}/''${round(EWW_RAM.total_swap / 1073741824, 0)} GB")
-          (left-row :label "Disk" :value "''${round(EWW_DISK["/"].used_perc, 0)}%" :subtext "''${round(EWW_DISK["/"].used / 1073741824, 0)} / ''${round(EWW_DISK["/"].total / 1073741824, 0)} GB")
+          (left-row :label "Swap" :value "''${round((EWW_RAM.total_swap - EWW_RAM.free_swap) / EWW_RAM.total_swap, 0)}" :unit "%" :subtext "''${round((EWW_RAM.total_swap - EWW_RAM.free_swap) / 1073741824, 1)}/''${round(EWW_RAM.total_swap / 1073741824, 0)} GB")
+          (left-row :label "Disk" :value "''${round(EWW_DISK["/"].used_perc, 0)}" :unit "%" :subtext "''${round(EWW_DISK["/"].used / 1073741824, 0)} / ''${round(EWW_DISK["/"].total / 1073741824, 0)} GB")
           (left-row :label "Net" :value "↓ ''${net.down}" :subtext "↑ ''${net.up}")
         )
         (box
@@ -269,53 +280,59 @@ in
           :vexpand false
           :space-evenly false
           :class "column mid"
+          :hexpand true
           :valign "start"
-          (mid-row :label "CPU" :value "''${round(EWW_TEMPS.CORETEMP_PACKAGE_ID_0,0)}°C"
+          (label :text "02 COOLING" :class "section-heading" :xalign 0.0)
+          (mid-row :label "CPU" :value "''${round(EWW_TEMPS.CORETEMP_PACKAGE_ID_0,0)}" :unit "°C" :detail "''${EWW_TEMPS.CORETEMP_PACKAGE_ID_0}"
             (history-graph :value "''${EWW_TEMPS.CORETEMP_PACKAGE_ID_0}" :max 120 :class "cpu-temp-history history-graph"))
-          (mid-row :label "GPU" :value "''${sensors.gpu_temp}°C"
+          (mid-row :label "GPU" :value "''${sensors.gpu_temp}" :unit "°C"
             (history-graph :value "''${sensors.gpu_temp}" :max 120 :class "gpu-temp-history history-graph"))
-          (mid-row :label "Water" :value "''${round(EWW_TEMPS.HIGHFLOWNEXT_COOLANT_TEMP,0)}°C"
+          (mid-row :label "Water" :value "''${round(EWW_TEMPS.HIGHFLOWNEXT_COOLANT_TEMP,0)}" :unit "°C" :detail "''${EWW_TEMPS.HIGHFLOWNEXT_COOLANT_TEMP}"
             (history-graph :value "''${EWW_TEMPS.HIGHFLOWNEXT_COOLANT_TEMP}" :max 60 :class "water-temp-history history-graph"))
-          (mid-row :label "Flow" :value "''${sensors.flow_rate} dL/h"
+          (mid-row :label "Flow" :value "''${sensors.flow_rate}" :unit "dL/h"
             (history-graph :value "''${sensors.flow_rate}" :max 1000 :class "flow-rate-history history-graph"))
-          (mid-row :label "Fan" :value "''${sensors.fan_speed} RPM"
+          (mid-row :label "Fan" :value "''${sensors.fan_speed}" :unit "RPM"
             (history-graph :value "''${sensors.fan_speed}" :max 5000 :class "fan-speed-history history-graph"))
-          (mid-row :label "Pump" :value "''${sensors.pump_speed} RPM"
+          (mid-row :label "Pump" :value "''${sensors.pump_speed}" :unit "RPM"
             (history-graph :value "''${sensors.pump_speed}" :max 5000 :class "pump-speed-history history-graph"))
         )
         (box
           :orientation "v"
           :vexpand false
-          :hexpand true
+          :hexpand false
           :space-evenly false
           :class "column proc-col"
+          (label :text "03 PROCESSES" :class "section-heading" :xalign 0.0)
           (box
             :orientation "h"
             :class "process-summary"
             :space-evenly false
             (label :text "Procs" :class "process-summary-label" :xalign 0.0)
             (label :text "''${procs.total} / ''${procs.running}" :class "process-summary-value" :xalign 0.0))
-          (label :text "''${procs.top1}" :class "process-line" :xalign 0.0)
-          (label :text "''${procs.top2}" :class "process-line" :xalign 0.0)
-          (label :text "''${procs.top3}" :class "process-line" :xalign 0.0)
-          (label :text "''${procs.top4}" :class "process-line" :xalign 0.0)
-          (label :text "''${procs.top5}" :class "process-line" :xalign 0.0)
+          (process-row :process {procs.top1})
+          (process-row :process {procs.top2})
+          (process-row :process {procs.top3})
+          (process-row :process {procs.top4})
+          (process-row :process {procs.top5})
         )
         (box
           :orientation "v"
           :vexpand false
-          :hexpand true
+          :hexpand false
           :space-evenly false
           :class "column clock-col"
           :valign "start"
+          (label :text "LOCAL TIME" :class "section-heading" :xalign 1.0)
           (label :text "''${formattime(EWW_TIME, '%I:%M %p')}" :class "time" :xalign 1.0 :hexpand true)
           (label :text "''${formattime(EWW_TIME, '%A, %B %d')}" :class "date" :xalign 1.0 :hexpand true)
         )))
 
     (defwindow sysmon
+      :namespace "blackmoon-sysmon"
+      :focusable "none"
       :exclusive true
       :monitor "DP-1"
-      :geometry (geometry :x "0px" :y "0px" :width "1416px" :height "112px" :anchor "bottom center")
+      :geometry (geometry :x "0px" :y "0px" :width "100%" :height "112px" :anchor "bottom center")
       :stacking "fg"
       :windowtype "dock"
       :wm-ignore false
@@ -324,7 +341,8 @@ in
 
   home.file.".config/eww/sysmon/eww.scss".text = ''
       .sysmon {
-        background-color: rgba(30, 30, 46, 0.5);
+        background-color: rgba(24, 29, 33, 0.6);
+        box-shadow: inset 0 1px 0 rgba(99,198,192,0.25);
         color: rgba(255, 255, 255, 1.0);
         font-family: "Montserrat Bold";
         font-size: 19px;
@@ -332,133 +350,150 @@ in
       }
 
       .column {
-        padding: 3px 8px 0 8px;
+        padding: 4px 12px 3px 12px;
         border-left: 1px solid rgba(255,255,255,0.12);
       }
       
       .left {
-        min-width: 252px;
+        min-width: 300px;
         margin: 0 6px;
         border-left: 0;
-        font-size: 15px;
+        font-size: 11px;
       }
 
       .mid {
-        min-width: 252px;
+        min-width: 300px;
         margin: 0 6px;
-        font-size: 15px;
+        font-size: 11px;
       }
 
       .proc-col {
-        min-width: 360px;
+        min-width: 340px;
       }
 
       .clock-col {
         min-width: 300px;
       }
 
-      .mid-value {
-        min-width: 105px;
-      }
+      .mid-value { min-width: 58px; }
 
-      .left-value {
-        min-width: 69px;
-      }
+      .left-value { min-width: 88px; }
 
       .left-label,
       .mid-label {
-       color: rgba(255,255,255,0.5);
+       font-weight: bold;
+       color: #b9bec2;
       }
 
       .left-value,
       .mid-value
        {
+        font-family: "Cascadia Code";
+        font-size: 12px;
         font-weight: bold;
         color: rgba(255,255,255,1);
       }
 
       .left-label {
-        min-width: 63px;
+        min-width: 48px;
       }
 
       .mid-label {
-        min-width: 63px;
+        min-width: 48px;
       }
 
-      .graph.history-graph {
-        min-height: 20px;
-        padding: 1px 0;
-        opacity: 0.9;
+      .history-graph {
+        min-height: 0;
+        margin: 2px 0 2px 8px;
+        color: rgba(235,238,240,0.9);
+        background-color: rgba(235,238,240,0.055);
       }
 
-      .graph.cpu-history { color: rgba(202,153,255,0.9); }
-      .graph.ram-history { color: rgba(249,226,175,0.95); }
-      .graph.cpu-temp-history { color: rgba(250,179,135,0.95); }
-      .graph.gpu-temp-history { color: rgba(137,220,235,0.95); }
-      .graph.water-temp-history { color: rgba(116,199,236,0.95); }
-      .graph.flow-rate-history { color: rgba(166,218,149,0.95); }
-      .graph.fan-speed-history { color: rgba(245,194,231,0.95); }
-      .graph.pump-speed-history { color: rgba(148,226,213,0.95); }
+      .graph-ticks { margin: 2px 0 2px 8px; min-height: 3px; }
+      .graph-tick { border-right: 1px solid rgba(255,255,255,0.18); }
+      .process-track { margin-left: 12px; }
+      .process-track trough { min-width: 0; min-height: 2px; border: 0; border-radius: 0; background: rgba(255,255,255,0.04); }
+      .process-track progress { min-width: 0; min-height: 2px; border: 0; border-radius: 0; background: rgba(255,255,255,0.23); }
+      .section-heading {
+        font-family: "Montserrat Semi-Bold";
+        font-weight: bold;
+        font-size: 9px;
+        letter-spacing: 1.5px;
+        color: #b9bec2;
+        margin-bottom: 3px;
+      }
+      .row { min-height: 14px; }
+      .metric-unit {
+        font-size: 10px;
+        color: #92999e;
+        min-width: 12px;
+        padding-left: 3px;
+        padding-right: 6px;
+      }
+      .cooling-unit { min-width: 28px; }
 
-      .cpu-bar progress,
-      .cpu-bar progressbar progress { background-color: rgba(202,153,255,0.85); }
-
-      .ram-bar progress,
-      .ram-bar progressbar progress { background-color: rgba(249,226,175,0.9); }
-
-      .cpu-temp-bar progress,
-      .cpu-temp-bar progressbar progress { background-color: rgba(250,179,135,0.9); }
-
-      .gpu-temp-bar progress,
-      .gpu-temp-bar progressbar progress { background-color: rgba(137,220,235,0.9); }
-
-      .water-temp-bar progress,
-      .water-temp-bar progressbar progress { background-color: rgba(116,199,236,0.9); }
-
-      .flow-rate-bar progress,
-      .flow-rate-bar progressbar progress { background-color: rgba(166,218,149,0.9); }
-
-      .fan-speed-bar progress,
-      .fan-speed-bar progressbar progress { background-color: rgba(245,194,231,0.9); }
-
-      .pump-speed-bar progress,
-      .pump-speed-bar progressbar progress { background-color: rgba(148,226,213,0.9); }
 
       .left-subtext {
-        font-size: 12px;
-        color: rgba(255,255,255,0.7);
+        font-family: "Cascadia Code";
+        font-size: 10px;
+        color: #b9bec2;
         min-width: 79px;
       }
 
       .process-summary {
-        font-size: 16px;
-        margin-bottom: 2px;
+        font-family: "Cascadia Code";
+        font-size: 12px;
+        margin-bottom: 0;
       }
 
       .process-summary-label {
-        color: rgba(255,255,255,0.5);
+        color: #b9bec2;
         min-width: 52px;
       }
 
       .process-summary-value {
-        color: rgba(255,255,255,0.92);
+        color: ${palette.text};
       }
 
-      .process-line {
+      .process-row { font-size: 11px; min-height: 14px; }
+      .process-name {
+        font-family: "Montserrat";
+        font-size: 11px;
+        font-weight: 500;
+        color: ${palette.text};
+      }
+      .process-cpu {
         font-family: "Cascadia Code";
-        font-size: 13px;
-        color: rgba(255,255,255,0.82);
+        font-size: 11px;
+        min-width: 58px;
+        color: ${palette.text};
+      }
+      .process-unit {
+        font-size: 10px;
+        color: #92999e;
+        padding-left: 3px;
       }
 
       .time {
         font-family: "Montserrat Medium";
-        font-size: 62px;
+        font-size: 52px;
       }
 
       .date {
-        font-size: 21px;
+        color: #b9bec2;
+        font-size: 16px;
       }
     '';
+
+  # Higher order reserves the full-width bottom edge before the vertical sidebar,
+  # independent of startup/reload order. The sidebar then ends above these 112px.
+  wayland.windowManager.hyprland.settings.layer_rule = [{
+    name = "blackmoon-sysmon-layout";
+    match.namespace = "^(blackmoon-sysmon)$";
+    order = 20;
+    blur = true;
+    ignore_alpha = 0;
+  }];
 
   # Autostart bar when Hyprland launches
   wayland.windowManager.hyprland.settings.on = [

@@ -3,7 +3,7 @@
   config = lib.mkIf pkgs.stdenv.hostPlatform.isLinux (
     let
       hyprpanelVars = if builtins.hasAttr "hyprpanel" config.variables then config.variables.hyprpanel else {};
-      hiddenMonitors = if builtins.hasAttr "hyprpanelHiddenMonitors" hyprpanelVars then config.variables.hyprpanelHiddenMonitors else [];
+      hiddenMonitors = hyprpanelVars.hiddenMonitors;
       defaultLayout = {
         name = "*";
         value = {

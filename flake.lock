@@ -176,7 +176,6 @@
       "original": {
         "owner": "mochimisu",
         "repo": "file-dispatch",
-        "rev": "ad0637c65b5d6d880040c01046c4c0db97e91e10",
         "type": "github"
       }
     },
@@ -827,6 +826,7 @@
         "nixpkgs": "nixpkgs_5",
         "nixvim": "nixvim",
         "rose-pine-hyprcursor": "rose-pine-hyprcursor",
+        "skwd-wall": "skwd-wall",
         "sops-nix": "sops-nix",
         "wikimem-skill": "wikimem-skill"
       }
@@ -848,6 +848,27 @@
       "original": {
         "owner": "ndom91",
         "repo": "rose-pine-hyprcursor",
+        "type": "github"
+      }
+    },
+    "skwd-wall": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1790891305,
+        "narHash": "sha256-VFhWFUmADuG55w5XPRikv0NOzRdid6ECmlEEAxnu50U=",
+        "owner": "liixini",
+        "repo": "skwd-wall",
+        "rev": "2b85cb2b45a1efb1140280571d522f53a58169d9",
+        "type": "github"
+      },
+      "original": {
+        "owner": "liixini",
+        "ref": "nix",
+        "repo": "skwd-wall",
         "type": "github"
       }
     },

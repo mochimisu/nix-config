@@ -6,7 +6,7 @@
 }:
 let
   defaultVaultPath = "${config.home.homeDirectory}/Obsidian Vault";
-  vaultPath = config.variables.obsidianVaultPath or defaultVaultPath;
+  vaultPath = if config.variables.obsidianVaultPath == null then defaultVaultPath else config.variables.obsidianVaultPath;
 in {
   programs.nixvim.plugins.obsidian = {
     enable = true;

@@ -2,17 +2,11 @@
   lib,
   pkgs,
   config,
-  osConfig ? null,
   ...
 }: let
   variables = config.variables or {};
   nestedDesktop = variables.nestedDesktop or false;
   isLinuxGui = pkgs.stdenv.hostPlatform.isLinux && (variables.isGui or true);
-  hostName =
-    if osConfig != null
-    then osConfig.networking.hostName or ""
-    else "";
-
   sidebarScreens =
     if pkgs.stdenv.hostPlatform.isLinux && builtins.hasAttr "ewwSidebarScreens" variables
     then variables.ewwSidebarScreens
@@ -83,7 +77,12 @@ in {
     file = {
       ".config/quickshell/sidebar/shell.qml".source = pkgs.replaceVars ./shell.qml {
         sidebarScreensJson = builtins.toJSON sidebarScreens;
-        inherit hostName;
+        mediaOsdBin = if config.variables.desktopStyle.mediaFeedback.enable
+          then "${import ../../../theme/media-osd {inherit pkgs;}}/bin/sekai-media-osd" else "";
+        mediaFeedbackEnabled = if config.variables.desktopStyle.mediaFeedback.enable then "true" else "false";
+        blockedAudioDescriptionsJson = builtins.toJSON quickshellSidebar.blockedAudioDescriptions;
+        themePaletteJson = builtins.toJSON (if config.variables.desktopStyle.shell.enable
+          then (import ../../../theme/palettes.nix {inherit lib;}).shell else {});
         sessionControlsEnabled = if nestedDesktop then "false" else "true";
         fontSize = variables.ewwSidebarFontSize or "13px";
         iconSize = variables.ewwSidebarIconSize or "16";

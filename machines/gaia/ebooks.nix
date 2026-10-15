@@ -88,7 +88,7 @@ in {
   };
 
   virtualisation.oci-containers.containers.koreader-sync = {
-    image = "docker.io/koreader/kosync:latest";
+    image = (import ./container-images.nix).koreader;
     autoStart = true;
     ports = [
       "7200:7200"

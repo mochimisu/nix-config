@@ -16,7 +16,6 @@
     gamemode.enable = true;
   };
 
-  home-manager.extraSpecialArgs = {inherit inputs;};
   hardware.bluetooth = {
     enable = true;
     powerOnBoot = true;

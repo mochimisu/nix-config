@@ -1,0 +1,11 @@
+{
+  "background": "#181d21",
+  "surface": "#232b30",
+  "raised": "#303b42",
+  "text": "#ffffff",
+  "muted": "#b8c4c8",
+  "teal": "#63c6c0",
+  "selection": "#236963",
+  "lavender": "#b8addd",
+  "red": "#f08090"
+}

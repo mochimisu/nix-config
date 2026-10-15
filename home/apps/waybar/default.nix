@@ -47,9 +47,7 @@ in {
               "temperature#cpu"
             ]
             ++ (
-              if builtins.hasAttr "waybarModulesLeft" config.variables
-              then ["temperature#gpu" "temperature#water"]
-              else []
+              config.variables.waybarModulesLeft
             );
           "modules-center" = ["hyprland/window"];
           "modules-right" = [

@@ -97,6 +97,7 @@
 in {
 
   imports = [
+    ./nix-cache.nix
     ./blackvue-sync.nix
     ./blackvue-viewer.nix
     ./ebooks.nix

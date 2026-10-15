@@ -1,8 +1,12 @@
 {
   description = "my flake";
   inputs = {
-    # Published File Dispatch source, pinned to the reviewed revision.
-    gaia-file-dispatch.url = "github:mochimisu/file-dispatch/ad0637c65b5d6d880040c01046c4c0db97e91e10";
+    skwd-wall = {
+      url = "github:liixini/skwd-wall/nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    # Published File Dispatch source; the reviewed revision lives in flake.lock.
+    gaia-file-dispatch.url = "github:mochimisu/file-dispatch";
     wikimem-skill = {
       url = "github:mochimisu/wikimem-skill";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -60,10 +64,37 @@
       system = "x86_64-linux";
       config.allowUnfree = true;
     };
+    # Host policy stays explicit below; this helper owns only common wiring.
+    mkNixosHost = {hostModules, modules ? [], homeModules, homeArgs ? {}}:
+      nixpkgs.lib.nixosSystem {
+        system = "x86_64-linux";
+        specialArgs = {inherit inputs;};
+        modules = [./vars.nix] ++ hostModules ++ [
+          ./boot-efi.nix
+          ./common.nix
+        ] ++ modules ++ [
+          home-manager.nixosModules.home-manager
+          {
+            home-manager.useGlobalPkgs = true;
+            home-manager.useUserPackages = true;
+            home-manager.extraSpecialArgs = {inherit inputs;};
+            home-manager.users.brandon = {
+              _module.args = homeArgs;
+              imports = [
+                inputs.catppuccin.homeModules.catppuccin
+              ] ++ homeModules ++ [
+                self.homeModules.home
+                ./home/desktop.nix
+              ];
+            };
+          }
+        ];
+      };
   in {
     packages.x86_64-linux = {
       default = self.nixosConfigurations.oasis.config.system.build.toplevel;
       chatgpt = pkgsX86Linux.callPackage ./pkgs/chatgpt/package.nix {};
+      skwd-wall = inputs.skwd-wall.packages.x86_64-linux.default;
       update-chatgpt = pkgsX86Linux.callPackage ./pkgs/chatgpt/update.nix {};
 
       gaia-iso = let
@@ -174,138 +205,64 @@
     };
 
     nixosConfigurations = {
-      glasscastle = nixpkgs.lib.nixosSystem {
-        specialArgs = {inherit inputs;};
-        system = "x86_64-linux";
-        modules = [
-          ./vars.nix
+      glasscastle = mkNixosHost {
+        hostModules = [
           ./machines/glasscastle/hardware-configuration.nix
           ./machines/glasscastle/configuration.nix
-          ./boot-efi.nix
-          ./common.nix
+        ];
+        modules = [
           ./common-gui.nix
           ./desktop.nix
           ./common-gaming.nix
-          home-manager.nixosModules.home-manager
-          {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-            home-manager.users.brandon = {
-              imports = [
-                inputs.catppuccin.homeModules.catppuccin
-                ./machines/glasscastle/home.nix
-                self.homeModules.home
-                ./home/desktop.nix
-              ];
-            };
-          }
         ];
+        homeModules = [./machines/glasscastle/home.nix];
       };
-      espresso = nixpkgs.lib.nixosSystem {
-        specialArgs = {inherit inputs;};
-        system = "x86_64-linux";
-        modules = [
-          ./vars.nix
+      espresso = mkNixosHost {
+        hostModules = [
           ./machines/espresso/hardware-configuration.nix
           ./machines/espresso/configuration.nix
-          ./boot-efi.nix
-          ./common.nix
+        ];
+        modules = [
           ./common-gui.nix
           ./desktop.nix
           ./common-gaming.nix
-          home-manager.nixosModules.home-manager
-          {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-            home-manager.users.brandon = {
-              imports = [
-                inputs.catppuccin.homeModules.catppuccin
-                ./machines/espresso/home.nix
-                self.homeModules.home
-                ./home/desktop.nix
-              ];
-            };
-          }
         ];
+        homeModules = [./machines/espresso/home.nix];
       };
-      blackmoon = nixpkgs.lib.nixosSystem {
-        specialArgs = {inherit inputs;};
-        system = "x86_64-linux";
-        modules = [
-          ./vars.nix
+      blackmoon = mkNixosHost {
+        hostModules = [
           ./machines/blackmoon/hardware-configuration.nix
           ./machines/blackmoon/configuration.nix
-          ./boot-efi.nix
-          ./common.nix
+        ];
+        modules = [
           ./common-gui.nix
           ./desktop.nix
           ./common-gaming.nix
-          home-manager.nixosModules.home-manager
-          {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-            home-manager.users.brandon = {
-              imports = [
-                inputs.catppuccin.homeModules.catppuccin
-                ./machines/blackmoon/home
-                self.homeModules.home
-                ./home/desktop.nix
-              ];
-            };
-          }
         ];
+        homeModules = [./machines/blackmoon/home];
+        homeArgs.skwdSuite = inputs.skwd-wall.packages.x86_64-linux.default;
       };
-      oasis = nixpkgs.lib.nixosSystem {
-        specialArgs = {inherit inputs;};
-        system = "x86_64-linux";
-        modules = [
-          ./vars.nix
+      oasis = mkNixosHost {
+        hostModules = [
           ./machines/oasis/hardware-configuration.nix
           ./machines/oasis/configuration.nix
-          ./boot-efi.nix
-          ./common.nix
+        ];
+        modules = [
           ./common-gui.nix
           ./desktop.nix
           ./common-gaming.nix
-          home-manager.nixosModules.home-manager
-          {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-            home-manager.users.brandon = {
-              imports = [
-                inputs.catppuccin.homeModules.catppuccin
-                ./machines/oasis/home
-                self.homeModules.home
-                ./home/desktop.nix
-              ];
-            };
-          }
         ];
+        homeModules = [./machines/oasis/home];
       };
-      gaia = nixpkgs.lib.nixosSystem {
-        specialArgs = {inherit inputs;};
-        system = "x86_64-linux";
-        modules = [
-          ./vars.nix
-          inputs.sops-nix.nixosModules.sops
+      gaia = mkNixosHost {
+        hostModules = [
           ./machines/gaia/hardware-configuration.nix
           ./machines/gaia/configuration.nix
-          ./boot-efi.nix
-          ./common.nix
-          home-manager.nixosModules.home-manager
-          {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-            home-manager.users.brandon = {
-              imports = [
-                inputs.catppuccin.homeModules.catppuccin
-                ./machines/gaia/home
-                self.homeModules.home
-                ./home/desktop.nix
-              ];
-            };
-          }
         ];
+        modules = [
+          inputs.sops-nix.nixosModules.sops
+        ];
+        homeModules = [./machines/gaia/home];
       };
     };
   };
