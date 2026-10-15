@@ -4,12 +4,12 @@ let
 
 ewwProcs = pkgs.writeShellScriptBin "eww-procs" ''
 #!/usr/bin/env bash
-# Emits: {"total":618,"running":2,"top1":"foo: 17%", ...}
+# Emits: {"total":618,"running":2,"top1":{"name":"foo","cpu":"17.0"}, ...}
 
 normalize_top() {
   local label="$1"
   local cpu="$2"
-  printf "%-15.15s: %s%%" "$label" "$cpu"
+  ${pkgs.jq}/bin/jq -cn --arg name "$label" --arg cpu "$cpu" '{name: $name, cpu: $cpu}'
 }
 
 while true; do
@@ -28,14 +28,14 @@ while true; do
   while IFS= read -r line && [ "$idx" -le 7 ]; do
     IFS='|' read -r stat cpu comm <<< "$line"
     [ -z "$stat" ] && continue
-    top_json="$top_json,\"top$idx\":\"$(normalize_top "$comm" "$cpu")\""
+    top_json="$top_json,\"top$idx\":$(normalize_top "$comm" "$cpu")"
     idx=$((idx + 1))
   done <<EOF_TOP
 $ps_output
 EOF_TOP
 
   while [ "$idx" -le 7 ]; do
-    top_json="$top_json,\"top$idx\":\"\""
+    top_json="$top_json,\"top$idx\":{\"name\":\"\",\"cpu\":\"\"}"
     idx=$((idx + 1))
   done
 
@@ -181,7 +181,8 @@ in
         :class class
         :hexpand true
         :vexpand false
-        :thickness 2
+        :thickness 1
+        :line-style "round"
       ))
     (defpoll swap
       :interval "120s"
@@ -200,7 +201,7 @@ in
         :xalign 0.0
       ))
     (defwidget left-value [text]
-      (label :text text :class "left-value" :xalign 0.0))
+      (label :text text :class "left-value" :xalign 1.0))
     (defwidget mid-label [text]
       (label
         :text text
@@ -208,14 +209,15 @@ in
         :xalign 0.0
       ))
     (defwidget mid-value [text]
-      (label :text text :class "mid-value" :xalign 0.0))
-    (defwidget left-row [label value ?subtext]
+      (label :text text :class "mid-value" :xalign 1.0))
+    (defwidget left-row [label value ?unit ?subtext]
       (box
         :orientation "h"
         :class "row"
         :space-evenly false
         (left-label :text label)
         (left-value :text value)
+        (label :text unit :class "metric-unit" :xalign 0.0)
         (label :text subtext
           :class "left-subtext"
           :halign "start"
@@ -225,19 +227,27 @@ in
          :vexpand false
          :width 105
          (children))))
-    (defwidget mid-row [label value]
+    (defwidget mid-row [label value unit]
       (box
         :orientation "h"
         :class "row"
         :space-evenly false
           (mid-label :text label)
           (mid-value :text value)
+          (label :text unit :class "metric-unit cooling-unit" :xalign 0.0)
           (box
             :hexpand true
             :vexpand false
             :width 105
             (children))))
 
+
+    (defwidget process-row [process]
+      (box :orientation "h" :space-evenly false :class "process-row"
+        (label :text {process.name} :tooltip {process.name} :class "process-name"
+          :xalign 0.0 :hexpand true :truncate true :limit-width 30)
+        (label :text {process.cpu} :class "process-cpu" :xalign 1.0)
+        (label :text "%" :class "process-unit" :xalign 0.0)))
 
     (defwidget sys-info []
       (box
@@ -253,14 +263,15 @@ in
           :class "column left"
           :hexpand true
           :valign "start"
+          (label :text "COMPUTE" :class "section-heading" :xalign 0.0)
           (left-row :label "Up" :value uptime)
-          (left-row :label "CPU" :value "''${round(EWW_CPU.avg, 1)}%"
+          (left-row :label "CPU" :value "''${round(EWW_CPU.avg, 1)}" :unit "%"
             (history-graph :value "''${EWW_CPU.avg}" :max 100 :class "cpu-history history-graph"))
-          (left-row :label "RAM" :value "''${round(EWW_RAM.used_mem_perc, 1)}%"
+          (left-row :label "RAM" :value "''${round(EWW_RAM.used_mem_perc, 1)}" :unit "%"
             :subtext "''${round(EWW_RAM.used_mem / 1073741824, 1)} / ''${round(EWW_RAM.total_mem / 1073741824, 0)} GB"
             (history-graph :value "''${EWW_RAM.used_mem_perc}" :max 100 :class "ram-history history-graph"))
-          (left-row :label "Swap" :value "''${round((EWW_RAM.total_swap - EWW_RAM.free_swap) / EWW_RAM.total_swap, 0)}%" :subtext "''${round((EWW_RAM.total_swap - EWW_RAM.free_swap) / 1073741824, 1)}/''${round(EWW_RAM.total_swap / 1073741824, 0)} GB")
-          (left-row :label "Disk" :value "''${round(EWW_DISK["/"].used_perc, 0)}%" :subtext "''${round(EWW_DISK["/"].used / 1073741824, 0)} / ''${round(EWW_DISK["/"].total / 1073741824, 0)} GB")
+          (left-row :label "Swap" :value "''${round((EWW_RAM.total_swap - EWW_RAM.free_swap) / EWW_RAM.total_swap, 0)}" :unit "%" :subtext "''${round((EWW_RAM.total_swap - EWW_RAM.free_swap) / 1073741824, 1)}/''${round(EWW_RAM.total_swap / 1073741824, 0)} GB")
+          (left-row :label "Disk" :value "''${round(EWW_DISK["/"].used_perc, 0)}" :unit "%" :subtext "''${round(EWW_DISK["/"].used / 1073741824, 0)} / ''${round(EWW_DISK["/"].total / 1073741824, 0)} GB")
           (left-row :label "Net" :value "↓ ''${net.down}" :subtext "↑ ''${net.up}")
         )
         (box
@@ -270,17 +281,18 @@ in
           :class "column mid"
           :hexpand true
           :valign "start"
-          (mid-row :label "CPU" :value "''${round(EWW_TEMPS.CORETEMP_PACKAGE_ID_0,0)}°C"
+          (label :text "COOLING" :class "section-heading" :xalign 0.0)
+          (mid-row :label "CPU" :value "''${round(EWW_TEMPS.CORETEMP_PACKAGE_ID_0,0)}" :unit "°C"
             (history-graph :value "''${EWW_TEMPS.CORETEMP_PACKAGE_ID_0}" :max 120 :class "cpu-temp-history history-graph"))
-          (mid-row :label "GPU" :value "''${sensors.gpu_temp}°C"
+          (mid-row :label "GPU" :value "''${sensors.gpu_temp}" :unit "°C"
             (history-graph :value "''${sensors.gpu_temp}" :max 120 :class "gpu-temp-history history-graph"))
-          (mid-row :label "Water" :value "''${round(EWW_TEMPS.HIGHFLOWNEXT_COOLANT_TEMP,0)}°C"
+          (mid-row :label "Water" :value "''${round(EWW_TEMPS.HIGHFLOWNEXT_COOLANT_TEMP,0)}" :unit "°C"
             (history-graph :value "''${EWW_TEMPS.HIGHFLOWNEXT_COOLANT_TEMP}" :max 60 :class "water-temp-history history-graph"))
-          (mid-row :label "Flow" :value "''${sensors.flow_rate} dL/h"
+          (mid-row :label "Flow" :value "''${sensors.flow_rate}" :unit "dL/h"
             (history-graph :value "''${sensors.flow_rate}" :max 1000 :class "flow-rate-history history-graph"))
-          (mid-row :label "Fan" :value "''${sensors.fan_speed} RPM"
+          (mid-row :label "Fan" :value "''${sensors.fan_speed}" :unit "RPM"
             (history-graph :value "''${sensors.fan_speed}" :max 5000 :class "fan-speed-history history-graph"))
-          (mid-row :label "Pump" :value "''${sensors.pump_speed} RPM"
+          (mid-row :label "Pump" :value "''${sensors.pump_speed}" :unit "RPM"
             (history-graph :value "''${sensors.pump_speed}" :max 5000 :class "pump-speed-history history-graph"))
         )
         (box
@@ -289,17 +301,18 @@ in
           :hexpand false
           :space-evenly false
           :class "column proc-col"
+          (label :text "PROCESSES" :class "section-heading" :xalign 0.0)
           (box
             :orientation "h"
             :class "process-summary"
             :space-evenly false
             (label :text "Procs" :class "process-summary-label" :xalign 0.0)
             (label :text "''${procs.total} / ''${procs.running}" :class "process-summary-value" :xalign 0.0))
-          (label :text "''${procs.top1}" :class "process-line" :xalign 0.0)
-          (label :text "''${procs.top2}" :class "process-line" :xalign 0.0)
-          (label :text "''${procs.top3}" :class "process-line" :xalign 0.0)
-          (label :text "''${procs.top4}" :class "process-line" :xalign 0.0)
-          (label :text "''${procs.top5}" :class "process-line" :xalign 0.0)
+          (process-row :process {procs.top1})
+          (process-row :process {procs.top2})
+          (process-row :process {procs.top3})
+          (process-row :process {procs.top4})
+          (process-row :process {procs.top5})
         )
         (box
           :orientation "v"
@@ -308,6 +321,7 @@ in
           :space-evenly false
           :class "column clock-col"
           :valign "start"
+          (label :text "LOCAL TIME" :class "section-heading" :xalign 1.0)
           (label :text "''${formattime(EWW_TIME, '%I:%M %p')}" :class "time" :xalign 1.0 :hexpand true)
           (label :text "''${formattime(EWW_TIME, '%A, %B %d')}" :class "date" :xalign 1.0 :hexpand true)
         )))
@@ -335,38 +349,34 @@ in
       }
 
       .column {
-        padding: 3px 8px 0 8px;
+        padding: 4px 12px 3px 12px;
         border-left: 1px solid rgba(255,255,255,0.12);
       }
       
       .left {
-        min-width: 340px;
+        min-width: 300px;
         margin: 0 6px;
         border-left: 0;
-        font-size: 15px;
+        font-size: 11px;
       }
 
       .mid {
-        min-width: 340px;
+        min-width: 300px;
         margin: 0 6px;
-        font-size: 15px;
+        font-size: 11px;
       }
 
       .proc-col {
-        min-width: 220px;
+        min-width: 340px;
       }
 
       .clock-col {
         min-width: 300px;
       }
 
-      .mid-value {
-        min-width: 105px;
-      }
+      .mid-value { min-width: 58px; }
 
-      .left-value {
-        min-width: 69px;
-      }
+      .left-value { min-width: 88px; }
 
       .left-label,
       .mid-label {
@@ -376,36 +386,56 @@ in
       .left-value,
       .mid-value
        {
+        font-family: "Cascadia Code";
+        font-size: 12px;
         font-weight: bold;
         color: rgba(255,255,255,1);
       }
 
       .left-label {
-        min-width: 63px;
+        min-width: 48px;
       }
 
       .mid-label {
-        min-width: 63px;
+        min-width: 48px;
       }
 
       .history-graph {
-        min-height: 20px;
-        padding: 1px 0;
-        opacity: 0.9;
+        min-height: 0;
+        margin: 2px 0 2px 8px;
+        color: rgba(235,238,240,0.9);
+        background-color: rgba(235,238,240,0.055);
       }
 
-      /* One neutral trace color: identity comes from the adjacent metric label. */
-      .history-graph { color: rgba(235,238,240,0.9); }
+      .section-heading {
+        font-family: "Montserrat Semi-Bold";
+        font-size: 9px;
+        letter-spacing: 1.5px;
+        color: #b9bec2;
+        margin-bottom: 3px;
+      }
+      .row { min-height: 14px; }
+      .metric-unit {
+        font-size: 10px;
+        color: #92999e;
+        min-width: 12px;
+        padding-left: 3px;
+        padding-right: 6px;
+      }
+      .cooling-unit { min-width: 28px; }
+
 
       .left-subtext {
-        font-size: 12px;
+        font-family: "Cascadia Code";
+        font-size: 10px;
         color: #b9bec2;
         min-width: 79px;
       }
 
       .process-summary {
-        font-size: 16px;
-        margin-bottom: 2px;
+        font-family: "Cascadia Code";
+        font-size: 12px;
+        margin-bottom: 0;
       }
 
       .process-summary-label {
@@ -417,20 +447,33 @@ in
         color: ${palette.text};
       }
 
-      .process-line {
-        font-family: "Cascadia Code";
-        font-size: 13px;
+      .process-row { font-size: 11px; min-height: 14px; }
+      .process-name {
+        font-family: "Montserrat";
+        font-size: 11px;
+        font-weight: 500;
         color: ${palette.text};
+      }
+      .process-cpu {
+        font-family: "Cascadia Code";
+        font-size: 11px;
+        min-width: 58px;
+        color: ${palette.text};
+      }
+      .process-unit {
+        font-size: 10px;
+        color: #92999e;
+        padding-left: 3px;
       }
 
       .time {
         font-family: "Montserrat Medium";
-        font-size: 62px;
+        font-size: 52px;
       }
 
       .date {
         color: #b9bec2;
-        font-size: 21px;
+        font-size: 16px;
       }
     '';
 
