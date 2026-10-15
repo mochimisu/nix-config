@@ -77,7 +77,7 @@ in {
   programs.kitty.settings = {
     background = p.background;
     foreground = p.text;
-    background_opacity = lib.mkForce 1.0;
+    background_opacity = lib.mkForce 0.6;
     cursor = p.teal;
     cursor_text_color = p.background;
     selection_background = p.selection;

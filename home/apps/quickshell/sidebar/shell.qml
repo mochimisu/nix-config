@@ -48,6 +48,9 @@ ShellRoot {
     readonly property color selectedColor: themed ? theme.mint : "#33ffffff"
     readonly property color warningFill: themed ? theme.pink : "#33f38ba8"
     readonly property color edgeColor: themed ? theme.ink : "#80ffffff"
+    readonly property color railForeground: themed ? (theme.railForeground || theme.ink) : fgColor
+    readonly property color railMuted: themed ? (theme.railMuted || theme.muted) : mutedColor
+    readonly property color railBackground: themed ? (theme.railBackground || theme.surface) : surfaceColor
     readonly property int panelRadius: themed ? 16 : 8
 
     // ----- Derived sizing / style -----
@@ -76,8 +79,9 @@ ShellRoot {
     component RailCard: Rectangle {
         visible: root.themed
         radius: 9
-        color: root.surfaceColor
-        border { width: 1; color: root.edgeColor }
+        property bool dark: false
+        color: dark ? root.railBackground : root.surfaceColor
+        border { width: 1; color: dark && root.themed ? root.theme.teal : root.edgeColor }
         Rectangle {
             anchors.fill: parent; anchors.margins: 2
             radius: 7; color: "transparent"
@@ -781,7 +785,7 @@ ShellRoot {
                             id: workspaceModule
                             width: parent.width
                             height: topSection.implicitHeight + (root.themed ? 8 : 0)
-                            RailCard { anchors.fill: parent }
+                            RailCard { anchors.fill: parent; dark: true }
                             // --- Top: workspaces ---
                             Column {
                                 id: topSection
@@ -807,7 +811,7 @@ ShellRoot {
                                             height: parent.height - 2
                                             radius: root.themed ? 5 : 3
                                             color: modelData.urgent ? root.warningFill
-                                                : root.themed ? (modelData.active ? root.selectedColor : root.chipColor) : "transparent"
+                                                : root.themed ? (modelData.active ? root.selectedColor : "transparent") : "transparent"
                                             border.width: root.themed && modelData.active ? 1 : 0
                                             border.color: root.fgColor
                                         }
@@ -815,7 +819,7 @@ ShellRoot {
                                         Text {
                                             anchors.centerIn: parent
                                             text: modelData.urgent ? ("!" + modelData.name + "!") : (modelData.active && !root.themed ? ("-" + modelData.name + "-") : String(modelData.name))
-                                            color: modelData.urgent ? root.urgentColor : root.fgColor
+                                            color: modelData.urgent ? root.urgentColor : (modelData.active ? root.fgColor : root.railForeground)
                                             font.family: root.baseFont
                                             font.pixelSize: Math.max(8, root.fontSizePx - 2)
                                             font.bold: !!modelData.active || !!modelData.urgent
@@ -879,7 +883,7 @@ ShellRoot {
                                 width: parent.width
                                 visible: trayColumn.implicitHeight > 0
                                 height: visible ? trayColumn.implicitHeight + (root.themed ? 8 : 0) : 0
-                                RailCard { anchors.fill: parent }
+                                RailCard { anchors.fill: parent; dark: true }
                                 // System tray
                                 Column {
                                     id: trayColumn
@@ -957,7 +961,7 @@ ShellRoot {
                                 id: statusModule
                                 width: parent.width
                                 height: statusColumn.implicitHeight + (root.themed ? 8 : 0)
-                                RailCard { anchors.fill: parent }
+                                RailCard { anchors.fill: parent; dark: true }
                                 Column {
                                     id: statusColumn
                                     width: parent.width
@@ -974,7 +978,7 @@ ShellRoot {
 
                                             Text {
                                                 text: ""
-                                                color: root.fgColor
+                                                color: root.railForeground
                                                 font.family: "Font Awesome 7 Brands"
                                                 font.pixelSize: root.statusIconPx
                                                 horizontalAlignment: Text.AlignHCenter
@@ -983,7 +987,7 @@ ShellRoot {
 
                                             Text {
                                                 text: String(root.bluetoothCount)
-                                                color: root.fgColor
+                                                color: root.railForeground
                                                 font.family: root.baseFont
                                                 font.pixelSize: 9
                                                 horizontalAlignment: Text.AlignHCenter
@@ -996,7 +1000,7 @@ ShellRoot {
                             Text {
                                 width: parent.width
                                 text: root.networkIconGlyph()
-                                color: root.fgColor
+                                color: root.railForeground
                                 font.family: "Font Awesome 7 Free Solid"
                                 font.pixelSize: root.statusIconPx
                                 horizontalAlignment: Text.AlignHCenter
@@ -1021,7 +1025,7 @@ ShellRoot {
                                         Text {
                                             id: cavaText
                                             text: root.cavaBars
-                                            color: root.fgColor
+                                            color: root.railForeground
                                             font.family: "monospace"
                                             font.pixelSize: root.cavaTextPx
                                             renderType: Text.NativeRendering
@@ -1039,7 +1043,7 @@ ShellRoot {
                                     Text {
                                         width: parent.width
                                         text: root.audioMuted ? "MUTE" : (String(root.volumePercent) + "%")
-                                        color: root.audioMuted ? root.mutedColor : root.fgColor
+                                        color: root.audioMuted ? root.railMuted : root.railForeground
                                         font.family: root.baseFont
                                         font.pixelSize: 9
                                         horizontalAlignment: Text.AlignHCenter
@@ -1075,7 +1079,7 @@ ShellRoot {
 
                                     Text {
                                         text: "󰍬"
-                                        color: root.accentColor
+                                        color: (root.themed ? root.theme.teal : root.accentColor)
                                         font.family: root.baseFont
                                         font.pixelSize: 9
                                         horizontalAlignment: Text.AlignHCenter
@@ -1083,7 +1087,7 @@ ShellRoot {
 
                                     Text {
                                         text: "PTT"
-                                        color: root.accentColor
+                                        color: (root.themed ? root.theme.teal : root.accentColor)
                                         font.family: root.baseFont
                                         font.pixelSize: 8
                                         horizontalAlignment: Text.AlignHCenter
@@ -1103,7 +1107,7 @@ ShellRoot {
 
                                     Text {
                                         text: "KEY"
-                                        color: root.accentColor
+                                        color: (root.themed ? root.theme.teal : root.accentColor)
                                         font.family: root.baseFont
                                         font.pixelSize: 8
                                         horizontalAlignment: Text.AlignHCenter
@@ -1111,7 +1115,7 @@ ShellRoot {
 
                                     Text {
                                         text: "QWER"
-                                        color: root.accentColor
+                                        color: (root.themed ? root.theme.teal : root.accentColor)
                                         font.family: root.baseFont
                                         font.pixelSize: 8
                                         horizontalAlignment: Text.AlignHCenter
@@ -1131,7 +1135,7 @@ ShellRoot {
 
                                     Text {
                                         text: root.batteryIcon()
-                                        color: root.fgColor
+                                        color: root.railForeground
                                         font.family: root.baseFont
                                         font.pixelSize: root.batteryIconPx
                                         rotation: -90
@@ -1140,7 +1144,7 @@ ShellRoot {
 
                                     Text {
                                         text: String(root.batteryState.percent || 0) + "%"
-                                        color: root.fgColor
+                                        color: root.railForeground
                                         font.family: root.baseFont
                                         font.pixelSize: 8
                                         horizontalAlignment: Text.AlignHCenter
@@ -1160,7 +1164,7 @@ ShellRoot {
 
                                     Text {
                                         text: ""
-                                        color: root.toastNotifications.length > 0 ? root.accentColor : root.fgColor
+                                        color: root.toastNotifications.length > 0 ? (root.themed ? root.theme.teal : root.accentColor) : root.railForeground
                                         font.family: "Font Awesome 7 Free Solid"
                                         font.pixelSize: root.statusIconPx
                                         horizontalAlignment: Text.AlignHCenter
@@ -1169,7 +1173,7 @@ ShellRoot {
 
                                     Text {
                                         text: String(root.notificationCount)
-                                        color: root.fgColor
+                                        color: root.railForeground
                                         font.family: root.baseFont
                                         font.pixelSize: 8
                                         horizontalAlignment: Text.AlignHCenter
@@ -1194,7 +1198,7 @@ ShellRoot {
 
                                 width: parent.width
                                 height: clockColumn.implicitHeight + (root.themed ? 8 : 0)
-                                RailCard { anchors.fill: parent }
+                                RailCard { anchors.fill: parent; dark: true }
 
                                 Column {
                                     id: clockColumn
@@ -1206,7 +1210,7 @@ ShellRoot {
                                     Text {
                                         width: parent.width
                                         text: String(root.clockState.hour || "00")
-                                        color: root.fgColor
+                                        color: root.railForeground
                                         font.family: root.baseFont
                                         font.pixelSize: root.clockMainPx
                                         font.letterSpacing: root.clockLetterSpacing
@@ -1218,7 +1222,7 @@ ShellRoot {
                                     Text {
                                         width: parent.width
                                         text: String(root.clockState.minute || "00")
-                                        color: root.fgColor
+                                        color: root.railForeground
                                         font.family: root.baseFont
                                         font.pixelSize: root.clockMainPx
                                         font.letterSpacing: root.clockLetterSpacing
@@ -1230,7 +1234,7 @@ ShellRoot {
                                     Text {
                                         width: parent.width
                                         text: String(root.clockState.ampm || "am")
-                                        color: root.fgColor
+                                        color: root.railForeground
                                         font.family: root.baseFont
                                         font.pixelSize: root.tinyTextPx
                                         horizontalAlignment: Text.AlignRight
@@ -1239,7 +1243,7 @@ ShellRoot {
                                     Text {
                                         width: parent.width
                                         text: String(root.clockState.date || "01/01")
-                                        color: root.fgColor
+                                        color: root.railForeground
                                         font.family: root.baseFont
                                         font.pixelSize: root.dateTextPx
                                         horizontalAlignment: Text.AlignHCenter

@@ -12,7 +12,7 @@ Coverage:
 - GTK4: dark preference and named-color CSS overrides; no forced GTK3 theme.
 - Qt5/Qt6: qt5ct/qt6ct plugins, Fusion style and explicit QPalette colors. Set
   Fusion inside qtct; do not set QT_STYLE_OVERRIDE, which bypasses integration.
-- Kitty: opaque #181d21 background, #ffffff foreground, coordinated ANSI colors,
+- Kitty: dark #181d21 background at the user’s restored 0.6 opacity, #ffffff foreground, coordinated ANSI colors,
   teal selection/cursor and lavender secondary accents. Shared SSH OSC color
   hooks and all non-appearance settings remain unchanged.
 - Rofi: imports the existing mochi layout and overrides only palette variables;

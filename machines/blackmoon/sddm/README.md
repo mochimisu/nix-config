@@ -104,3 +104,15 @@ No merge, push, broad rebuild, logout or display-manager restart was performed.
 
 References: [Mako configuration](https://github.com/emersion/mako/blob/v1.11.0/doc/mako.5.scd),
 [SDDM theme API](https://github.com/sddm/sddm/wiki/Theming).
+
+## Centered functional login form
+
+The login card is centered on the screen independently of the decorative clock
+column. Decorations use spare left-side space and hide when that space is too
+narrow; they never move the form away from center. Short screens retain scrolling
+and focused-control visibility. Remembered-user selection, password focus and
+authentication handlers are unchanged. Geometry/focus/failure tests pass at
+1280×800, 800×600 and 3440×1440; the real SDDM test-mode preview passes at
+1280×800 without authentication. The revised theme is built, but requires a
+normal system activation before a future greeter start uses it. Do not restart
+the display manager to apply this while a session is active.

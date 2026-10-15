@@ -100,7 +100,7 @@ Rectangle {
         id: digit
         property string glyph
         property color tint
-        property real size: root.compact ? 62 : Math.min(118, root.width / 11)
+        property real size: Math.min(118, decoration.width / 4.5)
         implicitWidth: face.implicitWidth + 2
         implicitHeight: face.implicitHeight + 8
         Repeater {
@@ -177,17 +177,19 @@ Rectangle {
     Flickable {
         id: viewport
         anchors.fill: parent; anchors.margins: root.compact ? 24 : 56
-        contentWidth: width; contentHeight: Math.max(height, layout.implicitHeight + 24)
+        contentWidth: width; contentHeight: Math.max(height, layout.implicitHeight)
         clip: true; boundsBehavior: Flickable.StopAtBounds
         ScrollBar.vertical: ScrollBar {}
-        GridLayout {
+        Item {
             id: layout
-            width: parent.width - 12
-            y: Math.max(8, (parent.height - implicitHeight - 12) / 2)
-            columns: root.compact ? 1 : 2
-            columnSpacing: 72; rowSpacing: 20
+            width: viewport.width
+            implicitHeight: loginCard.implicitHeight
+            y: Math.max(0, (viewport.height - implicitHeight) / 2)
             ColumnLayout {
-                Layout.fillWidth: true; Layout.alignment: Qt.AlignVCenter
+                id: decoration
+                width: Math.max(0, (parent.width - loginCard.width) / 2 - 48)
+                anchors.verticalCenter: parent.verticalCenter
+                visible: width >= 220
                 spacing: root.compact ? 12 : 22
                 Card {
                     implicitWidth: brand.implicitWidth + 40; implicitHeight: 40; radius: 14
@@ -235,10 +237,11 @@ Rectangle {
                 }
             }
             Card {
+                id: loginCard
                 stacked: true
                 color: "#fcfdfb"
-                Layout.preferredWidth: 420; Layout.maximumWidth: 460
-                Layout.fillWidth: true; Layout.alignment: Qt.AlignHCenter
+                width: Math.min(420, parent.width)
+                x: (parent.width - width) / 2
                 implicitHeight: form.implicitHeight + 56
                 ColumnLayout {
                     id: form
