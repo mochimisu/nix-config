@@ -9,7 +9,11 @@ in {
         gaps_in = lib.mkForce 4;
         gaps_out = lib.mkForce 6;
         border_size = lib.mkForce 2;
-        col.active_border = lib.mkForce "${rgba p.teal "ff"} ${rgba p.lavenderEdge "ff"} 45deg";
+        # Lua gradients use a table; the legacy multi-color string is invalid.
+        col.active_border = lib.mkForce {
+          colors = [(rgba p.teal "ff") (rgba p.lavenderEdge "ff")];
+          angle = 45;
+        };
         col.inactive_border = lib.mkForce (rgba p.inactive "99");
       };
       decoration = {

@@ -89,3 +89,5 @@
 - Home Manager conditional file overrides must gate the file entry (or `xdg.configFile`), not only its `onChange` leaf. The latter leaves an empty `mako/config` entry on headless Gaia and fails evaluation with a missing `source`. Keep the Mako reload override gated by both `isLinuxGui` and `nestedDesktop`.
 
 - Blackmoon wallpapers use the pinned upstream `skwd-wall` Nix input and `machines/blackmoon/home/wallpaper.nix`, replacing mpvpaper. Keep the ignored cat MP4, DP-3 bottom layer, mute/fill policy, Hyprpaper fallback, and fullscreen Kitty exception. Skwd's pause API is global; revisit it before adding animated secondary outputs. Automatic recoloring is disabled. See `docs/skwd-wall.md` for activation and rollback; do not add a custom Rust package or broad input update for this integration.
+
+- Hyprland Lua gradient options require `{ colors = {...}, angle = 45 }`, not legacy multi-color strings. After changing generated Hyprland settings, run the pinned `Hyprland --verify-config -c <generated-file>`; Nix evaluation/build alone does not validate the compositor parser.
