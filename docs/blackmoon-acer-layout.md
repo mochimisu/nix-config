@@ -14,14 +14,20 @@ above the bottom bar. No desktop outer gaps were added.
 The charcoal background is 60% opaque with layer blur. Values and all graph
 traces are neutral white, with gray labels/date/separators; the subtle inset top
 line is the only muted teal accent. Metric colors do not encode status or warning
-levels. The user rejected the earlier per-metric teal/lavender colors. COMPUTE, COOLING and PROCESSES headings and thin vertical dividers group the
+levels. The user rejected the earlier per-metric teal/lavender colors. Numbered 01 COMPUTE, 02 COOLING and 03 PROCESSES headings and thin vertical dividers group the
 readings. Values use aligned monospace figures with smaller separate units.
-Graphs use fine white lines with faint native area fill. Eww does not expose a
+Graphs use fine white lines with faint native area fill and small time ticks at
+30-second intervals across the 90-second history. Cooling-row hover text preserves
+the available unrounded sensor reading. Eww does not expose a
 latest-reading dot, so no approximate marker is drawn. Both graph sections have
 300px minima and expand into available space; the process section has a 340px
 minimum, giving it more room than the first instrument-panel pass. Process names
 use Montserrat with ellipsis and full-name tooltips, while CPU percentages occupy
-a separate aligned Cascadia Code column. The clock and date share a right-aligned
+a nearby aligned Cascadia Code column after a compact 120px name column. Faint
+tracks occupy the remaining space. Track full scale is logical CPU count × 100%
+(3200% on Blackmoon); text retains the original ps CPU percentage, including values
+over 100%. Hover text explains that ps reports a process-lifetime average, with
+100% representing one logical CPU. The clock and date share a right-aligned
 LOCAL TIME block. The 90-second
 history, polling and metrics remain unchanged. Graph class selectors target the
 actual Eww widget classes.

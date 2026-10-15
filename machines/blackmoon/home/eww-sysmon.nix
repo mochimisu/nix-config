@@ -12,6 +12,7 @@ normalize_top() {
   ${pkgs.jq}/bin/jq -cn --arg name "$label" --arg cpu "$cpu" '{name: $name, cpu: $cpu}'
 }
 
+cpu_capacity=$(( $(${pkgs.coreutils}/bin/nproc --all) * 100 ))
 while true; do
   ps_output=$(ps -eo stat=,pcpu=,comm= --sort=-pcpu | awk '
     {
@@ -39,7 +40,7 @@ EOF_TOP
     idx=$((idx + 1))
   done
 
-  printf '{"total":%d,"running":%d%s}\n' "$total" "$running" "$top_json"
+  printf '{"total":%d,"running":%d,"capacity":%d%s}\n' "$total" "$running" "$cpu_capacity" "$top_json"
 
   sleep 5
 done
@@ -174,16 +175,12 @@ in
       :interval "5s"
       "awk '{t=$1; d=int(t/86400); h=int((t%86400)/3600); m=int((t%3600)/60); printf \"%dd %dh %dm\", d,h,m}' /proc/uptime")
     (defwidget history-graph [value max class]
-      (graph
-        :value value
-        :max max
-        :time-range "90s"
-        :class class
-        :hexpand true
-        :vexpand false
-        :thickness 1
-        :line-style "round"
-      ))
+      (overlay :hexpand true
+        (graph :value value :max max :time-range "90s" :class class
+          :hexpand true :vexpand false :thickness 1 :line-style "round")
+        (box :orientation "h" :space-evenly true :valign "end" :class "graph-ticks"
+          :tooltip "90-second history; ticks divide time into 30-second intervals"
+          (box :class "graph-tick") (box :class "graph-tick") (box))))
     (defpoll swap
       :interval "120s"
       "free -h | awk '/^Swap/ {print $3 \"/\" $2}'")
@@ -227,10 +224,11 @@ in
          :vexpand false
          :width 105
          (children))))
-    (defwidget mid-row [label value unit]
+    (defwidget mid-row [label value unit ?detail]
       (box
         :orientation "h"
         :class "row"
+        :tooltip "''${label}: ''${detail != "" ? detail : value} ''${unit}"
         :space-evenly false
           (mid-label :text label)
           (mid-value :text value)
@@ -244,10 +242,13 @@ in
 
     (defwidget process-row [process]
       (box :orientation "h" :space-evenly false :class "process-row"
+        :tooltip "''${process.name}: ''${process.cpu}% CPU (ps lifetime average). 100% = one logical CPU; track full scale = ''${procs.capacity}% across all logical CPUs."
         (label :text {process.name} :tooltip {process.name} :class "process-name"
-          :xalign 0.0 :hexpand true :truncate true :limit-width 30)
+          :xalign 0.0 :hexpand false :truncate true :limit-width 16 :width 120)
         (label :text {process.cpu} :class "process-cpu" :xalign 1.0)
-        (label :text "%" :class "process-unit" :xalign 0.0)))
+        (label :text "%" :class "process-unit" :xalign 0.0)
+        (progress :value {process.cpu / procs.capacity * 100}
+          :orientation "h" :hexpand true :valign "center" :class "process-track")))
 
     (defwidget sys-info []
       (box
@@ -263,7 +264,7 @@ in
           :class "column left"
           :hexpand true
           :valign "start"
-          (label :text "COMPUTE" :class "section-heading" :xalign 0.0)
+          (label :text "01 COMPUTE" :class "section-heading" :xalign 0.0)
           (left-row :label "Up" :value uptime)
           (left-row :label "CPU" :value "''${round(EWW_CPU.avg, 1)}" :unit "%"
             (history-graph :value "''${EWW_CPU.avg}" :max 100 :class "cpu-history history-graph"))
@@ -281,12 +282,12 @@ in
           :class "column mid"
           :hexpand true
           :valign "start"
-          (label :text "COOLING" :class "section-heading" :xalign 0.0)
-          (mid-row :label "CPU" :value "''${round(EWW_TEMPS.CORETEMP_PACKAGE_ID_0,0)}" :unit "°C"
+          (label :text "02 COOLING" :class "section-heading" :xalign 0.0)
+          (mid-row :label "CPU" :value "''${round(EWW_TEMPS.CORETEMP_PACKAGE_ID_0,0)}" :unit "°C" :detail "''${EWW_TEMPS.CORETEMP_PACKAGE_ID_0}"
             (history-graph :value "''${EWW_TEMPS.CORETEMP_PACKAGE_ID_0}" :max 120 :class "cpu-temp-history history-graph"))
           (mid-row :label "GPU" :value "''${sensors.gpu_temp}" :unit "°C"
             (history-graph :value "''${sensors.gpu_temp}" :max 120 :class "gpu-temp-history history-graph"))
-          (mid-row :label "Water" :value "''${round(EWW_TEMPS.HIGHFLOWNEXT_COOLANT_TEMP,0)}" :unit "°C"
+          (mid-row :label "Water" :value "''${round(EWW_TEMPS.HIGHFLOWNEXT_COOLANT_TEMP,0)}" :unit "°C" :detail "''${EWW_TEMPS.HIGHFLOWNEXT_COOLANT_TEMP}"
             (history-graph :value "''${EWW_TEMPS.HIGHFLOWNEXT_COOLANT_TEMP}" :max 60 :class "water-temp-history history-graph"))
           (mid-row :label "Flow" :value "''${sensors.flow_rate}" :unit "dL/h"
             (history-graph :value "''${sensors.flow_rate}" :max 1000 :class "flow-rate-history history-graph"))
@@ -301,7 +302,7 @@ in
           :hexpand false
           :space-evenly false
           :class "column proc-col"
-          (label :text "PROCESSES" :class "section-heading" :xalign 0.0)
+          (label :text "03 PROCESSES" :class "section-heading" :xalign 0.0)
           (box
             :orientation "h"
             :class "process-summary"
@@ -408,6 +409,11 @@ in
         background-color: rgba(235,238,240,0.055);
       }
 
+      .graph-ticks { margin: 2px 0 2px 8px; min-height: 3px; }
+      .graph-tick { border-right: 1px solid rgba(255,255,255,0.18); }
+      .process-track { margin-left: 12px; }
+      .process-track trough { min-width: 0; min-height: 2px; border: 0; border-radius: 0; background: rgba(255,255,255,0.04); }
+      .process-track progress { min-width: 0; min-height: 2px; border: 0; border-radius: 0; background: rgba(255,255,255,0.23); }
       .section-heading {
         font-family: "Montserrat Semi-Bold";
         font-weight: bold;
