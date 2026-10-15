@@ -1,0 +1,58 @@
+//@ pragma UseQApplication
+import QtQuick
+import QtTest
+import Quickshell
+import "@launcher@"
+ShellRoot {
+    FloatingWindow {
+        id: window
+        visible: true
+        implicitWidth: @width@
+        implicitHeight: @height@
+        property var phone: presentation.phone
+        property int underlyingClicks: 0
+        MouseArea { anchors.fill: parent; onClicked: window.underlyingClicks++ }
+        Presentation {
+            id: presentation
+            anchors.fill: parent
+            onLaunchRequested: app => { throw new Error("Unexpected app launch"); }
+        }
+        Timer { interval: 700; running: true; onTriggered: { try { tests.test_search_navigation_launch_escape(); console.log("TESTS PASSED"); Qt.quit(); } catch (e) { console.error(e); Qt.exit(1); } } }
+        TestCase {
+            id: tests
+            name: "PhoneLauncher"
+            when: false
+            function qtest_fail(message, frame) { console.error("ASSERT", message); throw new Error(message); }
+            SignalSpy { id: dismissed; target: presentation; signalName: "dismissed" }
+            SignalSpy { id: launched; target: window.phone; signalName: "launchRequested" }
+            function compare(actual, expected) { console.log("COMPARE", actual, expected); if (actual !== expected) throw new Error("Mismatch"); }
+            function keyClicks(text) { for (const character of text) keyClick(character); }
+            function test_search_navigation_launch_escape() {
+                const body = window.phone.mapToItem(presentation, window.phone.width / 2, 350);
+                verify(presentation.insidePhone(body.x, body.y));
+                mouseClick(presentation, body.x, body.y);
+                compare(presentation.closing, false);
+                const corner = window.phone.mapToItem(presentation, 0, 0);
+                compare(presentation.insidePhone(corner.x, corner.y), false);
+                mousePress(presentation, corner.x, corner.y);
+                compare(presentation.closing, true);
+                wait(300);
+                compare(dismissed.count, 0);
+                compare(window.underlyingClicks, 0);
+                mouseRelease(presentation, corner.x, corner.y);
+                wait(250);
+                compare(dismissed.count, 1);
+                compare(window.underlyingClicks, 0);
+                presentation.suspend(); presentation.open(); wait(300);
+                compare(presentation.opened, true);
+                mouseClick(presentation, corner.x, corner.y);
+                wait(30); presentation.open(); wait(300);
+                compare(presentation.closing, false);
+                compare(dismissed.count, 1); // canceled exit cannot dismiss the reopened phone
+                keyClick(Qt.Key_Escape); wait(300);
+                compare(dismissed.count, 2);
+
+            }
+        }
+    }
+}
