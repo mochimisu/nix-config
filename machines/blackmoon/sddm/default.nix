@@ -1,4 +1,7 @@
 {lib, pkgs, ...}: let
+  rotateDisplays = pkgs.writeScript "blackmoon-sddm-displays" ("#!${pkgs.python3}/bin/python3\n" +
+    builtins.replaceStrings ["@xrandr@"] ["${pkgs.xrandr}/bin/xrandr"]
+      (builtins.readFile ./rotate-displays.py));
   p = lib.importJSON ../../../home/theme/sekai-palette.json;
   settings = pkgs.writeText "sekai-sddm.conf" (lib.generators.toINI {} {
     General = {
@@ -17,5 +20,9 @@ in {
   # Host import is the opt-in. No authentication or display-server changes.
   catppuccin.sddm.enable = false;
   services.displayManager.sddm.theme = "sekai-blackmoon";
+  # Runs only when the X11 greeter starts; never rotates the Wayland session.
+  services.xserver.displayManager.setupCommands = lib.mkAfter ''
+    ${rotateDisplays}
+  '';
   environment.systemPackages = [theme];
 }

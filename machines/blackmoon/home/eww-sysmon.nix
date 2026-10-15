@@ -1,5 +1,6 @@
 { lib, pkgs, ... }:
 let
+  palette = lib.importJSON ./app-palette.json;
 
 ewwProcs = pkgs.writeShellScriptBin "eww-procs" ''
 #!/usr/bin/env bash
@@ -313,9 +314,11 @@ in
         )))
 
     (defwindow sysmon
+      :namespace "blackmoon-sysmon"
+      :focusable "none"
       :exclusive true
       :monitor "DP-1"
-      :geometry (geometry :x "0px" :y "0px" :width "1416px" :height "112px" :anchor "bottom center")
+      :geometry (geometry :x "0px" :y "0px" :width "100%" :height "112px" :anchor "bottom center")
       :stacking "fg"
       :windowtype "dock"
       :wm-ignore false
@@ -324,7 +327,8 @@ in
 
   home.file.".config/eww/sysmon/eww.scss".text = ''
       .sysmon {
-        background-color: rgba(30, 30, 46, 0.5);
+        background-color: rgba(24, 29, 33, 0.6);
+        box-shadow: inset 0 1px 0 rgba(99,198,192,0.35);
         color: rgba(255, 255, 255, 1.0);
         font-family: "Montserrat Bold";
         font-size: 19px;
@@ -333,7 +337,7 @@ in
 
       .column {
         padding: 3px 8px 0 8px;
-        border-left: 1px solid rgba(255,255,255,0.12);
+        border-left: 1px solid rgba(184,173,221,0.18);
       }
       
       .left {
@@ -367,7 +371,7 @@ in
 
       .left-label,
       .mid-label {
-       color: rgba(255,255,255,0.5);
+       color: ${palette.muted};
       }
 
       .left-value,
@@ -385,48 +389,48 @@ in
         min-width: 63px;
       }
 
-      .graph.history-graph {
+      .history-graph {
         min-height: 20px;
         padding: 1px 0;
         opacity: 0.9;
       }
 
-      .graph.cpu-history { color: rgba(202,153,255,0.9); }
-      .graph.ram-history { color: rgba(249,226,175,0.95); }
-      .graph.cpu-temp-history { color: rgba(250,179,135,0.95); }
-      .graph.gpu-temp-history { color: rgba(137,220,235,0.95); }
-      .graph.water-temp-history { color: rgba(116,199,236,0.95); }
-      .graph.flow-rate-history { color: rgba(166,218,149,0.95); }
-      .graph.fan-speed-history { color: rgba(245,194,231,0.95); }
-      .graph.pump-speed-history { color: rgba(148,226,213,0.95); }
+      .cpu-history { color: rgba(184,173,221,0.9); }
+      .ram-history { color: rgba(99,198,192,0.95); }
+      .cpu-temp-history { color: rgba(208,199,236,0.95); }
+      .gpu-temp-history { color: rgba(143,222,215,0.95); }
+      .water-temp-history { color: rgba(99,198,192,0.95); }
+      .flow-rate-history { color: rgba(184,173,221,0.95); }
+      .fan-speed-history { color: rgba(208,199,236,0.95); }
+      .pump-speed-history { color: rgba(143,222,215,0.95); }
 
       .cpu-bar progress,
-      .cpu-bar progressbar progress { background-color: rgba(202,153,255,0.85); }
+      .cpu-bar progressbar progress { background-color: rgba(184,173,221,0.85); }
 
       .ram-bar progress,
-      .ram-bar progressbar progress { background-color: rgba(249,226,175,0.9); }
+      .ram-bar progressbar progress { background-color: rgba(99,198,192,0.9); }
 
       .cpu-temp-bar progress,
-      .cpu-temp-bar progressbar progress { background-color: rgba(250,179,135,0.9); }
+      .cpu-temp-bar progressbar progress { background-color: rgba(208,199,236,0.9); }
 
       .gpu-temp-bar progress,
-      .gpu-temp-bar progressbar progress { background-color: rgba(137,220,235,0.9); }
+      .gpu-temp-bar progressbar progress { background-color: rgba(143,222,215,0.9); }
 
       .water-temp-bar progress,
-      .water-temp-bar progressbar progress { background-color: rgba(116,199,236,0.9); }
+      .water-temp-bar progressbar progress { background-color: rgba(99,198,192,0.9); }
 
       .flow-rate-bar progress,
-      .flow-rate-bar progressbar progress { background-color: rgba(166,218,149,0.9); }
+      .flow-rate-bar progressbar progress { background-color: rgba(184,173,221,0.9); }
 
       .fan-speed-bar progress,
-      .fan-speed-bar progressbar progress { background-color: rgba(245,194,231,0.9); }
+      .fan-speed-bar progressbar progress { background-color: rgba(208,199,236,0.9); }
 
       .pump-speed-bar progress,
-      .pump-speed-bar progressbar progress { background-color: rgba(148,226,213,0.9); }
+      .pump-speed-bar progressbar progress { background-color: rgba(143,222,215,0.9); }
 
       .left-subtext {
         font-size: 12px;
-        color: rgba(255,255,255,0.7);
+        color: ${palette.muted};
         min-width: 79px;
       }
 
@@ -436,18 +440,18 @@ in
       }
 
       .process-summary-label {
-        color: rgba(255,255,255,0.5);
+        color: ${palette.muted};
         min-width: 52px;
       }
 
       .process-summary-value {
-        color: rgba(255,255,255,0.92);
+        color: ${palette.text};
       }
 
       .process-line {
         font-family: "Cascadia Code";
         font-size: 13px;
-        color: rgba(255,255,255,0.82);
+        color: ${palette.text};
       }
 
       .time {
@@ -456,9 +460,20 @@ in
       }
 
       .date {
+        color: ${palette.lavender};
         font-size: 21px;
       }
     '';
+
+  # Higher order reserves the full-width bottom edge before the vertical sidebar,
+  # independent of startup/reload order. The sidebar then ends above these 112px.
+  wayland.windowManager.hyprland.settings.layer_rule = [{
+    name = "blackmoon-sysmon-layout";
+    match.namespace = "^(blackmoon-sysmon)$";
+    order = 20;
+    blur = true;
+    ignore_alpha = 0;
+  }];
 
   # Autostart bar when Hyprland launches
   wayland.windowManager.hyprland.settings.on = [
