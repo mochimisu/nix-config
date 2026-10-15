@@ -242,9 +242,8 @@ in
     (defwidget sys-info []
       (box
         :orientation "h"
-        :width 1416
         :height 112
-        :hexpand false
+        :hexpand true
         :vexpand false
         :space-evenly false
         (box
@@ -252,7 +251,6 @@ in
           :vexpand false
           :space-evenly false
           :class "column left"
-          :halign "start"
           :hexpand true
           :valign "start"
           (left-row :label "Up" :value uptime)
@@ -270,6 +268,7 @@ in
           :vexpand false
           :space-evenly false
           :class "column mid"
+          :hexpand true
           :valign "start"
           (mid-row :label "CPU" :value "''${round(EWW_TEMPS.CORETEMP_PACKAGE_ID_0,0)}°C"
             (history-graph :value "''${EWW_TEMPS.CORETEMP_PACKAGE_ID_0}" :max 120 :class "cpu-temp-history history-graph"))
@@ -287,7 +286,7 @@ in
         (box
           :orientation "v"
           :vexpand false
-          :hexpand true
+          :hexpand false
           :space-evenly false
           :class "column proc-col"
           (box
@@ -305,7 +304,7 @@ in
         (box
           :orientation "v"
           :vexpand false
-          :hexpand true
+          :hexpand false
           :space-evenly false
           :class "column clock-col"
           :valign "start"
@@ -328,7 +327,7 @@ in
   home.file.".config/eww/sysmon/eww.scss".text = ''
       .sysmon {
         background-color: rgba(24, 29, 33, 0.6);
-        box-shadow: inset 0 1px 0 rgba(99,198,192,0.35);
+        box-shadow: inset 0 1px 0 rgba(99,198,192,0.25);
         color: rgba(255, 255, 255, 1.0);
         font-family: "Montserrat Bold";
         font-size: 19px;
@@ -337,24 +336,24 @@ in
 
       .column {
         padding: 3px 8px 0 8px;
-        border-left: 1px solid rgba(184,173,221,0.18);
+        border-left: 1px solid rgba(255,255,255,0.12);
       }
       
       .left {
-        min-width: 252px;
+        min-width: 340px;
         margin: 0 6px;
         border-left: 0;
         font-size: 15px;
       }
 
       .mid {
-        min-width: 252px;
+        min-width: 340px;
         margin: 0 6px;
         font-size: 15px;
       }
 
       .proc-col {
-        min-width: 360px;
+        min-width: 220px;
       }
 
       .clock-col {
@@ -371,7 +370,7 @@ in
 
       .left-label,
       .mid-label {
-       color: ${palette.muted};
+       color: #b9bec2;
       }
 
       .left-value,
@@ -395,42 +394,12 @@ in
         opacity: 0.9;
       }
 
-      .cpu-history { color: rgba(184,173,221,0.9); }
-      .ram-history { color: rgba(99,198,192,0.95); }
-      .cpu-temp-history { color: rgba(208,199,236,0.95); }
-      .gpu-temp-history { color: rgba(143,222,215,0.95); }
-      .water-temp-history { color: rgba(99,198,192,0.95); }
-      .flow-rate-history { color: rgba(184,173,221,0.95); }
-      .fan-speed-history { color: rgba(208,199,236,0.95); }
-      .pump-speed-history { color: rgba(143,222,215,0.95); }
-
-      .cpu-bar progress,
-      .cpu-bar progressbar progress { background-color: rgba(184,173,221,0.85); }
-
-      .ram-bar progress,
-      .ram-bar progressbar progress { background-color: rgba(99,198,192,0.9); }
-
-      .cpu-temp-bar progress,
-      .cpu-temp-bar progressbar progress { background-color: rgba(208,199,236,0.9); }
-
-      .gpu-temp-bar progress,
-      .gpu-temp-bar progressbar progress { background-color: rgba(143,222,215,0.9); }
-
-      .water-temp-bar progress,
-      .water-temp-bar progressbar progress { background-color: rgba(99,198,192,0.9); }
-
-      .flow-rate-bar progress,
-      .flow-rate-bar progressbar progress { background-color: rgba(184,173,221,0.9); }
-
-      .fan-speed-bar progress,
-      .fan-speed-bar progressbar progress { background-color: rgba(208,199,236,0.9); }
-
-      .pump-speed-bar progress,
-      .pump-speed-bar progressbar progress { background-color: rgba(143,222,215,0.9); }
+      /* One neutral trace color: identity comes from the adjacent metric label. */
+      .history-graph { color: rgba(235,238,240,0.9); }
 
       .left-subtext {
         font-size: 12px;
-        color: ${palette.muted};
+        color: #b9bec2;
         min-width: 79px;
       }
 
@@ -440,7 +409,7 @@ in
       }
 
       .process-summary-label {
-        color: ${palette.muted};
+        color: #b9bec2;
         min-width: 52px;
       }
 
@@ -460,7 +429,7 @@ in
       }
 
       .date {
-        color: ${palette.lavender};
+        color: #b9bec2;
         font-size: 21px;
       }
     '';

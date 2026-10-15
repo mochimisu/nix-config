@@ -11,9 +11,14 @@ so its exclusive bottom zone is arranged before the vertical sidebar regardless
 of startup order. The sidebar retains its right-side exclusive zone and ends
 above the bottom bar. No desktop outer gaps were added.
 
-The charcoal background is 60% opaque with layer blur; white values, muted labels,
-teal/lavender graphs, lavender date and a subtle inset top line match the app
-palette. Graph class selectors now target the actual Eww widget classes.
+The charcoal background is 60% opaque with layer blur. Values and all graph
+traces are neutral white, with gray labels/date/separators; the subtle inset top
+line is the only muted teal accent. Metric colors do not encode status or warning
+levels. The user rejected the earlier per-metric teal/lavender colors. Both graph
+sections expand into available horizontal space; the process section uses a
+compact 220px minimum and the clock retains its original type size. The 90-second
+history, polling and metrics remain unchanged. Graph class selectors target the
+actual Eww widget classes.
 
 Verified live on DP-1: bar `(3440,1888) 1440x112`; sidebar `(4858,-560) 22x2448`.
 The bar is display-only: there are no click actions to change. Sensor updates,
