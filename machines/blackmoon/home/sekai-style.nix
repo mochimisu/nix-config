@@ -7,7 +7,7 @@ in {
     config = {
       general = {
         gaps_in = lib.mkForce 4;
-        gaps_out = lib.mkForce 6;
+        gaps_out = lib.mkForce 0;
         border_size = lib.mkForce 2;
         # Lua gradients use a table; the legacy multi-color string is invalid.
         col.active_border = lib.mkForce {
