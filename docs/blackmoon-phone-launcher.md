@@ -80,3 +80,10 @@ passed. Only the launcher QML/service and sidebar QML were deployed on Blackmoon
 with Home Manager-owned links and a launcher/sidebar restart. The launcher remains
 hidden after startup; existing apps in its cgroup are preserved by KillMode=process.
 Snowy wallpaper and HDR edits remain separately owned and uncommitted.
+
+## Phone lift tuning (2026-10-17, Los Angeles)
+
+User feedback found the cubic arrival and hooked path too floaty. Opening now uses
+a 300 ms sine ease-in/out, a direct upward lift with 18 px lateral drift, and a
+monotonic pitch/roll turn. The settled pose and scale are unchanged. Closing uses
+180 ms quadratic acceleration; threaded rendering and elapsed-time pacing remain.

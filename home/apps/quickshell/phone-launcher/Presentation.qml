@@ -40,8 +40,8 @@ Item {
         enabled: stage.visible
         NumberAnimation {
             id: slide
-            duration: stage.flat ? 0 : (stage.closing ? 180 : 260)
-            easing.type: stage.closing ? Easing.InCubic : Easing.OutCubic
+            duration: stage.flat ? 0 : (stage.closing ? 180 : 300)
+            easing.type: stage.closing ? Easing.InQuad : Easing.InOutSine
         }
     }
     readonly property alias phone: phone
@@ -111,18 +111,19 @@ Item {
         services: stage.services
         width: Math.min(400, stage.width - 100)
         height: Math.min(720, stage.height - 100)
-        // A shallow curved path and linked wrist rotation, not a scale change.
+        // Lift from below with a small lateral drift and a monotonic wrist turn.
+        // Avoid the sideways hook and long deceleration of the old cubic path.
         x: (stage.width - width) / 2 + (stage.flat ? 0 :
-            12 * stage.travel - 28 * Math.sin(Math.PI * stage.travel))
+            18 * stage.travel)
         y: stage.restingTop + (stage.flat ? 0 : stage.travel * (stage.height + height / 4 - stage.restingTop))
         interactive: stage.interactive
         opacity: 1
         scale: stage.displayScale
         // Match the reference's almost-parallel long edges. Separate Rotation
         // items each add Qt's short default perspective, exaggerating taper.
-        property real yaw: stage.flat ? 0 : -30 - 6 * Math.sin(Math.PI * stage.travel)
-        property real pitch: stage.flat ? 0 : 18 + 10 * stage.travel
-        property real roll: stage.flat ? 0 : -4 - 2 * stage.travel - 8 * Math.sin(Math.PI * stage.travel)
+        property real yaw: stage.flat ? 0 : -30 - 3 * stage.travel
+        property real pitch: stage.flat ? 0 : 18 + 20 * stage.travel
+        property real roll: stage.flat ? 0 : -4 - 5 * stage.travel
         transform: Matrix4x4 {
             matrix: {
                 const y = phone.yaw * Math.PI / 180;
