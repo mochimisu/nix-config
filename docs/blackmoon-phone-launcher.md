@@ -126,3 +126,6 @@ wrist follow-through with stronger yaw/roll overshoot and three brief mint/white
 motion strokes. Strokes disappear before arrival and are absent in flat mode.
 Exit takes 100 ms, with dispatch/dismissal at 120 ms (held pointer releases remain
 guarded). The keyboard fixture checks Escape dismissal within 180 ms.
+
+Follow-up: user requested a 300 ms entrance. Both lift and wrist now finish
+in 300 ms, preserving their separate easing/overshoot and the 100 ms exit.

@@ -46,7 +46,7 @@ Item {
         enabled: stage.visible
         NumberAnimation {
             id: slide
-            duration: stage.flat ? 0 : (stage.closing ? 100 : 420)
+            duration: stage.flat ? 0 : (stage.closing ? 100 : 300)
             easing.type: stage.closing ? Easing.InQuad : Easing.OutBack
             easing.overshoot: 1.65
         }
@@ -56,7 +56,7 @@ Item {
     Behavior on wrist {
         enabled: stage.visible
         NumberAnimation {
-            duration: stage.flat ? 0 : (stage.closing ? 100 : 500)
+            duration: stage.flat ? 0 : (stage.closing ? 100 : 300)
             easing.type: stage.closing ? Easing.InQuad : Easing.OutBack
             easing.overshoot: 2.6
         }
