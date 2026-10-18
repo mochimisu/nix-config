@@ -40,7 +40,7 @@ Item {
         enabled: stage.visible
         NumberAnimation {
             id: slide
-            duration: stage.flat ? 0 : (stage.closing ? 180 : 230)
+            duration: stage.flat ? 0 : (stage.closing ? 180 : 160)
             easing.type: stage.closing ? Easing.InQuad : Easing.InOutSine
         }
     }
