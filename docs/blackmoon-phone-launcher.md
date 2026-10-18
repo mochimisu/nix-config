@@ -88,3 +88,18 @@ a 160 ms sine ease-in/out, a direct upward lift with 18 px lateral drift, and a
 monotonic pitch/roll turn. The settled pose and scale are unchanged. Closing uses
 180 ms quadratic acceleration; threaded rendering and elapsed-time pacing remain.
 Both 300 ms and 230 ms felt too slow; subsequent user feedback shortened opening to 160 ms.
+
+## Reference animation matching
+
+Re-inspection of the original 1920×1080, 30 fps Reddit clip shows the first
+entrance at approximately 4.3–4.8 s: a front-loaded lift reaches its resting
+height in about 200 ms, overshoots slightly, then settles. Its top edge starts
+flatter and rotates toward the final angle. The exit around 13.6–13.85 s
+accelerates downward while rotating back. This supersedes the experimental
+300/230/160 ms sine timing: speed alone did not reproduce the motion.
+
+The fitted approximation uses 500 ms OutBack (overshoot 1.4), 32 px lateral
+drift, and roll from +8° to −4°; exit is 240 ms InQuad with dismissal at 260 ms.
+This is a visual reconstruction, not recovered author code. Final pose, scale,
+opaque rendering and high-refresh pacing remain unchanged.
+Source: https://www.reddit.com/r/LinuxPorn/comments/1x36scr/project_sekai_inspired_rice/

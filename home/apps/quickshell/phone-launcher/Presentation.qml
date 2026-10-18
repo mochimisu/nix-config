@@ -40,8 +40,9 @@ Item {
         enabled: stage.visible
         NumberAnimation {
             id: slide
-            duration: stage.flat ? 0 : (stage.closing ? 180 : 160)
-            easing.type: stage.closing ? Easing.InQuad : Easing.InOutSine
+            duration: stage.flat ? 0 : (stage.closing ? 240 : 500)
+            easing.type: stage.closing ? Easing.InQuad : Easing.OutBack
+            easing.overshoot: 1.4
         }
     }
     readonly property alias phone: phone
@@ -70,7 +71,7 @@ Item {
     Component.onCompleted: { if (autoOpen && !closing) open(); }
     Timer {
         id: closeTimer
-        interval: stage.flat ? 0 : 200
+        interval: stage.flat ? 0 : 260
         onTriggered: {
             if (stage.pointerHeld) { restart(); return; }
             if (stage.pendingApp && stage.pendingApp.action) stage.actionRequested(stage.pendingApp.action);
@@ -111,19 +112,19 @@ Item {
         services: stage.services
         width: Math.min(400, stage.width - 100)
         height: Math.min(720, stage.height - 100)
-        // Lift from below with a small lateral drift and a monotonic wrist turn.
-        // Avoid the sideways hook and long deceleration of the old cubic path.
+        // Fitted to the reference clip at 4.3–4.8 s: fast lift, slight overshoot,
+        // then settle. The top edge begins flatter and turns into the resting pose.
         x: (stage.width - width) / 2 + (stage.flat ? 0 :
-            18 * stage.travel)
+            32 * stage.travel)
         y: stage.restingTop + (stage.flat ? 0 : stage.travel * (stage.height + height / 4 - stage.restingTop))
         interactive: stage.interactive
         opacity: 1
         scale: stage.displayScale
         // Match the reference's almost-parallel long edges. Separate Rotation
         // items each add Qt's short default perspective, exaggerating taper.
-        property real yaw: stage.flat ? 0 : -30 - 3 * stage.travel
+        property real yaw: stage.flat ? 0 : -30
         property real pitch: stage.flat ? 0 : 18 + 20 * stage.travel
-        property real roll: stage.flat ? 0 : -4 - 5 * stage.travel
+        property real roll: stage.flat ? 0 : -4 + 12 * stage.travel
         transform: Matrix4x4 {
             matrix: {
                 const y = phone.yaw * Math.PI / 180;

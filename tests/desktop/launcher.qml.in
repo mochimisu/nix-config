@@ -46,7 +46,7 @@ ShellRoot {
                 const search = findChild(window.phone,"search");
                 search.forceActiveFocus(); keyClick(Qt.Key_Return);
                 compare(launched.count,1); compare(launched.signalArguments[0][0].id,"editor");
-                presentation.open(); wait(300);
+                presentation.open(); wait(600);
                 window.phone.query = "no-such-app"; wait(180);
                 compare(window.phone.detailApp,null); compare(window.phone.results.length,0);
                 search.forceActiveFocus(); keyClick(Qt.Key_Return); compare(launched.count,1);
@@ -54,7 +54,7 @@ ShellRoot {
                 window.phone.query = "st"; wait(180); compare(window.phone.detailApp,null);
                 window.phone.query = "steam"; wait(180); compare(window.phone.detailApp.id,"steam");
                 keyClick(Qt.Key_Escape); wait(160); compare(window.phone.detailApp,null);
-                presentation.open(); wait(300);
+                presentation.open(); wait(600);
                 const body = window.phone.mapToItem(presentation, window.phone.width / 2, 350);
                 verify(presentation.insidePhone(body.x, body.y));
                 mouseClick(presentation, body.x, body.y);
@@ -70,10 +70,10 @@ ShellRoot {
                 wait(250);
                 compare(dismissed.count, 1);
                 compare(window.underlyingClicks, 0);
-                presentation.suspend(); presentation.open(); wait(300);
+                presentation.suspend(); presentation.open(); wait(600);
                 compare(presentation.opened, true);
                 mouseClick(presentation, corner.x, corner.y);
-                wait(30); presentation.open(); wait(300);
+                wait(30); presentation.open(); wait(600);
                 compare(presentation.closing, false);
                 compare(dismissed.count, 1); // canceled exit cannot dismiss the reopened phone
                 keyClick(Qt.Key_Escape); wait(300);
