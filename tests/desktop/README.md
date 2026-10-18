@@ -58,3 +58,11 @@ when future intentional behavior changes make it obsolete.
 Home Manager evaluation still requires an ARM builder for Catppuccin's palette
 import-from-derivation. A passing portable option test does not replace that build,
 software-renderer validation, or a real nested-session test.
+
+The launcher fixture now supplies deterministic application entries and exercises
+exact-name detail, one-result detail, multiple matches, no results, Enter and
+Escape, including navigation back to the ranked grid. It saves detail screenshots
+at normal and compact sizes. Sidebar checks cover connected Ethernet/Wi-Fi,
+no established link, and unrelated tray icons. `frame-probe.qml` is a separate,
+manual live-output benchmark described in `docs/blackmoon-phone-launcher.md`;
+it is not run by the isolated test runner.

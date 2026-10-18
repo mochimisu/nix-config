@@ -193,7 +193,7 @@ def main():
                         raise RuntimeError(f'{name}: {len(differences)} image channels differ; maximum {max(differences)}')
                     print(f'PASS {name} visual equivalence: {len(differences)} channels differ, max {max(differences, default=0)}/255',flush=True)
             for width,height in [(560,900),(390,580)]:
-                q=(args.fixtures/'launcher.qml.in').read_text().replace('@launcher@',(repo/'home/apps/quickshell/phone-launcher').as_uri()).replace('@width@',str(width)).replace('@height@',str(height))
+                q=(args.fixtures/'launcher.qml.in').read_text().replace('@launcher@',(repo/'home/apps/quickshell/phone-launcher').as_uri()).replace('@width@',str(width)).replace('@height@',str(height)).replace('@output@',str(out/f'launcher-detail-{width}.png'))
                 path=temp/f'launcher-{width}-{height}.qml';path.write_text(q);run_qml(path,env,out)
             for width,height,keyboard in [(1280,800,False),(800,600,False),(1280,800,True),(800,600,True)]:
                 path=temp/f'greeter-{width}-{height}-{keyboard}.qml'

@@ -28,6 +28,15 @@
                     railViewport.contentY=Math.max(0,p.y+clockBlock.height-railViewport.height);
                 }
                 function runChecks() {
+                    root.networkState = {eth:"wired", ssid:null};
+                    compare(root.trayIconSource("image://icon/nm-stage01-connecting01", "nm-applet"), "image://icon/network-wired");
+                    root.networkState = {eth:null, ssid:"test"};
+                    compare(root.trayIconSource("image://icon/nm-stage01-connecting01", "nm-applet"), "image://icon/network-wireless");
+                    root.networkState = {eth:null, ssid:null};
+                    compare(root.trayIconSource("image://icon/nm-stage01-connecting01", "nm-applet"), "image://icon/nm-stage01-connecting01");
+                    root.networkState = {eth:"wired", ssid:null};
+                    compare(root.trayIconSource("image://icon/custom", "another-app"), "image://icon/custom");
+
                     console.log("geometry/workspaces");
                     equal(root.sidebarWidth,22);
                     equal(railViewport.width,22);

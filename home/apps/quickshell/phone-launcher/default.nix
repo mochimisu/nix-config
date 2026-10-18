@@ -10,6 +10,13 @@
   quickshell = pkgs.writeShellScript "sekai-quickshell" ''
     export QML_IMPORT_PATH="${pkgs.qt6.qtmultimedia}/lib/qt-6/qml''${QML_IMPORT_PATH:+:$QML_IMPORT_PATH}"
     export QT_PLUGIN_PATH="${pkgs.qt6.qtmultimedia}/lib/qt-6/plugins''${QT_PLUGIN_PATH:+:$QT_PLUGIN_PATH}"
+    # Qt's basic loop advances animations on a ~16 ms timer even on high-Hz outputs.
+    # Keep explicit software-renderer/user overrides; do not force a refresh rate.
+    if [ "''${QT_QUICK_BACKEND:-}" != software ]; then
+      # Use elapsed time so 120/175 Hz output changes preserve animation duration.
+      export QSG_USE_SIMPLE_ANIMATION_DRIVER="''${QSG_USE_SIMPLE_ANIMATION_DRIVER:-1}"
+      export QSG_RENDER_LOOP="''${QSG_RENDER_LOOP:-threaded}"
+    fi
     exec ${pkgs.quickshell}/bin/qs "$@"
   '';
   launcher = pkgs.writeShellScriptBin "sekai-launcher" (builtins.replaceStrings
@@ -42,6 +49,7 @@ in {
       ".config/quickshell/phone-launcher/shell.qml".source = pkgs.replaceVars ./shell.qml {inherit context;};
       ".config/quickshell/phone-launcher/Presentation.qml".source = ./Presentation.qml;
       ".config/quickshell/phone-launcher/Phone.qml".source = ./Phone.qml;
+      ".config/quickshell/phone-launcher/AppDetail.qml".source = ./AppDetail.qml;
     };
     # The shared Super+Space binding invokes menu; run/clipboard menus stay Rofi.
     wayland.windowManager.hyprland.settings.menu._var = lib.mkForce "${launcher}/bin/sekai-launcher";

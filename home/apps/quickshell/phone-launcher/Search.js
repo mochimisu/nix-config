@@ -32,3 +32,10 @@ function rank(applications, query) {
         || a.name.localeCompare(b.name) || String(a.app.id || "").localeCompare(String(b.app.id || "")))
         .map(hit => hit.app);
 }
+
+// Detail mode never changes ranking or hides keyboard access to other matches.
+function detailApp(results, query, selectedIndex) {
+    if (!String(query || "").trim() || selectedIndex !== 0 || !results.length) return null;
+    return results.length === 1 || String(results[0].name).trim().toLowerCase() === String(query).trim().toLowerCase()
+        ? results[0] : null;
+}

@@ -533,10 +533,18 @@ ShellRoot {
         notification.dismiss();
     }
 
-    function trayIconSource(rawIcon) {
+    function trayIconSource(rawIcon, trayId) {
         const iconRaw = String(rawIcon || "");
         if (iconRaw === "") {
             return "image://icon/image-missing";
+        }
+
+        // nm-applet animates for any connecting adapter, even when Ethernet is
+        // already online. Reflect established connectivity while keeping its menu
+        // and its original connecting/offline icon when no link is established.
+        if (String(trayId || "") === "nm-applet") {
+            if (networkState.eth) return "image://icon/network-wired";
+            if (networkState.ssid) return "image://icon/network-wireless";
         }
 
         // App-specific tray fallbacks.
@@ -887,7 +895,7 @@ ShellRoot {
                                             IconImage {
                                                 anchors.centerIn: parent
                                                 implicitSize: root.trayIconPx
-                                                source: root.trayIconSource(modelData.icon)
+                                                source: root.trayIconSource(modelData.icon, modelData.id)
                                             }
 
                                             MouseArea {

@@ -14,7 +14,9 @@ FocusScope {
     property bool interactive: true
     property point lastPointerPosition: Qt.point(NaN, NaN)
     property alias query: search.text
-    readonly property var results: AppSearch.rank(DesktopEntries.applications.values, search.text)
+    property var applications: DesktopEntries.applications.values
+    readonly property var results: AppSearch.rank(applications, search.text)
+    readonly property var detailApp: AppSearch.detailApp(results, search.text, grid.currentIndex)
     readonly property color ink: "#28585c"
     readonly property color mint: "#b8ece6"
     readonly property color pink: "#f5dbe9"
@@ -253,9 +255,9 @@ FocusScope {
     }
     GridView {
         id: grid
-        opacity: phone.searching ? 1 : 0
+        opacity: phone.searching && !phone.detailApp ? 1 : 0
         visible: opacity > 0
-        enabled: phone.searching
+        enabled: phone.searching && !phone.detailApp
         transform: Translate { x: phone.searching ? 0 : 12; Behavior on x { NumberAnimation { duration: 140 } } }
         Behavior on opacity { NumberAnimation { duration: 140 } }
         objectName: "apps"
@@ -362,4 +364,13 @@ FocusScope {
             font.pixelSize: 15
         }
     }
+    AppDetail {
+        objectName: "appDetail"
+        anchors { top: header.bottom; bottom: parent.bottom; left: parent.left; right: parent.right; topMargin: 17; bottomMargin: 105; leftMargin: 25; rightMargin: 25 }
+        app: phone.detailApp
+        interactive: phone.interactive
+        visible: !!app
+        onLaunchRequested: app => phone.launchRequested(app)
+    }
+
 }

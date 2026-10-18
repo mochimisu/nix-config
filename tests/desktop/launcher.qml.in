@@ -15,7 +15,7 @@ ShellRoot {
         Presentation {
             id: presentation
             anchors.fill: parent
-            onLaunchRequested: app => { throw new Error("Unexpected app launch"); }
+            onLaunchRequested: app => {}
         }
         Timer { interval: 700; running: true; onTriggered: { try { tests.test_search_navigation_launch_escape(); console.log("TESTS PASSED"); Qt.quit(); } catch (e) { console.error(e); Qt.exit(1); } } }
         TestCase {
@@ -28,6 +28,33 @@ ShellRoot {
             function compare(actual, expected) { console.log("COMPARE", actual, expected); if (actual !== expected) throw new Error("Mismatch"); }
             function keyClicks(text) { for (const character of text) keyClick(character); }
             function test_search_navigation_launch_escape() {
+                window.phone.applications = [
+                    {name:"Steam", id:"steam", genericName:"Game library", comment:"Play and manage your games", icon:""},
+                    {name:"Steam Link", id:"steam-link", icon:""},
+                    {name:"Editor", id:"editor", comment:"Write something", icon:""}
+                ];
+                window.phone.query = "sTeAm"; wait(180);
+                compare(window.phone.detailApp.id,"steam");
+                window.phone.grabToImage(r => { if (!r.saveToFile("@output@")) throw new Error("Detail capture failed"); });
+                wait(100);
+                window.phone.moveSelection(1); wait(150);
+                compare(window.phone.detailApp,null);
+                window.phone.moveSelection(-1); wait(150);
+                compare(window.phone.detailApp.id,"steam");
+                window.phone.query = "edit"; wait(180);
+                compare(window.phone.detailApp.id,"editor");
+                const search = findChild(window.phone,"search");
+                search.forceActiveFocus(); keyClick(Qt.Key_Return);
+                compare(launched.count,1); compare(launched.signalArguments[0][0].id,"editor");
+                presentation.open(); wait(300);
+                window.phone.query = "no-such-app"; wait(180);
+                compare(window.phone.detailApp,null); compare(window.phone.results.length,0);
+                search.forceActiveFocus(); keyClick(Qt.Key_Return); compare(launched.count,1);
+                keyClick(Qt.Key_Escape); wait(160); compare(window.phone.query,"");
+                window.phone.query = "st"; wait(180); compare(window.phone.detailApp,null);
+                window.phone.query = "steam"; wait(180); compare(window.phone.detailApp.id,"steam");
+                keyClick(Qt.Key_Escape); wait(160); compare(window.phone.detailApp,null);
+                presentation.open(); wait(300);
                 const body = window.phone.mapToItem(presentation, window.phone.width / 2, 350);
                 verify(presentation.insidePhone(body.x, body.y));
                 mouseClick(presentation, body.x, body.y);

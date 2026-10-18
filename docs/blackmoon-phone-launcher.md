@@ -30,3 +30,53 @@ show/hide tests selected DP-3, DP-1, DP-3, DP-1 (including the portrait output's
 negative-Y area), with the same daemon PID. The test restored original pointer
 and focus. Home Manager built, Hyprland parser passed, and scoped file deployment
 passed Home Manager's link-collision check. No boot/greeter rotation changed.
+
+## Refresh pacing and app details (2026-10-18)
+
+The launcher wrapper selects Qt's threaded render loop and elapsed-time animation
+clock (`QSG_RENDER_LOOP=threaded`, `QSG_USE_SIMPLE_ANIMATION_DRIVER=1`) unless
+explicitly overridden. Software rendering is excluded. The elapsed-time clock
+preserves the existing 260/180 ms motion on mixed-refresh outputs. It does not
+force a display mode, disable vsync, reduce the 3× media mask or rasterize text.
+[Qt's render-loop documentation](https://doc.qt.io/qt-6/qtquick-visualcanvas-scenegraph.html)
+describes the basic loop's ~16 ms timer and the elapsed-time alternative.
+
+On Blackmoon, Hyprland reported DP-3 at 174.963 Hz and DP-1 at 119.998 Hz. Qt logs
+confirmed the default basic loop. A noninteractive full-phone benchmark with the
+existing 4K snow video header measured these animation callback intervals:
+
+| Output / loop | Mean | Median | 95th percentile | Mean update rate |
+| --- | --- | --- | --- | --- |
+| DP-3 / basic | 16.00 ms | 15.99 ms | 23.90 ms | 62.5/s |
+| DP-3 / threaded + elapsed time | 6.30 ms | 5.81 ms | 11.36 ms | 158.7/s |
+| DP-1 / threaded + elapsed time | 8.46 ms | 8.59 ms | 14.17 ms | 118.2/s |
+
+These measure QML animation callbacks during repeated phone movement, not final
+scanout or perfect frame delivery. The remaining tail includes missed refreshes;
+video frames retain their own source cadence. `tests/desktop/frame-probe.qml`
+retains the manual benchmark: set `PROBE_OUTPUT`, optionally `PROBE_WALLPAPER`
+(a video file URI), and the render variables, then run it through the launcher's
+Qt Multimedia wrapper. It displays a phone for six seconds with an empty input
+region and no keyboard focus; it neither launches applications nor changes media
+selection. Compare loops on the same output/workload.
+
+A sole search result or a case-insensitive exact app-name match now opens a
+centered detail card with a larger icon, name, optional generic description and
+comment, and an Open button. Short viewports use a compact card; longer content
+scrolls. Enter still opens the selected app, Escape clears search before dismissing,
+and arrow/Tab navigation can leave an exact-match card for other ranked results.
+Ranking, pointer-output resolution, geometry, curve-rendered text and home media
+are unchanged. Empty/no-result queries never retain a stale detail card.
+
+The sidebar normalizes only `nm-applet`'s tray image when an established wired or
+wireless link exists. Blackmoon had connected Ethernet plus a secondary Wi-Fi
+adapter in `connecting (configuring)`; nm-applet emitted `nm-stage02-connecting01`
+for that secondary attempt. Its menu/actions remain intact, and when no link is
+established the original connecting/disconnected icon is retained. No network
+settings or interfaces were changed; a secondary adapter may continue retrying.
+
+Blackmoon and Oasis Home Manager builds and isolated keyboard/detail/network tests
+passed. Only the launcher QML/service and sidebar QML were deployed on Blackmoon,
+with Home Manager-owned links and a launcher/sidebar restart. The launcher remains
+hidden after startup; existing apps in its cgroup are preserved by KillMode=process.
+Snowy wallpaper and HDR edits remain separately owned and uncommitted.
