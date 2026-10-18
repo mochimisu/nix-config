@@ -151,3 +151,8 @@ its exit before starting the unit. Verify IPC readiness and that the unit's
 MainPID matches the sole phone-launcher instance and remains running afterward.
 Do not kill the service cgroup or apps launched from it. This recovery was applied
 and the current launcher now runs as the service-owned instance.
+
+Resting-pose correction: user clarified that the animation looks fine but the
+final tilt is too aggressive. Resting yaw/pitch/roll is now −24°/18°/−3°
+(previously −30°/30°/−4°). Relative wrist excursion, shake, easing and 300/100 ms
+timing stay unchanged. Projection-derived anchoring uses the corrected pose.

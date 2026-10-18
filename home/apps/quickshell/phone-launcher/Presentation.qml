@@ -25,9 +25,9 @@ Item {
         settledY(6, phone.height - (flat ? 42 : 100)),
         settledY(phone.width - 6, phone.height - (flat ? 42 : 100)))
     readonly property real hiddenTop: height + 16 - Math.min(
-        projectedY(6, 6, -10, 46, 18),
-        projectedY(phone.width + 28, 6, -10, 46, 18))
-    function settledY(x, y) { return projectedY(x, y, -30, 30, -4); }
+        projectedY(6, 6, -4, 34, 19),
+        projectedY(phone.width + 28, 6, -4, 34, 19))
+    function settledY(x, y) { return projectedY(x, y, -24, 18, -3); }
     function projectedY(x, y, yawDegrees, pitchDegrees, rollDegrees) {
         if (flat) return phone.height / 2 + displayScale * (y - phone.height / 2);
         const yaw = yawDegrees * Math.PI / 180, pitch = pitchDegrees * Math.PI / 180;
@@ -169,9 +169,9 @@ Item {
         scale: stage.displayScale
         // Match the reference's almost-parallel long edges. Separate Rotation
         // items each add Qt's short default perspective, exaggerating taper.
-        property real yaw: stage.flat ? 0 : -30 + 20 * stage.wrist + 1.5 * stage.liftShake
-        property real pitch: stage.flat ? 0 : 30 + 16 * stage.wrist
-        property real roll: stage.flat ? 0 : -4 + 22 * stage.wrist + 4 * stage.liftShake
+        property real yaw: stage.flat ? 0 : -24 + 20 * stage.wrist + 1.5 * stage.liftShake
+        property real pitch: stage.flat ? 0 : 18 + 16 * stage.wrist
+        property real roll: stage.flat ? 0 : -3 + 22 * stage.wrist + 4 * stage.liftShake
         transform: Matrix4x4 {
             matrix: {
                 const y = phone.yaw * Math.PI / 180;
