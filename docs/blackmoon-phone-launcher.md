@@ -84,6 +84,7 @@ Snowy wallpaper and HDR edits remain separately owned and uncommitted.
 ## Phone lift tuning (2026-10-17, Los Angeles)
 
 User feedback found the cubic arrival and hooked path too floaty. Opening now uses
-a 300 ms sine ease-in/out, a direct upward lift with 18 px lateral drift, and a
+a 230 ms sine ease-in/out, a direct upward lift with 18 px lateral drift, and a
 monotonic pitch/roll turn. The settled pose and scale are unchanged. Closing uses
 180 ms quadratic acceleration; threaded rendering and elapsed-time pacing remain.
+The initial 300 ms lift felt too slow; user feedback shortened it to 230 ms.
