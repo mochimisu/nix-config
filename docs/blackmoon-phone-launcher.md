@@ -103,3 +103,17 @@ drift, and roll from +8° to −4°; exit is 240 ms InQuad with dismissal at 260
 This is a visual reconstruction, not recovered author code. Final pose, scale,
 opaque rendering and high-refresh pacing remain unchanged.
 Source: https://www.reddit.com/r/LinuxPorn/comments/1x36scr/project_sekai_inspired_rice/
+
+### Independent wrist follow-through
+
+The first reference fit was rejected as insufficiently stylish. A rendered
+before/after frame comparison showed its axes were still locked to vertical
+travel and its long-edge lean was too weak. Pitch is now 30°, the rotation pivot
+is at 90% of phone height, and a separate 560 ms angular follow-through reveals
+the side edge as the hand turns (yaw −16° to −30°, roll +12° to −4°). The upward
+lift remains 500 ms with its fast first 200 ms. The lower chassis stays deeper
+below the output edge so overshoot does not make the phone float free. Controls
+become available near arrival rather than waiting for the final angular settle.
+These are visual fitting choices, not verified original implementation values.
+The entrance starts just below the projected screen edge, removing invisible
+travel before the first visible frame.
