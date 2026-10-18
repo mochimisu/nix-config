@@ -135,3 +135,19 @@ landing bounce. Lift/wrist OutBack overshoot is reduced to 0.55/0.7. A separate
 220 ms clock drives two small damped lateral/roll oscillations, zero at both
 ends and disabled on close, suspend, and flat mode. Entrance remains 300 ms;
 exit remains 100 ms.
+
+### Scoped restart verification correction
+
+The user reported no visible change after the shake deployment. The source link
+was current, but `qs list --all` showed an older standalone `-d` launcher and
+the user service had become inactive: `-n` exited on the existing instance.
+An immediate `systemctl is-active` result was a transient startup state, not
+proof that the displayed launcher reloaded.
+
+For subsequent scoped deployments, hold `$XDG_RUNTIME_DIR/sekai-launcher-toggle.lock`
+across stop/link replacement/start, inspect the actual phone-launcher instance,
+and stop only that exact Quickshell PID if it is outside the service. Wait for
+its exit before starting the unit. Verify IPC readiness and that the unit's
+MainPID matches the sole phone-launcher instance and remains running afterward.
+Do not kill the service cgroup or apps launched from it. This recovery was applied
+and the current launcher now runs as the service-owned instance.
