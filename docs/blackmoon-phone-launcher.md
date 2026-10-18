@@ -129,3 +129,9 @@ guarded). The keyboard fixture checks Escape dismissal within 180 ms.
 
 Follow-up: user requested a 300 ms entrance. Both lift and wrist now finish
 in 300 ms, preserving their separate easing/overshoot and the 100 ms exit.
+
+Follow-up: user clarified that the reference shakes during ascent and has less
+landing bounce. Lift/wrist OutBack overshoot is reduced to 0.55/0.7. A separate
+220 ms clock drives two small damped lateral/roll oscillations, zero at both
+ends and disabled on close, suspend, and flat mode. Entrance remains 300 ms;
+exit remains 100 ms.

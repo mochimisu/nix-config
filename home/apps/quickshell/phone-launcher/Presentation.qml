@@ -48,24 +48,36 @@ Item {
             id: slide
             duration: stage.flat ? 0 : (stage.closing ? 100 : 300)
             easing.type: stage.closing ? Easing.InQuad : Easing.OutBack
-            easing.overshoot: 1.65
+            easing.overshoot: 0.55
         }
     }
-    // The hand finishes turning after the main lift; do not lock all axes to travel.
+    // Independent wrist curve with a restrained landing.
     property real wrist: opened ? 0 : 1
     Behavior on wrist {
         enabled: stage.visible
         NumberAnimation {
             duration: stage.flat ? 0 : (stage.closing ? 100 : 300)
             easing.type: stage.closing ? Easing.InQuad : Easing.OutBack
-            easing.overshoot: 2.6
+            easing.overshoot: 0.7
         }
+    }
+    // Two small wrist oscillations during ascent, extinguished before landing.
+    property real liftPhase: 1
+    readonly property real liftShake: flat || closing ? 0 :
+        Math.sin(4 * Math.PI * liftPhase) * Math.sin(Math.PI * liftPhase) * (1 - liftPhase)
+    NumberAnimation {
+        id: shakeClock
+        target: stage; property: "liftPhase"
+        from: 0; to: 1; duration: 220
+        easing.type: Easing.Linear
     }
     readonly property alias phone: phone
 
     function finish(app) {
         if (closing) return;
         pendingApp = app;
+        shakeClock.stop();
+        liftPhase = 1;
         closing = true;
         opened = false;
         closeTimer.start();
@@ -76,9 +88,12 @@ Item {
         closing = false;
         phone.reset();
         opened = true;
+        if (!flat) shakeClock.restart();
     }
     function suspend() {
         closeTimer.stop();
+        shakeClock.stop();
+        liftPhase = 1;
         pendingApp = null;
         opened = false;
         closing = false;
@@ -145,18 +160,18 @@ Item {
         services: stage.services
         width: Math.min(400, stage.width - 100)
         height: Math.min(720, stage.height - 100)
-        // Exaggerated reference wrist flick: fast lift, angular overshoot, then settle.
+        // Brief wrist shake on ascent, then a quiet landing.
         x: (stage.width - width) / 2 + (stage.flat ? 0 :
-            32 * stage.travel)
+            32 * stage.travel + 5 * stage.liftShake)
         y: stage.restingTop + (stage.flat ? 0 : stage.travel * (stage.hiddenTop - stage.restingTop))
         interactive: stage.interactive
         opacity: 1
         scale: stage.displayScale
         // Match the reference's almost-parallel long edges. Separate Rotation
         // items each add Qt's short default perspective, exaggerating taper.
-        property real yaw: stage.flat ? 0 : -30 + 20 * stage.wrist
+        property real yaw: stage.flat ? 0 : -30 + 20 * stage.wrist + 1.5 * stage.liftShake
         property real pitch: stage.flat ? 0 : 30 + 16 * stage.wrist
-        property real roll: stage.flat ? 0 : -4 + 22 * stage.wrist
+        property real roll: stage.flat ? 0 : -4 + 22 * stage.wrist + 4 * stage.liftShake
         transform: Matrix4x4 {
             matrix: {
                 const y = phone.yaw * Math.PI / 180;
