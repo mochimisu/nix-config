@@ -117,3 +117,12 @@ become available near arrival rather than waiting for the final angular settle.
 These are visual fitting choices, not verified original implementation values.
 The entrance starts just below the projected screen edge, removing invisible
 travel before the first visible frame.
+
+### Anime-style accent and fast dismissal
+
+User accepted the wrist-pivot direction as better and requested more anime-style
+exaggeration plus a much faster exit. Entrance now has a 420 ms lift and a 500 ms
+wrist follow-through with stronger yaw/roll overshoot and three brief mint/white
+motion strokes. Strokes disappear before arrival and are absent in flat mode.
+Exit takes 100 ms, with dispatch/dismissal at 120 ms (held pointer releases remain
+guarded). The keyboard fixture checks Escape dismissal within 180 ms.

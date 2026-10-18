@@ -25,8 +25,8 @@ Item {
         settledY(6, phone.height - (flat ? 42 : 100)),
         settledY(phone.width - 6, phone.height - (flat ? 42 : 100)))
     readonly property real hiddenTop: height + 16 - Math.min(
-        projectedY(6, 6, -16, 42, 12),
-        projectedY(phone.width + 28, 6, -16, 42, 12))
+        projectedY(6, 6, -10, 46, 18),
+        projectedY(phone.width + 28, 6, -10, 46, 18))
     function settledY(x, y) { return projectedY(x, y, -30, 30, -4); }
     function projectedY(x, y, yawDegrees, pitchDegrees, rollDegrees) {
         if (flat) return phone.height / 2 + displayScale * (y - phone.height / 2);
@@ -46,9 +46,9 @@ Item {
         enabled: stage.visible
         NumberAnimation {
             id: slide
-            duration: stage.flat ? 0 : (stage.closing ? 240 : 500)
+            duration: stage.flat ? 0 : (stage.closing ? 100 : 420)
             easing.type: stage.closing ? Easing.InQuad : Easing.OutBack
-            easing.overshoot: 1.4
+            easing.overshoot: 1.65
         }
     }
     // The hand finishes turning after the main lift; do not lock all axes to travel.
@@ -56,9 +56,9 @@ Item {
     Behavior on wrist {
         enabled: stage.visible
         NumberAnimation {
-            duration: stage.flat ? 0 : (stage.closing ? 240 : 560)
+            duration: stage.flat ? 0 : (stage.closing ? 100 : 500)
             easing.type: stage.closing ? Easing.InQuad : Easing.OutBack
-            easing.overshoot: 2.0
+            easing.overshoot: 2.6
         }
     }
     readonly property alias phone: phone
@@ -87,7 +87,7 @@ Item {
     Component.onCompleted: { if (autoOpen && !closing) open(); }
     Timer {
         id: closeTimer
-        interval: stage.flat ? 0 : 260
+        interval: stage.flat ? 0 : 120
         onTriggered: {
             if (stage.pointerHeld) { restart(); return; }
             if (stage.pendingApp && stage.pendingApp.action) stage.actionRequested(stage.pendingApp.action);
@@ -121,6 +121,23 @@ Item {
         onCanceled: stage.pointerHeld = false
         onWheel: event => event.accepted = true
     }
+    // Brief manga-style motion strokes, gone before the phone becomes usable.
+    Repeater {
+        model: 3
+        Rectangle {
+            required property int index
+            x: phone.x - (24 + index * 15) * stage.displayScale
+            y: phone.y + (phone.height * 0.48 + index * 48) * stage.displayScale
+            width: (index === 1 ? 3 : 2) * stage.displayScale
+            height: (100 - index * 22) * stage.displayScale
+            radius: width / 2
+            rotation: 17
+            color: index === 1 ? "#faffff" : "#9de9e0"
+            antialiasing: true
+            opacity: stage.flat || stage.closing ? 0 :
+                Math.max(0, Math.min(0.8, 3 * stage.travel * (1 - stage.travel)))
+        }
+    }
     Phone {
         id: phone
         objectName: "phone"
@@ -128,8 +145,7 @@ Item {
         services: stage.services
         width: Math.min(400, stage.width - 100)
         height: Math.min(720, stage.height - 100)
-        // Fitted to the reference clip at 4.3–4.8 s: fast lift, slight overshoot,
-        // then settle. The top edge begins flatter and turns into the resting pose.
+        // Exaggerated reference wrist flick: fast lift, angular overshoot, then settle.
         x: (stage.width - width) / 2 + (stage.flat ? 0 :
             32 * stage.travel)
         y: stage.restingTop + (stage.flat ? 0 : stage.travel * (stage.hiddenTop - stage.restingTop))
@@ -138,9 +154,9 @@ Item {
         scale: stage.displayScale
         // Match the reference's almost-parallel long edges. Separate Rotation
         // items each add Qt's short default perspective, exaggerating taper.
-        property real yaw: stage.flat ? 0 : -30 + 14 * stage.wrist
-        property real pitch: stage.flat ? 0 : 30 + 12 * stage.wrist
-        property real roll: stage.flat ? 0 : -4 + 16 * stage.wrist
+        property real yaw: stage.flat ? 0 : -30 + 20 * stage.wrist
+        property real pitch: stage.flat ? 0 : 30 + 16 * stage.wrist
+        property real roll: stage.flat ? 0 : -4 + 22 * stage.wrist
         transform: Matrix4x4 {
             matrix: {
                 const y = phone.yaw * Math.PI / 180;

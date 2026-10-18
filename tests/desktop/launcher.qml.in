@@ -76,7 +76,7 @@ ShellRoot {
                 wait(30); presentation.open(); wait(600);
                 compare(presentation.closing, false);
                 compare(dismissed.count, 1); // canceled exit cannot dismiss the reopened phone
-                keyClick(Qt.Key_Escape); wait(300);
+                keyClick(Qt.Key_Escape); wait(180);
                 compare(dismissed.count, 2);
 
             }
