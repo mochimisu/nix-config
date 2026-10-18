@@ -40,6 +40,7 @@ in {
     ./eww-sysmon.nix
     ./fastfetch.nix
     ./wallpaper.nix
+    ./window-animation.nix
   ];
 
   home.packages = with pkgs; [
@@ -181,9 +182,9 @@ in {
 
     config.render = {
       # Enable color-management pipeline required for HDR output.
-      cm_enabled = false;
+      cm_enabled = true;
       # Auto-enable HDR when the app advertises HDR output.
-      cm_auto_hdr = 0;
+      cm_auto_hdr = 1;
     };
 
     config.misc = {
@@ -346,16 +347,15 @@ in {
       state_file="''${XDG_STATE_HOME:-$HOME/.local/state}/hypr/hdr-enabled"
       mkdir -p "''${state_file%/*}"
 
-      cm_enabled=$(hyprctl getoption render:cm_enabled | awk 'NR==1{print $2}')
       monitor_cm=$(
         hyprctl -j monitors |
           jq -r '.[] | select(.name == "DP-3") | .colorManagementPreset // "unknown"' |
           tail -n 1
       )
 
-      if [ "$monitor_cm" = "hdr" ] || [ "''${cm_enabled:-0}" = "1" ]; then
+      if [ "$monitor_cm" = "hdr" ] || [ "$monitor_cm" = "hdredid" ]; then
         printf "0" > "$state_file"
-        hyprctl eval 'hl.config({ render = { cm_enabled = false, cm_auto_hdr = 0 } })'
+        hyprctl eval 'hl.config({ render = { cm_enabled = true, cm_auto_hdr = 1 } })'
         hyprctl eval 'hl.monitor({
           output = "DP-3",
           mode = "3440x1440@175",

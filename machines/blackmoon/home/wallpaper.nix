@@ -1,7 +1,7 @@
 { config, lib, pkgs, skwdSuite, ... }:
 let
   suite = skwdSuite;
-  wallpaper = "${config.home.homeDirectory}/stuff/nix-config/untracked-assets/cat-in-the-swamp-moewalls-com.mp4";
+  wallpaper = "${config.home.homeDirectory}/stuff/nix-config/untracked-assets/snowfall-in-forest-motionbgs-4k.mp4";
   cacheDir = "${config.xdg.cacheHome}/skwd-wall-v2";
   configDir = "${config.xdg.configHome}/skwd-wall-v2";
   seed = pkgs.writeShellApplication {
@@ -34,27 +34,24 @@ let
         }
       ' "$settings" > "$tmp"
       mv "$tmp" "$settings"
-      # Upstream's default restore copies the last wallpaper to unassigned outputs.
-      # This host owns DP-3 and DP-1; preserve their independent selections.
+      # Seed both outputs from declared policy, never from mutable picker history.
+      mkdir -p ${lib.escapeShellArg cacheDir}
       outputs=${lib.escapeShellArg "${cacheDir}/outputs.json"}
-      if [[ -f "$outputs" ]]; then
-        [[ -e "$outputs.before-nix" ]] || cp -p "$outputs" "$outputs.before-nix"
-        tmp=$(mktemp "$outputs.XXXXXX")
-        jq 'with_entries(select(.key == "DP-3" or .key == "DP-1"))' "$outputs" > "$tmp"
-        mv "$tmp" "$outputs"
-      fi
+      tmp=$(mktemp "$outputs.XXXXXX")
+      jq -n --arg path ${lib.escapeShellArg wallpaper} '
+        {"DP-3": {type: "video", path: $path, mute: true, volume: 100, we_id: ""},
+         "DP-1": {type: "video", path: $path, mute: true, volume: 100, we_id: ""}}
+      ' > "$tmp"
+      mv "$tmp" "$outputs"
     '';
   };
   runner = pkgs.writeShellApplication {
-    name = "blackmoon-cat-wallpaper";
+    name = "blackmoon-wallpaper";
     runtimeInputs = [ suite pkgs.coreutils pkgs.jq config.wayland.windowManager.hyprland.package ];
     text = ''
       wallpaper=${lib.escapeShellArg wallpaper}
-      # Start only when the existing asset and target output are available.
-      until [[ -f "$wallpaper" ]] && hyprctl -j monitors 2>/dev/null | jq -e 'any(.[]; .name == "DP-3")' >/dev/null; do
-        sleep 1
-      done
-      outputs=${lib.escapeShellArg "${cacheDir}/outputs.json"}
+      # Media remains local runtime state; missing media exposes Hyprpaper.
+      until [[ -f "$wallpaper" ]]; do sleep 1; done
       skwd-walld &
       daemon_pid=$!
       trap 'kill "$daemon_pid" 2>/dev/null || true' EXIT
@@ -69,28 +66,33 @@ let
         sleep 1
       done
       [[ "$ready" == 1 ]] || exit 1
-      # Restore each configured connected output, never the all-output fallback.
-      # Snapshot before apply, since the daemon writes its output cache on apply.
-      saved_outputs="{}"
-      [[ ! -f "$outputs" ]] || saved_outputs=$(cat "$outputs")
-      for output in DP-3 DP-1; do
-        hyprctl -j monitors | jq -e --arg output "$output" 'any(.[]; .name == $output)' >/dev/null || continue
-        selected=$(printf '%s' "$saved_outputs" | jq -r --arg output "$output" '.[$output] | if .type == "we" then "we:" + .we_id else .path // empty end')
-        [[ -n "$selected" ]] || selected="$wallpaper"
-        if ! skwd-helm apply "$selected" --output "$output" --mute; then
-          skwd-helm apply "$wallpaper" --output "$output" --mute
-        fi
-        skwd-helm mute --output "$output"
-      done
+      declare -A restored=()
       previous=""
       while kill -0 "$daemon_pid" 2>/dev/null; do
-        monitor=$(hyprctl -j monitors | jq -r '.[] | select(.name == "DP-3") | .id')
-        state=resume
-        if [[ ! -f "$wallpaper" || -z "$monitor" ]]; then
-          # Restart cleans the whole renderer cgroup and waits, exposing Hyprpaper.
-          exit 1
+        [[ -f "$wallpaper" ]] || exit 1
+        # Output disappearance is normal (sleep/hotplug), not a daemon failure.
+        # Reconcile both returning outputs and stale picker/cache selections.
+        if ! monitors=$(hyprctl -j monitors) || ! current=$(skwd-helm current --json); then
+          sleep 1
+          continue
         fi
-        if hyprctl -j clients | jq -e --argjson monitor "$monitor" '
+        for output in DP-3 DP-1; do
+          if ! jq -e --arg output "$output" 'any(.[]; .name == $output)' <<< "$monitors" >/dev/null; then
+            unset 'restored[$output]'
+            continue
+          fi
+          if [[ -z "''${restored[$output]:-}" ]] || ! jq -e --arg output "$output" --arg path "$wallpaper" '
+            any(.outputs[]; .name == $output and .path == $path and .type == "video" and .mute == true)
+          ' <<< "$current" >/dev/null; then
+            # A disconnect during apply is retried after the next output query.
+            skwd-helm apply "$wallpaper" --output "$output" --mute || continue
+            restored[$output]=1
+            previous=""
+          fi
+        done
+        monitor=$(jq -r '.[] | select(.name == "DP-3") | .id' <<< "$monitors")
+        state=resume
+        if [[ -n "$monitor" ]] && hyprctl -j clients | jq -e --argjson monitor "$monitor" '
           any(.[]; .mapped == true and .monitor == $monitor
             and ((.fullscreen // 0) != 0)
             and ((.class // "" | ascii_downcase) != "kitty")
@@ -101,8 +103,7 @@ let
         # Skwd pauses decoding in place, avoiding a decoder restart every time.
         # The control API pauses both animated outputs; retain DP-3 fullscreen policy.
         if [[ "$state" != "$previous" ]]; then
-          skwd-helm "$state"
-          previous="$state"
+          if skwd-helm "$state"; then previous="$state"; fi
         fi
         sleep 1
       done
@@ -112,18 +113,18 @@ let
   };
 in {
   home.packages = [ suite ];
-  systemd.user.services.blackmoon-cat-wallpaper = {
+  systemd.user.services.blackmoon-wallpaper = {
     Unit = {
       Description = "Blackmoon Skwd animated wallpaper";
       After = [ "graphical-session.target" ];
       PartOf = [ "graphical-session.target" ];
-      Conflicts = [ "skwd-walld.service" ];
+      Conflicts = [ "skwd-walld.service" "blackmoon-cat-wallpaper.service" ];
     };
     Service = {
       Type = "exec";
       ExecStartPre = "${seed}/bin/blackmoon-skwd-config";
-      ExecStart = "${runner}/bin/blackmoon-cat-wallpaper";
-      RuntimeDirectory = "blackmoon-cat-wallpaper";
+      ExecStart = "${runner}/bin/blackmoon-wallpaper";
+      RuntimeDirectory = "blackmoon-wallpaper";
       KillMode = "control-group";
       TimeoutStopSec = "5s";
       Restart = "on-failure";

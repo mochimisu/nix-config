@@ -7,6 +7,7 @@ old lock timestamps alone are not reasons to remove a dependency. Prefer targete
 | Component | Policy / reason | Removal or update condition | Verified |
 | --- | --- | --- | --- |
 | Hyprgrass `8e605468…` | ABI pairing for locked Hyprland 0.56.2; local tap-count patch preserves gesture behavior | Advance together using upstream `hyprpm.toml`; build and test touch gestures | 2026-10-14: retained |
+| HyprWindowShade `a4c6b8af…` | Upstream ABI pairing for Hyprland 0.56.2; Blackmoon 280 ms block-assembly opening | Advance with compositor using upstream `hyprpm.toml`; test rendering before live load | 2026-10-17: built and loaded on NVIDIA |
 | Brother brscan5 `1.6.2-0` | DS-640 device/path customizations; nixpkgs still has 1.3.1-0 | Compare vendor/upstream support, build and perform a real scan before removal | 2026-10-14: retained |
 | AC Infinity `2.3.1` | Custom HA component absent from locked nixpkgs | Review release/manifest, update source hash, build, then verify devices after activation | 2026-10-14: updated from 2.2.0 |
 | Bambu Lab `2.2.26` | Custom HA component absent from locked nixpkgs | Review upstream release and dependency changes; migrate when nixpkgs provides it | 2026-10-14: retained |
