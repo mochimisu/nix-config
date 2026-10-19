@@ -4,8 +4,8 @@
   glslColor = color: let
     hex = lib.removePrefix "#" color;
   in "(vec3(0x${builtins.substring 0 2 hex}, 0x${builtins.substring 2 2 hex}, 0x${builtins.substring 4 2 hex}) / 255.0)";
-  mkShader = closing: pkgs.replaceVars ./holographic-open.glsl {
-    duration = if closing then "0.30" else "0.40";
+  mkShader = closing: pkgs.replaceVars ./materialize-open.glsl {
+    duration = if closing then "0.24" else "0.40";
     closing = if closing then "true" else "false";
     sekaiInk = glslColor palette.ink;
     sekaiTeal = glslColor palette.teal;
@@ -34,14 +34,14 @@ in {
       ];
       animation = lib.mkOverride 40 [
         {leaf = "windows"; enabled = true; speed = 2.2; bezier = "holoPop"; style = "popin 82%";}
-        {leaf = "windowsIn"; enabled = true; speed = 2.2; bezier = "holoPop"; style = "popin 82%";}
+        {leaf = "windowsIn"; enabled = false; speed = 2.2; bezier = "holoPop"; style = "popin 82%";}
         {leaf = "windowsMove"; enabled = true; speed = 2.8; bezier = "sekaiEase";}
-        {leaf = "windowsOut"; enabled = true; speed = 1.4; bezier = "default"; style = "popin 94%";}
+        {leaf = "windowsOut"; enabled = true; speed = 2.4; bezier = "linear"; style = "popin 100%";}
         {leaf = "border"; enabled = true; speed = 2.8; bezier = "borderSoft";}
         {leaf = "borderangle"; enabled = false; speed = 1; bezier = "default";}
         {leaf = "fade"; enabled = true; speed = 2; bezier = "default";}
-        {leaf = "fadeIn"; enabled = true; speed = 1; bezier = "default";}
-        {leaf = "fadeOut"; enabled = true; speed = 1.4; bezier = "default";}
+        {leaf = "fadeIn"; enabled = false; speed = 1; bezier = "default";}
+        {leaf = "fadeOut"; enabled = true; speed = 2.4; bezier = "linear";}
         {leaf = "workspaces"; enabled = true; speed = 4; bezier = "sekaiEase"; style = "slidefade 30%";}
       ];
       window_rule = [{
