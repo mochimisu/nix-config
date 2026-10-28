@@ -1,0 +1,89 @@
+--- a/Hooks.cpp
++++ b/Hooks.cpp
+@@ -1305,9 +1305,18 @@
+     // layer surface and for a close animation's snapshot as well, and neither
+     // has a window to ask.
+     g_pCurrentElemSize = elem ? elem->m_data.box.size() : Vector2D(0, 0);
+-    // Identity unless a close animation overrides it below: for every window,
+-    // layer and subsurface the texture IS the view, so the view fills it.
++    // Preserve the exact source crop before intermediate passes clear it.
++    // A client buffer can exceed its view (viewport/CSD crop); its full UV
++    // range is not necessarily the window. Both native-final and direct
++    // fallback shaders must receive the same window-local coordinate frame.
+     g_pCurrentWindowRect = CBox{0.0, 0.0, 1.0, 1.0};
++    const auto& renderData = g_pHyprRenderer->m_renderData;
++    if (elem && elem->m_data.allowCustomUV && renderData.primarySurfaceUVTopLeft != Vector2D(-1, -1)) {
++        const auto tl = renderData.primarySurfaceUVTopLeft;
++        const auto br = renderData.primarySurfaceUVBottomRight;
++        if (br.x > tl.x && br.y > tl.y)
++            g_pCurrentWindowRect = CBox{tl.x, tl.y, br.x - tl.x, br.y - tl.y};
++    }
+     g_pCurrentFadeoutAnim = nullptr;
+ 
+     // --- BUILD THE STACK ---
+@@ -1570,6 +1579,12 @@
+                 res = mon->m_pixelSize;
+             glUniform2f(activeEntry->resolutionLoc, (float)res.x, (float)res.y);
+         }
++        if (activeEntry->intermediateLoc >= 0)
++            glUniform1f(activeEntry->intermediateLoc, g_bIntermediatePass ? 1.0f : 0.0f);
++        if (activeEntry->outputTransformLoc >= 0) {
++            const auto mon = g_pHyprRenderer->m_renderData.pMonitor.lock();
++            glUniform1i(activeEntry->outputTransformLoc, mon ? static_cast<int>(mon->m_transform) : 0);
++        }
+         if (activeEntry->surfaceSizeLoc >= 0) {
+             // V0.56: CWindow::m_size is gone; IView::logicalBox() is the
+             // supported way to read a window's logical geometry.
+@@ -1724,7 +1739,7 @@
+             //
+             //     vec2 local = (v_texcoord - window_rect.xy) / window_rect.zw;
+             //
+-            // (0,0,1,1) for a window or layer, so `local` is just v_texcoord there,
++            // The source crop for a window or layer (usually 0,0,1,1),
+             // and the view's former sub-rect for a close animation, whose snapshot
+             // covers the whole monitor. Being unitless it also sidesteps the
+             // logical-versus-device-pixel question entirely.
+--- a/Globals.hpp
++++ b/Globals.hpp
+@@ -361,6 +361,8 @@
+     GLint     timeLoc         = -1;
+     GLint     alphaLoc        = -1;
+     GLint     resolutionLoc   = -1; // vec2: current monitor pixel size
++    GLint     outputTransformLoc = -1; // int: wl_output_transform of the rendering monitor
++    GLint     intermediateLoc = -1; // float: shader runs over the source buffer offscreen
+     GLint     surfaceSizeLoc  = -1; // vec2: the view's own size; 0,0 when unknown
+     GLint     mouseLoc        = -1; // vec2: pointer position
+     GLint     isActiveLoc     = -1; // float 0/1
+--- a/ShaderEngine.cpp
++++ b/ShaderEngine.cpp
+@@ -272,7 +272,20 @@
+     entry.shader = Hyprutils::Memory::makeShared<CShader>();
+ 
+     // V0.55: Access g_pHyprOpenGL directly (lives in Render::GL namespace)
+-    entry.shader->createProgram(Render::GL::g_pHyprOpenGL->m_shaders->TEXVERTSRC320, shaderCode, true, true);
++    // Expose geometry coordinates independently of texture sampling. A direct
++    // draw uses the unit window quad even when its client/blur texture is cropped.
++    // An offscreen stage spans the buffer, so normalize its preserved view crop.
++    std::string vertexCode = Render::GL::g_pHyprOpenGL->m_shaders->TEXVERTSRC320;
++    vertexCode = std::regex_replace(vertexCode, std::regex(R"(out\s+vec2\s+v_texcoord\s*;)"),
++        "out vec2 v_texcoord;\n"
++        "out vec2 v_windowcoord;\n"
++        "uniform vec4 window_rect;\n"
++        "uniform float plugin_intermediate;\n");
++    vertexCode = std::regex_replace(vertexCode, std::regex(R"(v_texcoord\s*=\s*texcoord\s*;)"),
++        "v_texcoord = texcoord;\n"
++        "v_windowcoord = plugin_intermediate > 0.5 ? "
++        "(texcoord - window_rect.xy) / max(window_rect.zw, vec2(0.00001)) : pos;");
++    entry.shader->createProgram(vertexCode, shaderCode, true, true);
+ 
+     const GLuint prog = entry.shader->program();
+     if (prog == 0) {
+@@ -295,6 +308,8 @@
+     entry.timeLoc         = glGetUniformLocation(prog, "time");
+     entry.alphaLoc        = glGetUniformLocation(prog, "plugin_alpha");
+     entry.resolutionLoc   = glGetUniformLocation(prog, "resolution");
++    entry.outputTransformLoc = glGetUniformLocation(prog, "output_transform");
++    entry.intermediateLoc = glGetUniformLocation(prog, "plugin_intermediate");
+     entry.surfaceSizeLoc  = glGetUniformLocation(prog, "surface_size");
+     entry.mouseLoc        = glGetUniformLocation(prog, "mouse");
+     entry.isActiveLoc     = glGetUniformLocation(prog, "is_active");

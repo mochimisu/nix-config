@@ -41,6 +41,8 @@ in {
     ./fastfetch.nix
     ./wallpaper.nix
     ./window-animation.nix
+    ./volume-overlay
+    ./notification-animation.nix
   ];
 
   home.packages = with pkgs; [

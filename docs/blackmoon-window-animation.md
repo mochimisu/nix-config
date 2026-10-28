@@ -733,3 +733,523 @@ materialize/live-close-135c871bd2/. Rollback source pre-deeper-fade.glsl and
 pre-deeper-fade-live.txt. Source is maintained in nix-config for later activation.
 The fixed Blackmoon monitor mapping and main-monitor verification limitation
 still apply.
+
+
+### Approved checkpoint and uncommitted Sekai-style experiment
+
+Approved glass animation saved as commit
+`7ca427b1727bf6c35dde95748890751bc6a65b50`, annotated local tag `glass-anim`.
+Only materialize-open.glsl, window-animation.nix and this diagnostic history
+were committed; unrelated staged index entries were verified unchanged. No push.
+
+The subsequent uncommitted experiment affects closing only: two release beats
+(0–5ms and13–18ms), slightly softened acceleration powers0.95–1.85, tiny
+rotational flutter limited to2px at the shard edge, a restrained mint/lavender
+tint range and sparse pearl four-ray sparkles with tiny companion points.
+Twinkles occur during the fall rather than only at departure. Deep-drop ranges,
+progressive fade to exactlytransparent240ms, bounds and rotated-panel correction
+remain. Opening output is byte-identical in GPU tests and its live file unchanged.
+
+HMfiles build/GLSL/nativealpha/premultiplication/endpoint/bounds tests passed.
+The authorized dedicated-CDP Chromium workspace2 live recording visibly confirms
+small glints and clean fading; zero owned test windows remain, configerrors empty.
+Only close shader leaf5fpjhhpwysvv8wz0xn2hwymzg1487n7j-home-manager-files deployed.
+Librarypreview workspace-2-sekai-glass-experiment.mp4:
+libfile_546222e6c1c4819186823634300a1602. Local evidence:
+materialize/live-close-cc95fa6f80/ in the task workspace.
+The tag remains the approved non-experimental baseline. Restore that shader
+source from the tag to discard the experiment; pre-sekai-style-live.txt retains
+the approved runtime shader target. No fullsystem activation; experiment remains
+uncommitted for review, with existing monitor dependency and persistence limits.
+
+### Kira-kira geometry and thicker seams (uncommitted experiment)
+
+The next requested iteration changes the shared opening/closing tessellation:
+12 jittered cells each partition into one broad diamond/kite and four smaller
+corner facets (60 pieces). Shared edge midpoints preserve tiling. Seams now have
+variable 1.4–2.4 px cores and soft bevels extending to 5 px, in pearl/mint tones.
+Local concave four-point glints vary from 4–11 px; larger kite pieces receive
+these accents consistently, with sparse accents on smaller facets. Opening uses
+the same geometry and seam treatment, returning to original pixels at rest.
+There is no global zoom or whole-window star. Deep downward closing motion,
+varied release/acceleration and progressive transparency ending at 240 ms remain.
+
+Build and both GLSL validations passed. Offscreen tests passed three aspect
+ratios and native alpha 0/153/255, exact start/end behavior, premultiplied bounds,
+progressive close-alpha bounds and zero output outside padded window bounds.
+Only the two shader symlinks were deployed from
+`rhk55n5shmvfjza6hhx2b3hjxr0v1v78-home-manager-files`; scoped collision checks passed.
+Actual isolated Chromium recording on DP-1/workspace 2 visibly confirms larger
+kite geometry, thicker seams, varied downward travel and progressive fading.
+Dedicated verified CDP close left zero owned windows; compositor errors empty.
+Recording: `materialize/live-close-aa46b04d9d/workspace-2-kira-kira-glass.mp4`
+in the task workspace. Library: `libfile_e4008b4a7fa481919cc4868e4f69525f`
+(file `file_000000005db481f4a02c874cf87d2f91`). Rollback links are retained in
+`materialize/pre-kira-live.txt`. `glass-anim` still points to
+`7ca427b1727bf6c35dde95748890751bc6a65b50`; this experiment remains uncommitted.
+No phone changes, push or full activation. Main-monitor live behavior and boot
+persistence remain unverified; the existing panel-orientation mapping remains
+host-specific. The recorded test covers closing; opening was validated offscreen.
+
+### Rounded gem silhouettes and wider gaps
+
+The next refinement rounds actual fragment silhouettes: inset convex polygons
+are expanded by a circular distance field, with radius 9–16 px and inward gap
+3.2–4.8 px per piece (both capped for small facets). Neighboring pieces therefore
+have roughly 6–10 px gaps before motion separates them further. Bevel cores are
+2.4–3.8 px with soft 7 px shoulders; glints sit farther inside the rounded gems.
+Rounding and gaps ramp in on close and vanish during opening settlement.
+Opening blends to native content over progress 0.90–0.98 after every piece lands,
+removing even the previous subpixel facet-junction gaps. Exact RGBA is restored
+before completion; closing motion and the 240 ms progressive fade are unchanged.
+
+Build, GLSL, three-aspect native-alpha/endpoints/premultiplication/fade bounds and
+padded clipping tests passed. Settled opening at 0.985 is byte-exact original;
+prior geometry had minimum alpha 246/255 at some antialiased joins. RTX 4090
+GPU queries at progress 0.35 (12 samples) measured median 0.229 ms at 720×500,
+versus 0.223 ms prior; 2.168 ms at 1440×2560 versus 2.057 ms prior. These are
+isolated shader timings, not end-to-end compositor frame-time guarantees.
+
+Scoped deployment uses `lqafxfssrg65y2mm08m0b6d8v4s83s1q-home-manager-files` for
+both shader leaves; collision checks passed. Workspace-2 owned Chromium close
+recording `materialize/live-close-7c02d0ba4d/workspace-2-rounded-kira-glass.mp4`
+visibly confirms rounded corners, wider gaps and progressive downward fade.
+Library ID `libfile_5afc2b60cff881919c9c3ae5bdfa6db3`, file ID
+`file_0000000047f88243986af9fecd2e17a6`; metadata persisted locally. Zero owned
+windows remain and compositor errors are empty. Rollback source/links are
+`materialize/pre-rounded.glsl` and `materialize/pre-rounded-live.txt`.
+The `glass-anim` tag remains unchanged; changes remain uncommitted. No user
+window manipulation, phone changes, full activation or push. Previous limits
+on main-monitor runtime validation and boot persistence still apply.
+
+### Verify and emphasize rounded creation geometry
+
+User clarified that the creation animation must show the same rounded treatment.
+Inspection confirmed the live opening leaf already pointed to the rounded
+Home Manager generation, and the isolated browser carried the correct shader tag.
+A recording started before browser spawn (`live-opening-f71967659a`) confirms
+that rounded geometry was active. Its edges were visually faint: 18% interior
+flight alpha also attenuated the bevels, and per-piece seam fade removed them
+before the whole assembly completed. This was visual prominence, not a missing
+runtime path.
+
+Opening now keeps rounding/gaps/bevels until global progress 0.80, fading them
+through 0.98. Edge-local opacity mixes toward 68% according to rim strength,
+while flying interiors retain their existing 18% baseline and native alpha.
+The final native-content blend remains; no permanent seams or global zoom.
+Only the opening live leaf was replaced, from
+`s5p1lzzm1qnvgwk0zc30jf1ra1l7wk4m-home-manager-files`; collision check passed.
+The closing leaf remains on the previous rounded generation unchanged.
+
+Build/GLSL/native-alpha/endpoints checks pass across three aspect ratios.
+Generated closing renders are byte-identical to the preceding rounded version
+at nine sampled times for all tested aspects/alphas. Actual workspace-2 recording
+`materialize/live-opening-70b1deea1a/workspace-2-rounded-glass-opening-and-close.mp4`
+clearly shows rounded bright seams through assembly and clean content at rest,
+followed by the preserved closing effect. Dedicated CDP cleanup left zero owned
+windows in both before/after tests; compositor errors empty. New Library clip:
+`libfile_00f83e3232488191baa92b147f198224`, file
+`file_000000009ff881f5bdc2d38959dbdebb`. Local metadata persisted. Source rollback:
+`materialize/pre-opening-prominence.glsl`; live rollback:
+`materialize/pre-opening-gems-live.txt`. Checkpoint `glass-anim` remains immutable;
+experiment uncommitted, no full activation or push.
+
+### Free-form overlapping opening and local seam dissolution
+
+Opening now has 20 rounded four-point radial sparkles, 20 soft diamonds and
+20 asymmetric plump petals, with varied size, orientation and jittered centers.
+They overlap freely instead of sharing fitted fragment boundaries. Closing
+retains its previous rounded gem geometry, downward movement and 240 ms fade.
+
+Opening accumulates plain and accented premultiplied texture contributions
+separately and normalizes each by total geometric coverage. Local contact
+coverage counts pieces weighted by proximity to their final positions (5–35 px).
+Seams and their alpha boost dissolve as this local arriving coverage increases;
+locally assembled areas blend to original content, with a final exact restoration
+by progress 0.98. This is a per-pixel arrival/overlap approximation, not pairwise
+collision physics. It avoids a lingering fitted grid and additive brightness.
+
+Build/GLSL, three-aspect alpha0/153/255 premultiplication, exact endpoints and
+pre-completion native coverage passed. Closing samples remain byte-identical to
+the previous rounded implementation. RTX4090 GPU medians at progress0.35:
+720×500 0.256 ms vs0.239;1440×2560 2.464 ms vs2.269 (~9% increase).
+These are isolated shader measurements, not compositor frame-time guarantees.
+
+Only the opening leaf was deployed from
+`i0lvc64x0a2h6ah6cx6xzinarsprbdc2-home-manager-files`; collision check passed.
+Workspace2-only isolated Chromium recording `live-opening-cad846a95d` confirms
+curved petal/four-point silhouettes, overlapping assembly and local edge decay,
+then clean resting content and unchanged closing. Zero owned windows remain;
+compositor errors empty. Library clip `libfile_749877f449348191893afee893346d24`,
+file `file_0000000023d481f5b19826c71f88e01d`, locally retained as
+`materialize/live-opening-cad846a95d/workspace-2-free-kira-assembly.mp4` with xattrs.
+Rollback: `materialize/pre-free-kira.glsl` and `pre-free-kira-live.txt`.
+`glass-anim` remains at7ca427b; experiment uncommitted; no full activation/push.
+Main-monitor live behavior and boot persistence remain unverified.
+
+### Match both directions and improve shape legibility
+
+User found the free-form opening too faint and correctly noted that closing
+had not adopted it. The previous iteration intentionally deployed opening only;
+this was an incomplete visual pairing, not a failed shared-source reload.
+Both generated runtime leaves now use the same 36-piece family: 12 rounded
+four-point sparkles, 12 soft diamonds and 12 petals, with varied sizes/orientation
+and free overlapping placement. Opening interior flight opacity is 42% instead
+of 18%, preserving native alpha. Local seam dissolution remains, now requiring
+more arriving coverage before fully suppressing edges (1.15–2.1 weighted pieces).
+Closing transitions from complete original content into these silhouettes over
+the first 12% of progress, then follows the existing deep varied downward fall
+and progressive fade to transparent at 240 ms. No whole-window zoom.
+
+Both leaves deployed from `7hnkngvlfij1klq1wl656w9kw3ziy57z-home-manager-files`;
+cache refreshed and both tags verified on the owned browser. Actual recording
+`live-opening-feb28356b7` was inspected for BOTH directions: stronger curved and
+four-point pieces in opening, local seam decay and clean rest; the same silhouette
+family is visibly present during closing, with downward separation and full fade.
+Safe dedicated-CDP cleanup left zero owned windows. Config errors empty and
+scoped collision checks passed. Build/both GLSL/three-aspect native-alpha,
+premultiplication, overlap bounds, exact settled content and current padded
+close-bounds checks passed. Opening GPU medians (RTX4090, progress0.35,12samples)
+are 0.157 ms at720×500 and1.490 ms at1440×2560, versus0.266/2.549 ms for60pieces.
+These measurements exclude compositor overhead and do not guarantee frame rate.
+
+New combined Library clip: `libfile_5c6f35c6d280819184be5f3057ad05ee`, file
+`file_0000000018f081f591783e902b5f7fa7`, local
+`materialize/live-opening-feb28356b7/workspace-2-kira-both-directions.mp4`.
+Xattrs retained. Rollback source/links: `pre-both-kira.glsl`/`pre-both-kira-live.txt`.
+The experiment is uncommitted; `glass-anim` unchanged. No user windows manipulated,
+full activation or push. Local contact remains an arrival/overlap approximation;
+main-monitor runtime and boot persistence remain unverified.
+
+### Recognizable anime motifs instead of amorphous rounded shapes
+
+User rejected the previous silhouettes as too round/amorphous. Both directions
+now share 36 pieces, nine each of: five-point stars (straight polygon sides,
+44% inner radius, slight rounded expansion), crescent moons (offset circle
+subtraction retaining open concavity), tapered lens petals, and concave narrow
+four-point glimmers. Tip rounding is only about1–2 px at typical sizes;
+antialiasing remains0.85px, luminous cores2–3px with5px soft shoulders, reduced
+from7px. Size/rotation variation, overlap normalization,42% opening flight alpha,
+local seam dissolution, exact final content and deep downward240ms close remain.
+
+Both shaders deployed from `mn8bvp9z1i3q4928pdpbh16l1s59pq58-home-manager-files`.
+Build/bothGLSL/three-aspect alpha0,153,255 premultiplication/overlap/endpoints,
+pre-completion native coverage/current padded bounds passed. RTX4090 isolated
+opening GPU median0.152ms720×500 and1.437ms1440×2560, effectively unchanged from
+prior0.151/1.438ms. Scoped Home Manager collision check passed.
+
+Actual workspace2 recording `live-opening-2db4d717bb` inspected in both directions:
+five-point stars and crescent cutouts clearly distinguish the silhouettes,
+petals/glimmers retain points; opening resolves to clean content and closing
+falls/fades fully. Both tags verified,zero owned windows remain,configerrors empty.
+Combined Library clip `libfile_4ceef731b41081918f49c5f91d578e9c`, file
+`file_00000000a4b881f58818a25ab4dad6da`; local
+`materialize/live-opening-2db4d717bb/workspace-2-anime-stars-moons.mp4` with xattrs.
+Rollback source/links: `pre-anime-motifs.glsl`/`pre-anime-motifs-live.txt`.
+`glass-anim` remains7ca427b; work uncommitted, no full activation/push.
+Local-contact approximation and main-monitor/boot-persistence limits remain.
+
+### Central playful star and layered mahou reveal (supersedes grid)
+
+User superseded the earlier no-central-star/no-growth direction: a large central
+star should grow/bounce, with many smaller pieces layering and filling the void
+from outside inward. Reviewed sampled frames of saved `refinement/reference1080.mp4`;
+strong ink/pearl contrast and clear negative space inform this interpretation.
+The reference was not established to contain this exact window effect.
+
+A sparse12-motif attempt exposed an actual live opening problem on rotated DP-1:
+the UV-driven mask was displaced/cropped instead of centered in the window.
+Pinned upstream Hooks.cpp documents a direct-draw fallback on rotated outputs
+and cropped primary-surface UVs. Anchoring opening geometry using `window_box`
+and swapped framebuffer coordinates corrects the observed displacement; original
+texture sampling is unchanged. This adds an explicit dependency on Blackmoon's
+DP-1 2560×1440 transform1 and logical origin(3440,-560). Other outputs retain
+window-UV geometry. Live main-monitor behavior remains unverified.
+
+Opening is now a separate shape-reveal path: a central five-point star uses a
+spring with about30% radius overshoot, then settles by48%progress.24 smaller
+stars/crescents/pointed petals/elongated glimmers launch in staggered waves,
+arc outward, return toward the perimeter and expand their reveal inward.
+Each has its own fade-in. Coverage uses `1-(1-a)*(1-b)` union, sampling native
+window content once, so overlaps cannot add brightness or exceed native alpha.
+Transient borders establish silhouettes and fade with local layered coverage
+and settlement. There is no generic full-rectangle fade or global texture zoom.
+Geometric coverage is exact by.985 before the endpoint shortcut. Closing uses
+12 sharp motifs in a golden-angle distribution instead of a grid, preserving
+varied deep downward motion and progressive transparency at240ms.
+
+Offscreen three-aspect/native-alpha/premultiplication/coverage/endpoints checks
+passed. A dedicated2560×1440 test verified the DP-1 window-box anchor: center
+revealed and corner clear early, exact native RGBA throughout the window at.985.
+Nix-generated shaders matched the tested substituted sources; GLSL passed.
+Opening GPU medians atprogress.35 were0.059ms720×500/0.528ms1440×2560 on RTX4090,
+excluding compositor overhead. Full-generation build was stopped when unrelated
+package changes expanded its scope; only shader sources and the generated
+home-file tree were subsequently built. No activation or package-profile switch.
+Both live shader leaves use `jk3ifd6fgs6zp0509jsz2f1f3aa3wxm0-home-manager-files`;
+scoped collision checks passed.
+
+Actual workspace2 recording `live-opening-bd0f0190f1` inspected for both effects:
+centered oversized star visibly contracts as small motifs overlap around it;
+shape expansion fills the remaining void, ending at coherent content. Closing
+retains readable falling motifs and full fade. Zero owned browser windows remain,
+configerrors empty. Combined clip `libfile_40d38c1c9afc819189aff190bd75ad4f`
+(file `file_000000008ee881f492d74c599f62984e`); clear opening keyframe
+`libfile_53ad8a8d1a0481919eff52dc39d0d6a2`
+(file `file_000000008d5081f58541ad636caf6b6a`). Local files under
+`materialize/live-opening-bd0f0190f1/` retain Library xattrs.
+`glass-anim` remains7ca427b; experiment uncommitted. No user-window manipulation,
+full activation or push. The monitor mapping is host-specific; boot persistence
+and main-monitor live verification remain outstanding.
+
+
+## Window-local star centering correction (2026-10-19)
+
+The earlier centered-window recording did not prove the origin workaround worked.
+A new baseline recording with an owned 640×460 Chromium at output-local (100,400)
+reproduced the fault: the star was displaced toward the right edge. The shader's
+hard-coded DP-1 resolution/origin branch has now been removed entirely.
+
+The pinned HyprWindowShade package carries `window-coordinates.patch`:
+
+- `v_windowcoord` is interpolated from the actual unit draw quad on the direct
+  path, independently of client/blur texture sampling coordinates.
+- Intermediate stages normalize the preserved source UV crop. Previously the
+  plugin reported (0,0,1,1) even when the visible view occupied a cropped buffer.
+- `output_transform` reports the rendering monitor's actual Wayland transform.
+  Close snapshots convert between panel UVs and window-local visual coordinates,
+  including the inverse conversion when sampling displaced content.
+
+Opening uses window-local geometry and the logical surface size. Closing retains
+its window snapshot subrectangle and downward fade. Spring coefficients, timing,
+satellite births, layering, and styling are unchanged. There are no monitor
+names, dimensions, global origins, or framebuffer positions in the new shader.
+The new varying requires the patched plugin; roll both back together.
+
+Built against the running Hyprland 0.56.2 commit/ABI. Generated GLSL and scoped Lua
+parse checks passed. Offscreen GPU tests compared direct and padded intermediate
+paths at two crop origins; checked all eight output transforms, framebuffer
+scales 0.75/1/1.5/2, native alpha 0/153/255, premultiplication, endpoints, exact
+opening coverage at 0.985, and padded closing bounds. Tests use the installed
+shader bytes. This proves those coordinate cases, not every client implementation.
+
+Only the existing live Lua's plugin path and two shader leaves were replaced,
+through `mbd4brp2x14qk76rpmynzzsgwx2y94xc-home-manager-files`. Config file watching
+loaded the new plugin before explicit load/unload calls ran (old path reported
+not loaded; new path reported already loaded). The plugin handle changed, and
+live rendering successfully consumed the new varying. Config errors are empty;
+the actual three targets pass Home Manager's collision check. No compositor
+restart or system/Home Manager activation occurred.
+
+Two dedicated temporary-profile Chromium windows were recorded on workspace 2,
+DP-1, without focus changes or user-window actions. Metadata verifies:
+
+| Test | Global top-left | Output-local top-left | Size | Output-local center |
+| --- | --- | --- | --- | --- |
+| A | (3540,-160) | (100,400) | 640×460 | (420,630) |
+| B | (4090,940) | (650,1500) | 600×420 | (950,1710) |
+
+Actual opening frames show the star at each window's center, instead of the
+monitor center (720,1280). Closing footage preserves falling motifs and complete
+fade. Evidence annotations mark expected geometry, not a subpixel measurement.
+Both browsers closed only through their identity-verified dedicated CDP sockets;
+remaining owned windows = 0. Capture directories are `materialize/live-centering-
+9162f654d8` and `materialize/live-centering-d68bfc9f1c` in the task workspace.
+
+Library clip: `libfile_2908107d23688191818978d00d2656e3` (file
+`file_00000000086c820ea4b5c98fde4a83cc`); annotated keyframes:
+`libfile_c399c3304724819183880e7aee9a0bb0` (file
+`file_00000000d4e8820c820ef476ed752151`). Local upload identity attributes saved.
+The clip shows both real positions at original speed with yellow window bounds.
+
+Live validation is limited to the authorized rotated DP-1 output; other transforms
+and scales were tested offscreen. The unrotated main output and multi-surface
+client behavior were not separately exercised live. Scoped links can still be
+replaced by the older installed generation at boot. `glass-anim` remains
+`7ca427b1727bf6c35dde95748890751bc6a65b50`; all experimental changes remain
+uncommitted. Rollback link targets are in `materialize/coordinate-before.json`.
+
+## Native focal star and pastel companions — 2026-10-20
+
+The user approved the central star, satellites and window-local centering. This
+pass changes their temporary color/opacity hierarchy while preserving geometry,
+spring, timing, paths and the 240 ms closing fade. The saved Prosekai reference
+inspired the palette; this is not recovered author code.
+
+The initial 0.84-alpha teal/mint focal-star version was superseded by explicit
+user feedback: keep the main star untinted and near full native opacity, and
+color the smaller shapes with multiple coordinated pastels. Main-star interior
+now uses native RGB and a 0.98 native-alpha multiplier (Kitty intrinsic alpha
+is preserved). Companion colors are mint mixed 22% toward pearl, powder blue
+RGB(.72,.84,.95), pink mixed 48% toward pearl, and lavender mixed 42% toward pearl.
+Selection uses mod(n+floor(n/4),4), balancing the opening set and avoiding
+color/shape correlation in closing. Companions retain a 72% pigment blend and
+0.34–0.48 native-alpha multiplier. Ink keylines and narrow pearl rims remain.
+Overlap stays bounded by native alpha without additive over-brightness. Opening
+restores native appearance over progress .58–.97 and is byte-exact by .985;
+closing uses the same hierarchy with untinted focal stars.
+
+Only the two shader leaves were deployed via
+`36r98381wmwlkyynlh63d77qg84ihkfs-home-manager-files`; no full activation or plugin
+reload. Backup: task `materialize/native-star-before-links.json`. Existing scoped
+boot-persistence limitations still apply. `glass-anim` remains
+`7ca427b1727bf6c35dde95748890751bc6a65b50`; changes remain uncommitted.
+
+GPU checks passed direct versus cropped intermediate rendering, all eight closing
+output transforms, framebuffer scales .75/1/1.5/2, native alpha 0/153/255,
+premultiplied bounds, endpoints and padded snapshot clipping. Patterned mixed-alpha
+textures at 317x219, 643x461 and 380x651 restore byte-exact content. Checks rerun on
+October 20 passed. Live Chromium run `live-centering-904eb24ed2` reconfirmed the
+centered star and companions. Updated combined preview uses Chromium
+`live-centering-904eb24ed2` and 60%-background Kitty
+`live-palette-kitty-03d8e9b67f`. All fixtures retained their 640x460 bounds on
+workspace 2 and closed only through verified dedicated CDP or private FIFO;
+zero owned windows remained.
+
+Known limitation: blurred Kitty briefly shows an additional sideways star during
+startup. Diagnostic `live-palette-kitty-noblur-3ebd31c93d`, with `no_blur=true` on
+only the unique owned fixture, removed that extra orientation while retaining the
+upright star and satellites. This implicates the blur pass, but no renderer trace
+was collected. The plugin's direct vertex path exposes `pos` as `v_windowcoord`
+for both client/blur draws; the current shader has no blur-pass discriminator.
+A general rotation or texture-size heuristic risks changing legitimate client
+geometry. No shader workaround or global blur disable was applied. A proper fix
+needs a pass-specific coordinate contract/instrumentation in the plugin, beyond
+this color-only scope. The invalid initial diagnostic `blur={enabled=false}` rule
+was rejected before window creation; corrected `no_blur` fixture completed and
+configerrors subsequently cleared.
+
+Published final artifacts (version 0, local xattrs verified):
+
+- Clip: `libfile_c2db26f05df0819186919b11669a95fa` / `file_00000000de2081fd885a4f8f17e4ec92`.
+- Keyframes: `libfile_5597c27cbfe88191bcec90ae339162a4` / `file_00000000156481f49886b162f633c42e`.
+
+Local task paths: `materialize/prosekai-native-star-pastels-preview.mp4` and
+`materialize/prosekai-native-star-pastels-keyframes.png`. These show actual blurred
+Kitty, not the blur-disabled diagnostic. Previous mint-focal preview IDs
+`libfile_4f56c23b8670819192b9e3c86b7dfbc2` and
+`libfile_45fa0fcd9ac48191a71240a2acac951c` are superseded. No phone settings changed.
+
+## Blur-pass coordinate fix — 2026-10-20
+
+Supersedes the preceding Kitty caveat. Pinned HyprWindowShade Hooks.cpp
+`runIntermediateStages` declines rotated outputs; `hkUseShader` then substitutes
+its shader throughout the original CTexPassElement draw. Hyprland 0.56.2
+OpenGL.cpp `renderTextureWithBlurInternal` pushes monitor-transform-enabled for
+background blur, then pops it before foreground rendering. `renderTextureInternal`
+composes the inverse monitor transform into the former projection. The original
+`v_windowcoord = pos` therefore described different visual axes in the two draws.
+
+Separate `pkgs/hyprwindowshade/blur-pass-coordinates.patch` supplies private vertex
+uniform `plugin_draw_transform` from that per-draw state (zero for intermediate
+passes). Its eight Wayland mappings normalize only `v_windowcoord`; texture UVs,
+projection, fragment shader and native blur settings are unchanged. Package patch
+order is window-coordinates then blur-pass-coordinates. Runtime version marker
+`a4c6b8a-window-blur-coordinates-v2` makes deployment verifiable with hyprctl.
+
+An initial v1 shared `output_transform` declaration failed GLSL ES precision
+linking and was rolled back; v2 uses a private name. ES vertex/fragment linking
+and GPU tests of the actual injected vertex code pass all eight orientations,
+with ordinary foreground output byte-identical. Build, config parser, HM link
+ownership and configerrors pass. Plugin was safely reloaded through the existing
+config watcher without a compositor restart. Current plugin:
+`/nix/store/1lb8ljjmdh43v7ix3p1c6wlw49b5jckz-HyprWindowShade-0-unstable-a4c6b8a/lib/libHyprWindowShade.so`.
+Scoped Lua tree: `a43pcl8656n58s6jhgw0yx4srfaxjsgc-home-manager-files`.
+Rollback record: task `materialize/blur-fix-before.json`; restore only its Lua
+symlink to return to the previous plugin, keeping current shader links.
+
+Live normal-blur Kitty `live-palette-kitty-b4a6ba2950` shows a single aligned
+upright star, native terminal content and normal resting blur. Chromium
+`live-centering-0f0301bf49` also retains the intended opening and closing. Both
+owned 640x460 fixtures on workspace 2 closed through identity-verified paths;
+zero owned windows remained. Live validation is limited to rotated DP-1;
+other transforms are GPU-tested, not live-tested.
+
+Preview: `libfile_29a8ed57f6a08191998979abe9cb3884` /
+`file_00000000d12481f5b71f8319b6c14d46`; keyframes:
+`libfile_c035d6d9ccb4819191804c5b92b110c6` /
+`file_00000000d6f481f5b96414be5b7d611a`. Local task
+`materialize/prosekai-blur-aligned-{preview.mp4,keyframes.png}`, version0 xattrs saved.
+No phone settings, normal blur policy, compositor restart or full activation changed.
+
+## Rounded pearl edges and kira glints — 2026-10-20
+
+At the user's request, both directions now have modest tip rounding and thicker
+pastel/pearl borders while retaining recognizable stars, open crescents, tapered
+petals and concave glimmers. This supersedes the thinner-edge appearance only.
+Main-star interior stays untinted at 0.98 native-alpha; companion palette and
+0.34–0.48 native-alpha multipliers remain. Motion, spring, centering, timings and
+closing fade are unchanged. The blur-pass plugin fix above remains active.
+
+Opening uses an inset silhouette plus circular dilation: main radius at most
+3 px (capped at 6% of animated radius), small motifs at most 2.2 px (7% cap).
+Closing uses at most 2.8 px (6% cap). Border weight now extends to 4.8 px with a
+2.2 px core; the pearl inset is centered 3.1 px inside the edge. Outline mixes
+66% pastel into ink at 90% blend; pearl rim uses 96% blend. Opening contact
+coverage attenuates internal outlines and rims as pieces overlap, followed by
+existing edge-life fade. Exact native content is restored by progress .985.
+No grid or lasting tint is added.
+
+Opening adds one brief main-star four-point glint and sparse satellite glints
+(one in four), 6–10 px rays. The satellite pulse starts at birth+.20 and ends
+by birth+.33 normalized progress. Closing retains sparse attached pearl glints,
+with 6–12 px rays instead of 4–11. Glints mix premultiplied color within existing
+coverage; they do not add opacity or a full-window glow.
+
+Only two shader leaves deployed through
+`9hibp15vs3px2sxk3kfhn22icmh1wxbd-home-manager-files`; rollback links are task
+`materialize/kira-edges-before-links.json`. Build, ES vertex+fragment linkage,
+GPU direct/cropped equivalence, 8 output transforms, scales .75/1/1.5/2,
+alpha 0/153/255, premultiplication, endpoints, padded bounds, patterned exact
+restoration and corrected blur-coordinate tests passed. HM ownership checks and
+configerrors passed. `glass-anim` remains 7ca427b1727bf6c35dde95748890751bc6a65b50.
+
+Final real workspace-2 captures: Chromium `live-centering-df1639245b` and
+normal-blur 60%-background Kitty `live-palette-kitty-2ad1b84224`. Both retain
+640x460 bounds and have zero owned windows remaining after identity-verified
+closure. Original-speed clip trims each recording independently to align the
+opening/closing; Chromium's slower launch required different capture offsets.
+Live Kitty has no sideways duplicate star. Other output transforms are tested
+on GPU only. No full activation, compositor restart or phone changes.
+
+Final Library clip: `libfile_dc671aa8d03c81919abfcaab9940aee0` /
+`file_00000000ebbc81f5a4672e20e81c1c1e`. Keyframes:
+`libfile_85f1c0f862348191913eed83e709d397` /
+`file_00000000c31c81fd9d7181da39290928`. Local task
+`materialize/prosekai-kira-edges-{preview.mp4,keyframes.png}`; version0 xattrs
+verified. These supersede the blur-aligned thinner-edge preview for current style.
+
+## Substantially thicker sticker borders — 2026-10-20
+
+User explicitly requested borders “much much thicker still.” Both directions now
+use an 11 px solid outline core and an 18 px outer fade extent, replacing
+2.2/4.8 px. Pearl inset center moves from3.1 to10 px; its half-width profile
+moves from.65–1.35 to3.2–4.8 px. Thus the pearl band itself spans approximately
+6.4–9.6 px instead of1.3–2.7 px. Existing palette, outline blends, shape/tip
+rounding, glints, motion, centering and fade logic are unchanged. Main interior
+stays untinted at.98 native alpha; smaller interiors retain native-alpha policy.
+
+Measured rendered band at framebuffer scale1: before4.25 px, after16.75 px
+(~3.94x). This is a GPU raster measurement along a straight main-star edge normal
+at progress.1 on a640x460 constant-content fixture, using >2/255 RGB deviation
+from native interior, quarter-pixel sample steps over actual raster pixels.
+It is not a claim that every motif/angle has identical raster width. Evidence:
+task materialize/chunky-width-measurement.json and measure-chunky-borders.py.
+The 1280-wide side-by-side keyframes retain each640px-wide app crop at1:1 scale.
+
+Build/ES vertex-fragment link, direct/cropped equivalence, all8transforms,
+scales.75/1/1.5/2, nativealpha0/153/255, premultiplication/endpoints/paddedbounds,
+patterned exactrestoration and blur-alignment tests passed. Both shader leaves
+installed through bj5ans4q6wjrfbqq29kh1k72waxn7k33-home-manager-files;
+rollback task materialize/chunky-before-links.json. Existing plugin v2 unchanged.
+Live owned Chromium live-centering-288773cd46 and normal-blur Kitty
+live-palette-kitty-a0cc382417 showed chunky borders, recognizable motifs, clean
+rest/fade and no sideways blur duplicate; zeroownedwindows after verifiedclosure.
+No compositor restart/fullactivation/commit/push or phone changes.
+
+Final Library clip libfile_5fe1c9914ca481919af4a1b2f1449b6c /
+file_0000000083bc81f98d290f21340d8f3f; keyframes
+libfile_4ffde120a918819188f3701bb6af9a19 /
+file_00000000fadc81fd9720e11a4fc06529. Local task
+materialize/prosekai-chunky-borders-{preview.mp4,keyframes.png}; version0 xattrs
+verified. Supersedes thinner kira-edge preview for current style.

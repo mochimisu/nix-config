@@ -9,17 +9,17 @@ let
   sources = {
     x86_64-linux = {
       arch = "amd64";
-      hash = "sha256-J2tTQcPXSyYdOtUhBvf6ft3gaEHkdn/ipAy1QJmx8+0=";
+      hash = "sha256-9cm/Lwo9UME5F69hGFp5H1IOWDmQn+qCLYhr41sSGyY=";
     };
     aarch64-linux = {
       arch = "arm64";
-      hash = "sha256-Vfrh4/sdYGmpBiDp5wc33Pi/IlVgTRV+KCzGdIobr0k=";
+      hash = "sha256-hdWyJEOpXfQcPW0UmnMuomDprMrb3v5GutkmRRMG6Jw=";
     };
   };
   source = sources.${stdenv.hostPlatform.system};
 in stdenv.mkDerivation rec {
   pname = "chatgpt";
-  version = "26.1007.21434";
+  version = "26.1023.50603";
 
   src = fetchurl {
     url = "https://persistent.oaistatic.com/codex-app-prod/linux/deb/pool/main/c/chatgpt/chatgpt_${version}_${source.arch}.deb";
@@ -55,9 +55,11 @@ in stdenv.mkDerivation rec {
     mkdir -p "$out/lib" "$out/bin" "$out/share"
     # Nix-store assets are read-only. Normalize only fresh runtime copies and
     # the data files the app customizes, preserving executable permissions.
+    python ${./test-launcher.py} ${./launcher.py}
     node ${./test-bundled-copy.cjs} ${./prepare-bundled-copy.cjs}
     python ${./patch-bundled-copy.py} \
-      usr/lib/chatgpt/resources/app.asar ${./prepare-bundled-copy.cjs}
+      usr/lib/chatgpt/resources/app.asar ${./prepare-bundled-copy.cjs} \
+      ${./window-controls.py} ${./test-window-controls.cjs}
     cp -a usr/lib/chatgpt "$out/lib/"
     cp -a usr/share/applications usr/share/pixmaps usr/share/metainfo "$out/share/"
 
@@ -72,9 +74,11 @@ in stdenv.mkDerivation rec {
   preFixup = ''
     # sharp keeps libvips in a sibling npm package outside normal library paths.
     addAutoPatchelfSearchPath "$out/lib/chatgpt"
-    makeWrapper "$out/lib/chatgpt/ChatGPT" "$out/bin/chatgpt" \
+    makeWrapper "$out/lib/chatgpt/ChatGPT" "$out/lib/chatgpt/chatgpt-wrapped" \
       "''${gappsWrapperArgs[@]}" \
       --suffix PATH : ${lib.makeBinPath [ xdg-utils bubblewrap ]}
+    makeWrapper ${python3}/bin/python3 "$out/bin/chatgpt" \
+      --add-flags "${./launcher.py} $out/lib/chatgpt/chatgpt-wrapped"
   '';
 
   meta = {

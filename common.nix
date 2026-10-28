@@ -41,8 +41,8 @@ in {
     package = pkgs.nixVersions.stable;
     extraOptions = "experimental-features = nix-command flakes";
     settings = {
-      cores = 4;
-      max-jobs = 4;
+      cores = lib.mkDefault 4;
+      max-jobs = lib.mkDefault 4;
       extra-substituters = [
         "http://gaia:5000"
       ];

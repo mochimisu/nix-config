@@ -13,7 +13,7 @@ old lock timestamps alone are not reasons to remove a dependency. Prefer targete
 | Bambu Lab `2.2.26` | Custom HA component absent from locked nixpkgs | Review upstream release and dependency changes; migrate when nixpkgs provides it | 2026-10-14: retained |
 | BlackVue Sync `2.2.0` | Fixed upstream source with firmware API support | Review release, update hash, verify both camera workers | 2026-10-14: retained |
 | File Dispatch | `flake.lock` owns reviewed revision `ad0637c…`; URL no longer repeats it | Targeted input update after upstream review | 2026-10-14: source unchanged |
-| ChatGPT | Local version/hashes and guarded ASAR patch in `pkgs/chatgpt/` | Run updater, review patch anchors and build; retain guarded customization | 2026-10-14: unchanged |
+| ChatGPT | Local version/hashes and guarded ASAR patch in `pkgs/chatgpt/` | Run updater, review patch anchors and build; retain guarded customization | 2026-10-27: 26.1023.50603 anchors and window-control test symbols reviewed; x64 build passed |
 | NVIDIA stable on Blackmoon | Kernel compatibility override, not an exact-version freeze | Verify another driver builds against the selected kernel and test graphics | 2026-10-14: retained |
 | wvkbd / Qt virtual keyboard | Local layout, sizing and touch behavior | Remove only after equivalent behavior and device tests | 2026-10-14: retained |
 | Codex zlib wrapper / X11 Rofi | Runtime library and host-specific behavior | Demonstrate upstream runtime fixes before removing | 2026-10-14: retained |

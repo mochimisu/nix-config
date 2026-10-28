@@ -2,6 +2,7 @@
   lib,
   pkgs,
   config,
+  osConfig ? {},
   ...
 }: let
   variables = config.variables or {};
@@ -81,6 +82,10 @@ in {
           then "${import ../../../theme/media-osd {inherit pkgs;}}/bin/sekai-media-osd" else "";
         mediaFeedbackEnabled = if config.variables.desktopStyle.mediaFeedback.enable then "true" else "false";
         blockedAudioDescriptionsJson = builtins.toJSON quickshellSidebar.blockedAudioDescriptions;
+        kirakiraMenusEnabled = if (osConfig.networking.hostName or "") == "blackmoon" then "true" else "false";
+        menuPaletteJson = builtins.toJSON ((lib.importJSON ../../../theme/app-palette.json) // {
+          background = "#c2181d21";
+        });
         themePaletteJson = builtins.toJSON (if config.variables.desktopStyle.shell.enable
           then (import ../../../theme/palettes.nix {inherit lib;}).shell else {});
         sessionControlsEnabled = if nestedDesktop then "false" else "true";

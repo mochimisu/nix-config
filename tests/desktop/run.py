@@ -25,7 +25,8 @@ def sidebar(source, repo, fixtures, height, themed, output):
     palette = json.loads((repo/'home/theme/sekai-palette.json').read_text())
     palette.update(railForeground=app['text'], railMuted=app['muted'])
     values = dict(sessionControlsEnabled='true', sidebarScreensJson='["0"]',
-                  hostName='blackmoon' if themed else 'oasis', mediaFeedbackEnabled=str(themed).lower(),
+                  hostName='blackmoon' if themed else 'oasis', kirakiraMenusEnabled=str(themed).lower(),
+                  menuPaletteJson=json.dumps(dict(app, background='#c2181d21')), mediaFeedbackEnabled=str(themed).lower(),
                   blockedAudioDescriptionsJson='[]', pttStateFile='', iconSize='16', fontSize='13px',
                   workspaceHeight='18', workspaceSpacing='2', themePaletteJson=json.dumps(palette if themed else {}))
     for key in re.findall(r'@(\w+)@', s):
@@ -61,6 +62,19 @@ def sidebar(source, repo, fixtures, height, themed, output):
     s = re.sub(r'^            WlrLayershell\..*\n','',s,flags=re.M)
     s = s.replace('running: true\n        command:', 'running: false\n        command:')
     checks = (fixtures/'sidebar-checks.qml.inc').read_text()
+    if 'readonly property bool kirakiraMenus:' in s:
+        # Private X11/offscreen tests have no Hyprland focus-grab protocol.
+        if '            HyprlandFocusGrab {' in s:
+            start = s.index('            HyprlandFocusGrab {')
+            s = s[:start] + s[block_end(s, start):]
+        # Shape-match the real opener; no app's D-Bus actions enter this fixture.
+        s = s.replace('delegate: QsMenuOpener { required property var modelData; menu: modelData }',
+                      'delegate: QtObject { required property var modelData; property var children: ({values: modelData.children}) }')
+        for card, key in [('audioCard','audioKeys'), ('controlCard','controlKeys'), ('trayCard','trayKeys')]:
+            s = s.replace('id: '+card, 'id: '+card+'\n TestCase { id: '+key+'; when: false }')
+        checks = checks.replace('                function runChecks()',
+                                (fixtures/'sidebar-menus.qml.inc').read_text()+'                function runChecks()')
+
     fixture = '''
             Timer {
                 interval: 300; running: true
@@ -70,7 +84,7 @@ def sidebar(source, repo, fixtures, height, themed, output):
                     root.windowState = {[name]: {title:"Desktop regression fixture"}};
                     root.clockState = {hour:"03",minute:"45",ampm:"pm",date:"10/14"};
                     root.networkState = {eth:"fixture"}; root.cavaBars="▂▄▆▃▅";
-                    controlCenterPopup.visible=true; audioPopup.visible=true;
+                    audioPopup.visible=false; controlCenterPopup.visible=true;
                     checkTimer.start();
                 }
             }
@@ -85,6 +99,8 @@ def sidebar(source, repo, fixtures, height, themed, output):
                 }
             }
 '''.replace('@output@', str(output))
+    if 'readonly property bool kirakiraMenus:' in s:
+        fixture = fixture.replace('tests.runChecks();', 'tests.runChecks(); tests.runMenuChecks();')
     return s.replace('            id: panel','            id: panel\n'+checks+fixture,1)
 
 

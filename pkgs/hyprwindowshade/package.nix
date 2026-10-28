@@ -9,6 +9,7 @@ hyprlandPlugins.mkHyprlandPlugin {
     rev = "a4c6b8af424a189072427c4c90ef2938e1b481d3";
     sha256 = "1p0c79bh7gfs9xlnv5smx8xmrgq0d5gipprwkickzsn7b40kfnw4";
   };
+  patches = [./window-coordinates.patch ./blur-pass-coordinates.patch];
   buildInputs = [libglvnd];
   dontUseCmakeConfigure = true;
   installPhase = ''

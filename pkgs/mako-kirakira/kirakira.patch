@@ -1,0 +1,303 @@
+--- /dev/null
++++ b/include/kirakira.h
+@@ -0,0 +1,15 @@
++#ifndef MAKO_KIRAKIRA_H
++#define MAKO_KIRAKIRA_H
++#include <cairo/cairo.h>
++#include <stdbool.h>
++#include <stdint.h>
++#define KIRA_SLOTS 8
++struct kira_card {
++    uint32_t id;
++    bool seen;
++    double born, leaving;
++    int width, bottom, scale;
++    struct { int x,y,width,height; } box;
++    cairo_pattern_t *image;
++};
++#endif
+--- /dev/null
++++ b/kirakira.c.inc
+@@ -0,0 +1,90 @@
++// Rendering-only effects: no notification objects, actions or timers are retained.
++// At most eight clipped snapshots and twenty-eight deterministic stars per card.
++static double kira_now(void) {
++    struct timespec ts;
++    clock_gettime(CLOCK_MONOTONIC, &ts);
++    return ts.tv_sec * 1000.0 + ts.tv_nsec / 1000000.0;
++}
++static void kira_clear(struct kira_card *card) {
++    if (card->image) cairo_pattern_destroy(card->image);
++    *card = (struct kira_card){0};
++}
++static void kira_tick(void *data) {
++    struct mako_surface *surface = data;
++    surface->kira_timer = NULL;
++    set_dirty(surface);
++}
++static void kira_schedule(struct mako_surface *surface) {
++    if (!surface->kira_timer)
++        surface->kira_timer = add_event_loop_timer(&surface->state->event_loop, 20, kira_tick, surface);
++}
++// Stable per-notification variation: no random allocation or ongoing simulation.
++static double kira_random(uint32_t seed) {
++    seed ^= seed >> 16; seed *= 0x7feb352dU;
++    seed ^= seed >> 15; seed *= 0x846ca68bU; seed ^= seed >> 16;
++    return (seed & 0xffffU) / 65535.0;
++}
++static void kira_star(cairo_t *cr, double r, bool glint) {
++    cairo_move_to(cr,-r,0);
++    cairo_line_to(cr,-r*.19,-r*.19);
++    cairo_line_to(cr,0,-r*(glint ? 1.45 : 1));
++    cairo_line_to(cr,r*.19,-r*.19); cairo_line_to(cr,r,0);
++    cairo_line_to(cr,r*.19,r*.19);
++    cairo_line_to(cr,0,r*(glint ? 1.45 : 1));
++    cairo_line_to(cr,-r*.19,r*.19); cairo_close_path(cr); cairo_fill(cr);
++}
++static void kira_stars(cairo_t *cr, const struct kira_card *card, double age, bool closing) {
++    if (age >= (closing ? 560 : 780) || age < 0) return;
++    cairo_save(cr); cairo_scale(cr, card->scale, card->scale);
++    // Effects stay in a bounded side corridor. Gutters and margins in render.c
++    // keep the longer paths inside the surface and out of adjacent card text.
++    for (int i=0; i<28; ++i) {
++        uint32_t seed=card->id*7919U+(uint32_t)i*101U+(closing ? 97U : 0U);
++        double a=kira_random(seed), b=kira_random(seed+1), c=kira_random(seed+2);
++        double delay=(i%7==0 ? 90 : 0)+kira_random(seed+3)*(closing ? 65 : 130);
++        double life=(closing ? 240 : 340)+kira_random(seed+4)*(closing ? 160 : 220);
++        double t=(age-delay)/life;
++        if (t<0 || t>1) continue;
++        double side=a>.42 ? 1 : -1;
++        double travel=14+28*b;
++        double ease=1-pow(1-t,2.1+1.8*c);
++        double x=card->box.x+(side>0 ? card->box.width : 0)+side*(2+travel*ease);
++        double safe_height=fmax(0,card->box.height-40);
++        double y=card->box.y+card->box.height/2+(a-.5)*safe_height;
++        y+=(kira_random(seed+5)-.5)*10*t+(kira_random(seed+6)-.5)*10*sin(M_PI*t);
++        bool glint=i%7==0;
++        if (glint) {
++            double vertical=i%14 ? 1 : -1;
++            y=card->box.y+(vertical>0 ? card->box.height-5 : 5);
++            y+=vertical*10*ease+(kira_random(seed+6)-.5)*4*sin(M_PI*t);
++        }
++        double r=(glint ? 5.5 : 2.4+5.8*c)*(0.65+0.35*sin(M_PI*t));
++        double alpha=fmin(1,t*9)*pow(1-t,.8)*(glint ? 1 : .95);
++        double red=i%3==0 ? 1 : i%2 ? .72 : .39;
++        double green=i%3==0 ? .94 : i%2 ? .68 : .78;
++        double blue=i%3==0 ? .78 : i%2 ? .87 : .75;
++        cairo_save(cr); cairo_translate(cr,x,y);
++        cairo_rotate(cr,(kira_random(seed+7)-.5)*1.8+(kira_random(seed+8)-.5)*3*t);
++        cairo_pattern_t *glow=cairo_pattern_create_radial(0,0,0,0,0,r*1.8);
++        cairo_pattern_add_color_stop_rgba(glow,0,red,green,blue,alpha*.38);
++        cairo_pattern_add_color_stop_rgba(glow,1,red,green,blue,0);
++        cairo_set_source(cr,glow); cairo_arc(cr,0,0,r*1.8,0,2*M_PI); cairo_fill(cr);
++        cairo_pattern_destroy(glow);
++        cairo_set_source_rgba(cr,red,green,blue,alpha); kira_star(cr,r,glint);
++        if (glint) { // A delayed white inner flash, not another persistent particle.
++            cairo_rotate(cr,.4); cairo_set_source_rgba(cr,1,1,1,alpha*.9);
++            kira_star(cr,r*.45,true);
++        }
++        cairo_restore(cr);
++    }
++    cairo_restore(cr);
++}
++static struct kira_card *kira_slot(struct mako_surface *surface, uint32_t id) {
++    struct kira_card *empty = NULL;
++    for (int i=0; i<KIRA_SLOTS; ++i) {
++        struct kira_card *c=&surface->kira[i];
++        if (c->id == id) return c;
++        if (!c->id) empty=c;
++    }
++    return empty; // Excess notifications render normally; memory never grows.
++}
+--- a/include/mako.h
++++ b/include/mako.h
+@@ -13,6 +13,7 @@
+ #endif
+ 
+ #include "config.h"
++#include "kirakira.h"
+ #include "event-loop.h"
+ #include "pool-buffer.h"
+ #include "cursor-shape-v1-client-protocol.h"
+@@ -22,6 +23,9 @@
+ struct mako_state;
+ 
+ struct mako_surface {
++	struct kira_card kira[KIRA_SLOTS];
++	struct mako_timer *kira_timer;
++	uint64_t kira_modes_hash;
+ 	struct wl_list link;
+ 
+ 	struct mako_state *state;
+--- a/surface.c
++++ b/surface.c
+@@ -5,6 +5,10 @@
+ #include "surface.h"
+ 
+ void destroy_surface(struct mako_surface *surface) {
++	destroy_timer(surface->kira_timer);
++	for (int i=0; i<KIRA_SLOTS; ++i) {
++		if (surface->kira[i].image) cairo_pattern_destroy(surface->kira[i].image);
++	}
+ 	if (surface->layer_surface != NULL) {
+ 		zwlr_layer_surface_v1_destroy(surface->layer_surface);
+ 	}
+--- a/render.c
++++ b/render.c
+@@ -1,4 +1,6 @@
+ #include <stdlib.h>
++#include <time.h>
++#include <math.h>
+ #include <cairo/cairo.h>
+ #include <pango/pangocairo.h>
+ 
+@@ -12,6 +14,8 @@
+ #include "icon.h"
+ 
+ #define M_PI 3.14159265358979323846
++
++#include "kirakira.c.inc"
+ 
+ // HiDPI conventions: local variables are in surface-local coordinates, unless
+ // they have a "buffer_" prefix, in which case they are in buffer-local
+@@ -344,9 +348,21 @@
+ 
+ 	*rendered_width = *rendered_height = 0;
+ 
+-	if (wl_list_empty(&state->notifications)) {
+-		return;
+-	}
++    double now = kira_now();
++    // Mode transitions cancel even already-closed snapshots, so enabling DND
++    // cannot leave an ornamental echo of a notification on screen.
++    uint64_t modes_hash=1469598103934665603ULL;
++    char **mode;
++    wl_array_for_each(mode, &state->current_modes) {
++        for (const unsigned char *p=(const unsigned char *)*mode; *p; ++p)
++            modes_hash=(modes_hash ^ *p)*1099511628211ULL;
++        modes_hash=(modes_hash ^ 0xffU)*1099511628211ULL;
++    }
++    if (surface->kira_modes_hash != modes_hash) {
++        for (int i=0; i<KIRA_SLOTS; ++i) kira_clear(&surface->kira[i]);
++        surface->kira_modes_hash=modes_hash;
++    }
++    for (int i=0; i<KIRA_SLOTS; ++i) surface->kira[i].seen=false;
+ 
+ 	// Clear
+ 	cairo_save(cairo);
+@@ -387,7 +403,13 @@
+ 
+ 		// Note that by this point, everything in the style is guaranteed to
+ 		// be specified, so we don't need to check.
+-		struct mako_style *style = &notif->style;
++        struct mako_style render_style = notif->style;
++        // Reserve decorative corridors without changing stored style or input.
++        if (render_style.margin.left < 64) render_style.margin.left=64;
++        if (render_style.margin.right < 64) render_style.margin.right=64;
++        if (render_style.margin.top < 24) render_style.margin.top=24;
++        if (render_style.margin.bottom < 24) render_style.margin.bottom=24;
++        struct mako_style *style = &render_style;
+ 
+ 		if (style->max_visible >= 0 &&
+ 				visible_count >= (size_t)style->max_visible) {
+@@ -416,9 +438,40 @@
+ 		}
+ 
+ 		struct mako_icon *icon = (style->icons) ? notif->icon : NULL;
+-		int notif_height = render_notification(
+-			cairo, state, surface, style, text, icon, total_height, scale,
+-			&notif->hotspot, notif->progress);
++        struct kira_card *card = surface->configured ? kira_slot(surface, notif->id) : NULL;
++        if (card) {
++            cairo_save(cairo);
++            cairo_rectangle(cairo, 0, total_height*scale, surface->width*scale, (style->height+64)*scale);
++            cairo_clip(cairo);
++            cairo_push_group(cairo);
++        }
++        int notif_height = render_notification(
++            cairo, state, surface, style, text, icon, total_height, scale,
++            &notif->hotspot, notif->progress);
++        if (card) {
++            cairo_pattern_t *image = cairo_pop_group(cairo);
++            cairo_restore(cairo);
++            if (card->id != notif->id || card->scale != scale) {
++                kira_clear(card);
++                card->id=notif->id; card->born=now;
++            }
++            card->seen=true; card->leaving=0; card->scale=scale;
++            card->width=surface->width; card->bottom=total_height+notif_height+24;
++            card->box.x=notif->hotspot.x; card->box.y=notif->hotspot.y;
++            card->box.width=notif->hotspot.width; card->box.height=notif->hotspot.height;
++            if (card->image) cairo_pattern_destroy(card->image);
++            card->image=image;
++            double t=(now-card->born)/280.0;
++            if (t>1) t=1;
++            double remainder=(1-t)*(1-t)*(1-t);
++            double dx=12*remainder;
++            cairo_save(cairo); cairo_translate(cairo,dx*scale,0);
++            cairo_set_source(cairo,image); cairo_paint_with_alpha(cairo,1-remainder);
++            cairo_restore(cairo);
++            notif->hotspot.x += (int)dx;
++            kira_stars(cairo,card,now-card->born,false);
++            if (now-card->born<780) kira_schedule(surface);
++        }
+ 		free(text);
+ 
+ 		int notif_width =
+@@ -479,6 +532,43 @@
+ 		destroy_notification(hidden_notif);
+ 	}
+ 
+-	*rendered_width = max_width;
+-	*rendered_height = total_height;
+-}
++    // Exclude live card rectangles from exit paint, including through translucent fills.
++    int ghost_width=0, ghost_height=0;
++    cairo_save(cairo);
++    cairo_rectangle(cairo,0,0,surface->width*scale,surface->height*scale);
++    struct mako_notification *live;
++    wl_list_for_each(live, &state->notifications, link) {
++        if (live->surface == surface && !live->style.invisible && live->hotspot.width>0)
++            cairo_rectangle(cairo,(live->hotspot.x-1)*scale,(live->hotspot.y-1)*scale,
++                (live->hotspot.width+2)*scale,(live->hotspot.height+2)*scale);
++    }
++    cairo_set_fill_rule(cairo,CAIRO_FILL_RULE_EVEN_ODD); cairo_clip(cairo);
++    for (int i=0; i<KIRA_SLOTS; ++i) {
++        struct kira_card *card=&surface->kira[i];
++        if (!card->id || get_notification(state,card->id)) continue;
++        if (card->scale != scale) { kira_clear(card); continue; }
++        if (!card->leaving) card->leaving=now;
++        double age=now-card->leaving;
++        if (age>=560) { kira_clear(card); continue; }
++        double t=fmin(1,age/180.0);
++        cairo_save(cairo); cairo_translate(cairo,-8*t*scale,0);
++        cairo_set_source(cairo,card->image); cairo_paint_with_alpha(cairo,(1-t)*(1-t));
++        cairo_restore(cairo);
++        kira_stars(cairo,card,age,true);
++        if (card->width>ghost_width) ghost_width=card->width;
++        if (card->bottom>ghost_height) ghost_height=card->bottom;
++        kira_schedule(surface);
++    }
++    cairo_restore(cairo);
++
++    // Suppressed/live-but-hidden cards vanish immediately, including DND.
++    for (int i=0; i<KIRA_SLOTS; ++i) {
++        struct kira_card *card=&surface->kira[i];
++        if (card->id && !card->seen && get_notification(state,card->id)) kira_clear(card);
++    }
++    if (total_height>0) total_height+=24;
++    if (ghost_width>max_width) max_width=ghost_width;
++    if (ghost_height>total_height) total_height=ghost_height;
++    *rendered_width = max_width;
++    *rendered_height = total_height;
++}
+--- a/meson.build
++++ b/meson.build
+@@ -83,6 +83,7 @@
+ 	'mako',
+ 	files(src_files) + protocols_src,
+ 	dependencies: [
++		cc.find_library('m'),
+ 		cairo,
+ 		epoll,
+ 		gdk_pixbuf,
