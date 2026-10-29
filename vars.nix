@@ -12,6 +12,12 @@ in {
     isGui = bool true "Enable graphical Home Manager settings.";
     nestedDesktop = bool false "Run desktop settings inside an existing host session.";
     desktopStyle = {
+      kirakira = {
+        enable = bool false "Default kirakira embellishments for compatible GUI homes.";
+        menus.enable = bool false "Use kirakira sidebar and tray menus.";
+        volume.enable = bool false "Use the bounded volume sparkle overlay.";
+        notifications.enable = bool false "Use animated Mako notification stars.";
+      };
       apps = {
         enable = bool false "Use the shared charcoal style for managed applications.";
         desktopIntegration.enable = bool false "Manage GTK/Qt desktop integration; disabled on externally owned desktops.";

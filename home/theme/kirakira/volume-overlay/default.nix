@@ -5,9 +5,9 @@
     ["${pkgs.mako}/bin/makoctl" "${config.wayland.windowManager.hyprland.package}/bin/hyprctl" "${pkgs.quickshell}/bin/qs" configDir]
     (builtins.readFile ./notify.py));
 in {
-  config = lib.mkIf config.variables.desktopStyle.mediaFeedback.enable {
+  config = lib.mkIf config.variables.desktopStyle.kirakira.volume.enable {
     xdg.configFile."quickshell/volume-overlay/shell.qml".source = pkgs.replaceVars ./shell.qml {
-      paletteJson = builtins.readFile ../../../../home/theme/app-palette.json;
+      paletteJson = builtins.readFile ../../app-palette.json;
     };
     xdg.configFile."quickshell/volume-overlay/notify.py".source = hook;
     # Keep the existing media client and its synchronous replacement semantics.
@@ -18,7 +18,7 @@ in {
     };
     systemd.user.services.sekai-volume-overlay = {
       Unit = {
-        Description = "Blackmoon volume sparkle overlay";
+        Description = "Kirakira volume sparkle overlay";
         After = ["graphical-session-pre.target"];
         PartOf = ["graphical-session.target"];
       };

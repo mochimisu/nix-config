@@ -5,7 +5,7 @@
   nativeHyprland = linuxGui && config.wayland.windowManager.hyprland.enable && !externalDesktop;
   anyStyle = style.apps.enable || style.notifications.enable || style.shell.enable || style.launcher.enable || style.mediaFeedback.enable;
 in {
-  imports = [./apps.nix ./notifications.nix ./shell.nix ./media-feedback.nix ../apps/quickshell/phone-launcher];
+  imports = [./kirakira ./apps.nix ./notifications.nix ./shell.nix ./media-feedback.nix ../apps/quickshell/phone-launcher];
   # Capability defaults do not install a compositor, greeter, or notification owner.
   variables.desktopStyle = {
     apps.enable = lib.mkDefault linuxGui;

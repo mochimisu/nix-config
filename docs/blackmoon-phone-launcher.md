@@ -156,3 +156,35 @@ Resting-pose correction: user clarified that the animation looks fine but the
 final tilt is too aggressive. Resting yaw/pitch/roll is now −24°/18°/−3°
 (previously −30°/30°/−4°). Relative wrist excursion, shake, easing and 300/100 ms
 timing stay unchanged. Projection-derived anchoring uses the corrected pose.
+
+
+## Early typing capture — October 28, 2026
+
+The IPC open handler now maps its existing exclusive-keyboard layer immediately,
+before the asynchronous pointer/wallpaper query. A transparent local TextInput
+retains early typing and edits; successful context resolution transfers that
+text into the phone search before its existing animation. Only the transparent
+capture surface initially uses the previous output; the visible phone still
+uses the freshly resolved pointer output. No global keyboard listener is added.
+The buffer is cleared on handoff, cancellation, query failure and each new open.
+Superseded context replies cannot restore canceled text. Held Super letters are
+accepted during capture/entrance; invocation Space is excluded in that case.
+
+`tests/desktop/launcher-input.py --quickshell-wrapper /path/to/sekai-quickshell`
+runs the actual shell/controller and presentation offscreen with a delayed
+synthetic context helper and disconnected system services. It covers rapid
+text/editing, handoff, held Super and Super+Alt, Escape, cancellation, repeated
+open/close and stale replies. Pointer geometry and search ranking tests also
+pass. The test substitutes a FloatingWindow for the layer surface, so actual
+compositor keyboard-grant timing and physical shortcut delivery remain outside
+its coverage. No live typing was injected. Capture begins when the persistent
+launcher handles IPC and Wayland grants its mapped surface focus, not before
+shortcut dispatch or while the launcher service is unavailable.
+
+Scoped deployment verified: launcher service PID 1365400 loaded all three changed
+QML files from `/nix/store/70hwvyjlk0yrh0xr06yrs7avswzkszjn-home-manager-files`
+and remained hidden. The files are rooted under
+`~/.local/state/sekai-launcher/home-files`; existing Home Manager declarations
+continue to own their durable source. The service's `KillMode=process` preserved
+its launched applications. Sidebar PID 930844 and Mako PID 126765 were unchanged.
+No full Nix rebuild or compositor restart was performed.

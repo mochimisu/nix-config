@@ -30,6 +30,11 @@ FocusScope {
         grid.contentY = 0;
         homeInput.forceActiveFocus();
     }
+    function beginSearch(text) {
+        search.text = text;
+        search.cursorPosition = search.text.length;
+        search.forceActiveFocus();
+    }
     function moveSelection(delta) {
         if (!interactive || !searching || !results.length) return;
         grid.currentIndex = Math.max(0, Math.min(results.length - 1, grid.currentIndex + delta));
@@ -127,7 +132,8 @@ FocusScope {
         Keys.onPressed: event => {
             if (event.key === Qt.Key_Escape) { phone.dismissed(); event.accepted = true; return; }
             if (event.text.length && !/[\x00-\x1f\x7f]/.test(event.text)
-                    && !(event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier))) {
+                    && !(event.modifiers & (Qt.ControlModifier | Qt.AltModifier))
+                    && (!(event.modifiers & Qt.MetaModifier) || (!phone.interactive && event.key !== Qt.Key_Space))) {
                 search.text = event.text;
                 search.forceActiveFocus();
                 event.accepted = true;
@@ -217,6 +223,14 @@ FocusScope {
                     anchors.fill: parent; anchors.margins: 4
                     radius: 14; color: "transparent"
                     border.width: 1; border.color: search.activeFocus ? "#86c8c4" : "#c8ded9"
+                }
+            }
+            Keys.onPressed: event => {
+                if (!phone.interactive && (event.modifiers & Qt.MetaModifier)
+                        && !(event.modifiers & Qt.ControlModifier) && event.text.length
+                        && !/[\x00-\x1f\x7f]/.test(event.text)) {
+                    if (event.key !== Qt.Key_Space) insert(cursorPosition, event.text);
+                    event.accepted = true;
                 }
             }
             Keys.onDownPressed: phone.moveSelection(grid.columns)

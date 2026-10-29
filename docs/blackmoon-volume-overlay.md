@@ -1,6 +1,6 @@
 # Blackmoon volume overlay — 2026-10-26
 
-Implemented in `machines/blackmoon/home/volume-overlay/{default.nix,notify.py,shell.qml}`, imported only by Blackmoon's home module. Existing media client, keybindings, sidebar, audio control and other hosts are unchanged. Mako's normal-volume category hook forwards each notification, including synchronous replacements, to a small Quickshell service; audio-error messages remain in Mako.
+Implemented in `home/theme/kirakira/volume-overlay/{default.nix,notify.py,shell.qml}`. As of October 28, compatible homes on hosts importing `common-gui.nix` enable it by default; see [shared kirakira policy](shared-kirakira.md). Existing media client, keybindings and audio control are unchanged. Mako's normal-volume category hook forwards each notification, including synchronous replacements, to a small Quickshell service; audio-error messages remain in Mako.
 
 The dark existing app palette uses teal/lavender/warm-white four-point stars. The card sits 38 logical pixels above the usable bottom edge. The hook queries the focused output and its reserved bottom inset on each notification; Qt handles scale and rotation. No fixed connector assumption. Empty input region and no keyboard focus. 24 particles per event, maximum 72, lifetime 760ms; repaint timer stops with zero particles. Card holds 1600ms after each event, fades for 160ms, then unmaps.
 
@@ -23,4 +23,4 @@ A full flake evaluation/build was not completed: existing user lock changes trig
 
 ## Rollback
 
-Run `/home/brandon/Documents/Codex/2026-10-26/task-2/rollback-volume-overlay.sh` as Brandon to stop/disable only this service, restore the prior Mako symlink, reload Mako, and remove only the overlay home links. Review the old Mako path if subsequent unrelated Mako changes have occurred. Durable rollback: remove only the `./volume-overlay` import from `machines/blackmoon/home/default.nix` and the newly added overlay directory; do not reset other dirty files or AGENTS.md. No commit was made; new module files are staged for flake visibility.
+Run `/home/brandon/Documents/Codex/2026-10-26/task-2/rollback-volume-overlay.sh` as Brandon to stop/disable only this service, restore the prior Mako symlink, reload Mako, and remove only the overlay home links. Review the old Mako path if subsequent unrelated Mako changes have occurred. Durable opt-out after the shared migration: set `variables.desktopStyle.kirakira.volume.enable = false` in the host home module; do not reset other dirty files or AGENTS.md. No commit was made; new module files are staged for flake visibility.

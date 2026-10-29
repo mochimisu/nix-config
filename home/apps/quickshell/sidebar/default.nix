@@ -82,7 +82,7 @@ in {
           then "${import ../../../theme/media-osd {inherit pkgs;}}/bin/sekai-media-osd" else "";
         mediaFeedbackEnabled = if config.variables.desktopStyle.mediaFeedback.enable then "true" else "false";
         blockedAudioDescriptionsJson = builtins.toJSON quickshellSidebar.blockedAudioDescriptions;
-        kirakiraMenusEnabled = if (osConfig.networking.hostName or "") == "blackmoon" then "true" else "false";
+        kirakiraMenusEnabled = if config.variables.desktopStyle.kirakira.menus.enable then "true" else "false";
         menuPaletteJson = builtins.toJSON ((lib.importJSON ../../../theme/app-palette.json) // {
           background = "#c2181d21";
         });

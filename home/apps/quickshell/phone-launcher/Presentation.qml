@@ -82,11 +82,12 @@ Item {
         opened = false;
         closeTimer.start();
     }
-    function open() {
+    function open(query) {
         closeTimer.stop();
         pendingApp = null;
         closing = false;
         phone.reset();
+        if (query) phone.beginSearch(query);
         opened = true;
         if (!flat) shakeClock.restart();
     }

@@ -1,6 +1,6 @@
 # Blackmoon notification kirakira rendering
 
-Blackmoon keeps Mako 1.11.0 as its notification owner. `machines/blackmoon/home/notification-animation.nix` selects the host-only package in `pkgs/mako-kirakira`. The package applies a version-guarded Cairo rendering patch; it does not replace the notification service, introduce another bar, or change the shared sidebar.
+Blackmoon keeps Mako 1.11.0 as its notification owner. `home/theme/kirakira/notifications.nix` selects the shared opt-in package in `pkgs/mako-kirakira`. The package applies a version-guarded Cairo rendering patch; it does not replace the notification service, introduce another bar, or change the shared sidebar.
 
 ## Installed refinement — October 27, 21:38 UTC request
 
@@ -30,6 +30,9 @@ The persistent service override is Home Manager-owned at `~/.config/systemd/user
 
 Full host evaluation of `services.mako.package.outPath` matches the running refined package. Full managed-file evaluation previously encountered an unrelated Catppuccin palette import-from-derivation with builds explicitly disabled; no unrelated build was triggered. The narrowly deployed drop-in follows the notification module's declared text. The deployment script retains guarded recovery to version 1 if service startup fails.
 
-The guarded live rollback script is `blackmoon:/home/brandon/Documents/Codex/2026-10-26/task-3/notifications-work/rollback-mako.sh --restart-authorized`; it removes only this exact owned drop-in, reloads the user manager and restarts Mako. Restarting clears current in-memory notifications/history, so obtain approval again if there is new outstanding work. Durable rollback removes only the `./notification-animation.nix` import and its new module/package; never reset the dirty host module wholesale. No commit or push was made.
+The guarded live rollback script is `blackmoon:/home/brandon/Documents/Codex/2026-10-26/task-3/notifications-work/rollback-mako.sh --restart-authorized`; it removes only this exact owned drop-in, reloads the user manager and restarts Mako. Restarting clears current in-memory notifications/history, so obtain approval again if there is new outstanding work. Durable opt-out sets `variables.desktopStyle.kirakira.notifications.enable = false` in the host home module; never reset the dirty host module wholesale. No commit or push was made.
 
 Synthetic preview updated in place: Library `libfile_74f445e4347c81918a735c195c2ddf49`, `/Blackmoon-kirakira-notifications.gif`, **version 1**, file ID `file_000000002f0081fd9706969debcc9b1c`, 205373 bytes. The GIF is 480×150, with 40 stored frames coalesced from 66 private-rendered source frames. It contains no live notification or desktop content. Local verification inspected decoded frames, bounds and Library upload identity. Refinement test evidence lives in `notifications-work/refined-final-evidence` and `refined-final-evidence-scale2`; the earlier evidence directories describe the earlier version 1.
+
+
+October 28 shared-policy migration: [common-gui kirakira defaults](shared-kirakira.md). The patched binary and renderer are unchanged. Migration itself performs no live activation.
