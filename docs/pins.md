@@ -6,6 +6,7 @@ old lock timestamps alone are not reasons to remove a dependency. Prefer targete
 
 | Component | Policy / reason | Removal or update condition | Verified |
 | --- | --- | --- | --- |
+| ChatGPT patchelf 0.15.2 | 0.19.2 corrupts bundled Node 24.22.1 load-segment layout, causing loader SIGSEGV during task workspace preparation | A newer patcher must pass the shipped-Node install check after all ELF fixups | 2026-10-29: same upstream Node crashes with 0.19.2 and starts with 0.15.2 |
 | Hyprgrass `8e605468…` | ABI pairing for locked Hyprland 0.56.2; local tap-count patch preserves gesture behavior | Advance together using upstream `hyprpm.toml`; build and test touch gestures | 2026-10-14: retained |
 | HyprWindowShade `a4c6b8af…` | Upstream ABI pairing for Hyprland 0.56.2; Blackmoon 280 ms block-assembly opening | Advance with compositor using upstream `hyprpm.toml`; test rendering before live load | 2026-10-17: built and loaded on NVIDIA |
 | Brother brscan5 `1.6.2-0` | DS-640 device/path customizations; nixpkgs still has 1.3.1-0 | Compare vendor/upstream support, build and perform a real scan before removal | 2026-10-14: retained |

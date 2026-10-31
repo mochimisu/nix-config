@@ -1,5 +1,21 @@
 # ChatGPT Linux package
 
+## Bundled Node compatibility
+
+The package pins patchelf 0.15.2 for ELF fixups. With 26.1023.51421,
+patchelf 0.19.2 produces overlapping load segments in the bundled Node
+24.22.1 executable. It segfaults inside glibc's `dl_main` before JavaScript
+runs, causing remote task creation to return
+`DesktopTaskWorkspaceUnavailableError` even for an existing home directory.
+The same upstream executable patched with 0.15.2 starts successfully.
+
+An install check runs the actual bundled Node after all fixup hooks and tests
+the crypto and networking imports used by workspace preparation. Keep this
+check when updating the patcher; successful dependency resolution alone does
+not establish that the executable starts. The check needs no desktop session.
+
+## Window controls
+
 Build with `nix build .#chatgpt`. The packaged launcher supports two opt-in
 window controls, reviewed against ChatGPT 26.1013.40934:
 

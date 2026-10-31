@@ -48,7 +48,13 @@ in {
     nvidia-vaapi-driver
   ];
 
-  programs.kitty.settings.auto_reload_config = -1;
+  programs.kitty.settings = {
+    auto_reload_config = -1;
+    # The default 10 ms repaint delay underserves Blackmoon's 120/175 Hz displays.
+    # Keep presentation paced by the monitor rather than the ~100 FPS timer.
+    repaint_delay = 1;
+    sync_to_monitor = true;
+  };
 
   systemd.user.services.steam-autostart = {
     Unit = {
