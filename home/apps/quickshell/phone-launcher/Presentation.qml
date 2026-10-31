@@ -18,50 +18,83 @@ Item {
     readonly property real displayScale: Math.min(flat ? 1.5 : 1.41,
         (width - 48) / (phone.width + phone.height * 0.25 + 40),
         (height - 24) / (phone.height * 0.95))
-    readonly property bool interactive: opened && !closing && !slide.running
+    readonly property bool interactive: opened && !closing && (!slide.running || Math.abs(travel) < 0.08)
     // Hide the whole lower rounded edge, including its raised far corner.
     // Use the settled projection rather than the untransformed rectangle.
     readonly property real restingTop: height + 8 - Math.min(
-        settledY(6, phone.height - 42),
-        settledY(phone.width - 6, phone.height - 42))
-    function settledY(x, y) {
+        settledY(6, phone.height - (flat ? 42 : 100)),
+        settledY(phone.width - 6, phone.height - (flat ? 42 : 100)))
+    readonly property real hiddenTop: height + 16 - Math.min(
+        projectedY(6, 6, -4, 34, 19),
+        projectedY(phone.width + 28, 6, -4, 34, 19))
+    function settledY(x, y) { return projectedY(x, y, -24, 18, -3); }
+    function projectedY(x, y, yawDegrees, pitchDegrees, rollDegrees) {
         if (flat) return phone.height / 2 + displayScale * (y - phone.height / 2);
-        const yaw = -30 * Math.PI / 180, pitch = 18 * Math.PI / 180;
-        const roll = -4 * Math.PI / 180;
-        const dx = x - phone.width / 2, dy = y - phone.height / 2;
+        const yaw = yawDegrees * Math.PI / 180, pitch = pitchDegrees * Math.PI / 180;
+        const roll = rollDegrees * Math.PI / 180;
+        const pivotY = phone.height * 0.9;
+        const dx = x - phone.width / 2, dy = y - pivotY;
         const b = Math.sin(roll) * Math.cos(yaw);
         const d = Math.sin(roll) * Math.sin(yaw) * Math.sin(pitch)
                 + Math.cos(roll) * Math.cos(pitch);
         const z = -Math.sin(yaw) * dx + Math.cos(yaw) * Math.sin(pitch) * dy;
-        return phone.height / 2 + displayScale * (b * dx + d * dy) / (1 - z / 5000);
+        return phone.height / 2 + displayScale * (pivotY - phone.height / 2
+            + (b * dx + d * dy) / (1 - z / 5000));
     }
     property real travel: opened ? 0 : 1
     Behavior on travel {
         enabled: stage.visible
         NumberAnimation {
             id: slide
-            duration: stage.flat ? 0 : (stage.closing ? 180 : 260)
-            easing.type: stage.closing ? Easing.InCubic : Easing.OutCubic
+            duration: stage.flat ? 0 : (stage.closing ? 100 : 300)
+            easing.type: stage.closing ? Easing.InQuad : Easing.OutBack
+            easing.overshoot: 0.55
         }
+    }
+    // Independent wrist curve with a restrained landing.
+    property real wrist: opened ? 0 : 1
+    Behavior on wrist {
+        enabled: stage.visible
+        NumberAnimation {
+            duration: stage.flat ? 0 : (stage.closing ? 100 : 300)
+            easing.type: stage.closing ? Easing.InQuad : Easing.OutBack
+            easing.overshoot: 0.7
+        }
+    }
+    // Two small wrist oscillations during ascent, extinguished before landing.
+    property real liftPhase: 1
+    readonly property real liftShake: flat || closing ? 0 :
+        Math.sin(4 * Math.PI * liftPhase) * Math.sin(Math.PI * liftPhase) * (1 - liftPhase)
+    NumberAnimation {
+        id: shakeClock
+        target: stage; property: "liftPhase"
+        from: 0; to: 1; duration: 220
+        easing.type: Easing.Linear
     }
     readonly property alias phone: phone
 
     function finish(app) {
         if (closing) return;
         pendingApp = app;
+        shakeClock.stop();
+        liftPhase = 1;
         closing = true;
         opened = false;
         closeTimer.start();
     }
-    function open() {
+    function open(query) {
         closeTimer.stop();
         pendingApp = null;
         closing = false;
         phone.reset();
+        if (query) phone.beginSearch(query);
         opened = true;
+        if (!flat) shakeClock.restart();
     }
     function suspend() {
         closeTimer.stop();
+        shakeClock.stop();
+        liftPhase = 1;
         pendingApp = null;
         opened = false;
         closing = false;
@@ -70,7 +103,7 @@ Item {
     Component.onCompleted: { if (autoOpen && !closing) open(); }
     Timer {
         id: closeTimer
-        interval: stage.flat ? 0 : 200
+        interval: stage.flat ? 0 : 120
         onTriggered: {
             if (stage.pointerHeld) { restart(); return; }
             if (stage.pendingApp && stage.pendingApp.action) stage.actionRequested(stage.pendingApp.action);
@@ -104,6 +137,23 @@ Item {
         onCanceled: stage.pointerHeld = false
         onWheel: event => event.accepted = true
     }
+    // Brief manga-style motion strokes, gone before the phone becomes usable.
+    Repeater {
+        model: 3
+        Rectangle {
+            required property int index
+            x: phone.x - (24 + index * 15) * stage.displayScale
+            y: phone.y + (phone.height * 0.48 + index * 48) * stage.displayScale
+            width: (index === 1 ? 3 : 2) * stage.displayScale
+            height: (100 - index * 22) * stage.displayScale
+            radius: width / 2
+            rotation: 17
+            color: index === 1 ? "#faffff" : "#9de9e0"
+            antialiasing: true
+            opacity: stage.flat || stage.closing ? 0 :
+                Math.max(0, Math.min(0.8, 3 * stage.travel * (1 - stage.travel)))
+        }
+    }
     Phone {
         id: phone
         objectName: "phone"
@@ -111,18 +161,18 @@ Item {
         services: stage.services
         width: Math.min(400, stage.width - 100)
         height: Math.min(720, stage.height - 100)
-        // A shallow curved path and linked wrist rotation, not a scale change.
+        // Brief wrist shake on ascent, then a quiet landing.
         x: (stage.width - width) / 2 + (stage.flat ? 0 :
-            12 * stage.travel - 28 * Math.sin(Math.PI * stage.travel))
-        y: stage.restingTop + (stage.flat ? 0 : stage.travel * (stage.height + height / 4 - stage.restingTop))
+            32 * stage.travel + 5 * stage.liftShake)
+        y: stage.restingTop + (stage.flat ? 0 : stage.travel * (stage.hiddenTop - stage.restingTop))
         interactive: stage.interactive
         opacity: 1
         scale: stage.displayScale
         // Match the reference's almost-parallel long edges. Separate Rotation
         // items each add Qt's short default perspective, exaggerating taper.
-        property real yaw: stage.flat ? 0 : -30 - 6 * Math.sin(Math.PI * stage.travel)
-        property real pitch: stage.flat ? 0 : 18 + 10 * stage.travel
-        property real roll: stage.flat ? 0 : -4 - 2 * stage.travel - 8 * Math.sin(Math.PI * stage.travel)
+        property real yaw: stage.flat ? 0 : -24 + 20 * stage.wrist + 1.5 * stage.liftShake
+        property real pitch: stage.flat ? 0 : 18 + 16 * stage.wrist
+        property real roll: stage.flat ? 0 : -3 + 22 * stage.wrist + 4 * stage.liftShake
         transform: Matrix4x4 {
             matrix: {
                 const y = phone.yaw * Math.PI / 180;
@@ -135,7 +185,7 @@ Item {
                 const c = cr * sy * sp - sr * cp;
                 const d = sr * sy * sp + cr * cp;
                 const g = -sy, h = cy * sp;
-                const cx = phone.width / 2, centerY = phone.height / 2;
+                const cx = phone.width / 2, centerY = phone.height * 0.9;
                 const focal = 5000;
                 const u = -g / focal, v = -h / focal;
                 const aa = a + cx * u, cc = c + cx * v;

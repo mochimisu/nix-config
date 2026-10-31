@@ -13,10 +13,7 @@
 
 in {
   variables.desktopStyle = {
-    apps.enable = true;
-    shell.enable = true;
-    launcher = {enable = true; wallpaperPackage = skwdSuite;};
-    mediaFeedback.enable = true;
+    launcher.wallpaperPackage = skwdSuite;
   };
   variables.quickshellSidebar.blockedAudioDescriptions = [
     "AD102 High Definition Audio Controller Digital Stereo (HDMI)"
@@ -43,6 +40,7 @@ in {
     ./eww-sysmon.nix
     ./fastfetch.nix
     ./wallpaper.nix
+    ./window-animation.nix
   ];
 
   home.packages = with pkgs; [
@@ -50,7 +48,13 @@ in {
     nvidia-vaapi-driver
   ];
 
-  programs.kitty.settings.auto_reload_config = -1;
+  programs.kitty.settings = {
+    auto_reload_config = -1;
+    # The default 10 ms repaint delay underserves Blackmoon's 120/175 Hz displays.
+    # Keep presentation paced by the monitor rather than the ~100 FPS timer.
+    repaint_delay = 1;
+    sync_to_monitor = true;
+  };
 
   systemd.user.services.steam-autostart = {
     Unit = {
@@ -184,9 +188,9 @@ in {
 
     config.render = {
       # Enable color-management pipeline required for HDR output.
-      cm_enabled = false;
+      cm_enabled = true;
       # Auto-enable HDR when the app advertises HDR output.
-      cm_auto_hdr = 0;
+      cm_auto_hdr = 1;
     };
 
     config.misc = {
@@ -349,16 +353,15 @@ in {
       state_file="''${XDG_STATE_HOME:-$HOME/.local/state}/hypr/hdr-enabled"
       mkdir -p "''${state_file%/*}"
 
-      cm_enabled=$(hyprctl getoption render:cm_enabled | awk 'NR==1{print $2}')
       monitor_cm=$(
         hyprctl -j monitors |
           jq -r '.[] | select(.name == "DP-3") | .colorManagementPreset // "unknown"' |
           tail -n 1
       )
 
-      if [ "$monitor_cm" = "hdr" ] || [ "''${cm_enabled:-0}" = "1" ]; then
+      if [ "$monitor_cm" = "hdr" ] || [ "$monitor_cm" = "hdredid" ]; then
         printf "0" > "$state_file"
-        hyprctl eval 'hl.config({ render = { cm_enabled = false, cm_auto_hdr = 0 } })'
+        hyprctl eval 'hl.config({ render = { cm_enabled = true, cm_auto_hdr = 1 } })'
         hyprctl eval 'hl.monitor({
           output = "DP-3",
           mode = "3440x1440@175",

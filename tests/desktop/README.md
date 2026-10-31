@@ -4,6 +4,7 @@ Run from the repository root on a Linux desktop build host:
 
 ```sh
 nix eval --impure --json --file tests/desktop/options.nix
+nix eval --impure --json --file tests/desktop/matrix.nix --apply 'f: f {}'
 nix build .#nixosConfigurations.blackmoon.config.home-manager.users.brandon.home.activationPackage --out-link /tmp/style-home
 runner=$(nix-build tests/desktop --no-out-link)
 "$runner/bin/test-desktop-style" --repo "$PWD" --generation /tmp/style-home --output /tmp/style-test-results
@@ -18,13 +19,18 @@ test rather than silently skipping it. Logs and PNGs remain in `--output`.
 
 Coverage:
 
-- Typed style options default off, reject invalid types, and enable independently.
+- Bare typed style options default off, reject invalid types, and enable independently.
+  The matrix test asserts capability defaults on native hosts, Gaia exclusion,
+  and Cove ownership. For Comet use `--apply 'f: f {includeComet=true;}'` with an ARM builder.
   This check is platform-independent and does not force Comet's ARM packages.
 - Real sidebar QML: workspace and all ten control actions, audio selection,
   compact 420/220px layouts, scrolling through 40 outputs, and unthemed defaults.
 - Real launcher QML: transformed inside/outside hit testing, held-release dismissal,
   no click-through, and normal/compact viewports. Pointer unit tests separately
   cover rotated/scaled/negative-origin outputs and disconnected-output rejection.
+- Real greeter: remembered account, selected session, duplicate submission, failure
+  clearing, layout selection, compact focus, and real optional Qt Virtual Keyboard
+  sizing/visibility at 1280×800 and 800×600. Authentication/power calls are mocked.
 - Real Eww: long process names and 0–3200% CPU values on a private 1440×112 output;
   Wayland configure events assert the actual layer size. Screenshots expose clipping
   or misleading track scaling for review. No synthetic values reach the live bar.
@@ -52,3 +58,11 @@ when future intentional behavior changes make it obsolete.
 Home Manager evaluation still requires an ARM builder for Catppuccin's palette
 import-from-derivation. A passing portable option test does not replace that build,
 software-renderer validation, or a real nested-session test.
+
+The launcher fixture now supplies deterministic application entries and exercises
+exact-name detail, one-result detail, multiple matches, no results, Enter and
+Escape, including navigation back to the ranked grid. It saves detail screenshots
+at normal and compact sizes. Sidebar checks cover connected Ethernet/Wi-Fi,
+no established link, and unrelated tray icons. `frame-probe.qml` is a separate,
+manual live-output benchmark described in `docs/blackmoon-phone-launcher.md`;
+it is not run by the isolated test runner.

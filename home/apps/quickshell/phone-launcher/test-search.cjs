@@ -20,3 +20,11 @@ assert.equal(context.rank([{name:'Café-Tools'}, {name:'Cafe Tools Helper'}], 'c
 assert.ok(!names('').includes('Hidden Steam'));
 assert.deepEqual(names('not-an-app-zzzz'), []);
 console.log('Search ranking tests passed');
+
+assert.equal(context.detailApp(context.rank(apps, 'sTeAm'), 'sTeAm', 0).id, 'steam');
+assert.equal(context.detailApp(context.rank(apps, 'steam'), 'steam', 1), null);
+assert.equal(context.detailApp(context.rank(apps, 'not-an-app-zzzz'), 'not-an-app-zzzz', -1), null);
+assert.equal(context.detailApp([{name:'Only app'}], 'only', 0).name, 'Only app');
+assert.equal(context.detailApp([{name:'Only app'}], '', 0), null);
+assert.equal(context.detailApp(context.rank(apps, 'ste'), 'ste', 0), null);
+console.log('Detail selection tests passed');

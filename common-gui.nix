@@ -1,6 +1,11 @@
 {pkgs, inputs, lib, ...}: {
   imports = [inputs.flatpaks.nixosModules.nix-flatpak];
 
+  # Shared policy, not a fleet activation. Ordinary per-home assignments win.
+  home-manager.sharedModules = [({lib, ...}: {
+    variables.desktopStyle.kirakira.enable = lib.mkDefault true;
+  })];
+
   # Packages
   environment.systemPackages = (import ./common-packages.nix {inherit pkgs inputs;}).gui;
 

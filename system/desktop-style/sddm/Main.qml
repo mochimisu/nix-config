@@ -8,6 +8,7 @@ Rectangle {
     width: 1280; height: 800
     color: config.Surface
     property date now: new Date()
+    readonly property bool virtualKeyboardEnabled: config.VirtualKeyboardEnabled === "true"
     property bool busy: false
     property string message: ""
     property bool manualUser: false
@@ -177,6 +178,11 @@ Rectangle {
     Flickable {
         id: viewport
         anchors.fill: parent; anchors.margins: root.compact ? 24 : 56
+        anchors.bottomMargin: (root.compact ? 24 : 56) + (virtualKeyboard.item && virtualKeyboard.item.active ? virtualKeyboard.height : 0)
+        onHeightChanged: {
+            if (password.activeFocus) root.reveal(password);
+            else if (username.activeFocus) root.reveal(username);
+        }
         contentWidth: width; contentHeight: Math.max(height, layout.implicitHeight)
         clip: true; boundsBehavior: Flickable.StopAtBounds
         ScrollBar.vertical: ScrollBar {}
@@ -194,7 +200,7 @@ Rectangle {
                 Card {
                     implicitWidth: brand.implicitWidth + 40; implicitHeight: 40; radius: 14
                     color: config.Mint
-                    Label { id: brand; anchors.centerIn: parent; text: "BLACKMOON"; font.bold: true; font.letterSpacing: 4 }
+                    Label { id: brand; anchors.centerIn: parent; text: config.HostName; font.bold: true; font.letterSpacing: 4 }
                 }
                 Item {
                     Layout.fillWidth: true
@@ -314,6 +320,11 @@ Rectangle {
                         KeyNavigation.tab: sessions
                         onAccepted: root.login()
                     }
+                    Pill {
+                        visible: root.virtualKeyboardEnabled
+                        Layout.fillWidth: true; text: qsTr("On-screen keyboard")
+                        onClicked: { password.forceActiveFocus(); Qt.inputMethod.visible ? Qt.inputMethod.hide() : Qt.inputMethod.show(); }
+                    }
                     Label { text: qsTr("Caps Lock is on"); color: config.Urgent; visible: keyboard.capsLock }
                     Label { text: qsTr("Session"); font.bold: true }
                     Choice {
@@ -348,5 +359,13 @@ Rectangle {
                 }
             }
         }
+    }
+    Loader {
+        id: virtualKeyboard
+        active: root.virtualKeyboardEnabled
+        source: "VirtualKeyboard.qml"
+        anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom
+        height: item ? item.implicitHeight : 0
+        z: 100
     }
 }

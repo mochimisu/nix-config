@@ -14,11 +14,18 @@ ShellRoot {
         opening = false;
         requestSerial++;
         window.visible = false;
+        earlyInput.clear();
         presentation.suspend();
     }
     function open() {
+        presentation.suspend();
+        earlyInput.clear();
         opening = true;
         requestSerial++;
+        // Map exclusive keyboard input before asynchronous context/media lookup.
+        // The phone itself stays hidden until the pointer output is resolved.
+        window.visible = true;
+        earlyInput.forceActiveFocus();
         startQuery();
     }
     function startQuery() {
@@ -39,25 +46,26 @@ ShellRoot {
                     status.wallpaper = context.wallpaper;
                     status.wallpaperVideo = context.video;
                     window.screen = output;
-                    window.visible = true;
-                    presentation.open();
-                } catch (error) { console.warn("Launcher context:", error); }
-                root.opening = false;
+                    const query = earlyInput.text;
+                    root.opening = false;
+                    presentation.open(query);
+                    earlyInput.clear();
+                } catch (error) { console.warn("Launcher context:", error); root.hide(); }
             }
         }
         onExited: (code, exitStatus) => {
             if (root.querySerial !== root.requestSerial) Qt.callLater(root.startQuery);
-            else if (code !== 0) { root.opening = false; console.warn("Launcher context query failed:", code); }
+            else if (code !== 0) { root.hide(); console.warn("Launcher context query failed:", code); }
         }
     }
     IpcHandler {
         target: "launcher"
         function toggle(): void {
-            if (root.opening) { root.opening = false; root.requestSerial++; return; }
+            if (root.opening) { root.hide(); return; }
             if (window.visible && !presentation.closing) presentation.finish(null);
             else root.open();
         }
-        function close(): void { root.opening = false; root.requestSerial++; if (window.visible) presentation.finish(null); }
+        function close(): void { if (root.opening) root.hide(); else if (window.visible) presentation.finish(null); }
         function state(): string { return root.opening ? "opening" : window.visible ? (presentation.closing ? "closing" : "open") : "hidden"; }
     }
     Status { id: status; active: window.visible }
@@ -74,10 +82,28 @@ ShellRoot {
         WlrLayershell.namespace: "sekai-launcher"
         WlrLayershell.keyboardFocus: visible ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
 
+        // Local text input only while this launcher owns keyboard focus.
+        // TextInput retains normal editing/IME behavior; nothing is recorded.
+        TextInput {
+            id: earlyInput
+            visible: root.opening
+            opacity: 0
+            focus: root.opening
+            Keys.onEscapePressed: root.hide()
+            Keys.onPressed: event => {
+                // A still-held invocation modifier must not eat the first letters.
+                if ((event.modifiers & Qt.MetaModifier) && event.text.length
+                        && !/[\x00-\x1f\x7f]/.test(event.text)
+                        && !(event.modifiers & Qt.ControlModifier)) {
+                    if (event.key !== Qt.Key_Space) insert(cursorPosition, event.text);
+                    event.accepted = true;
+                }
+            }
+        }
         Presentation {
             id: presentation
             autoOpen: false
-            visible: window.visible
+            visible: window.visible && !root.opening
             services: status
             anchors.fill: parent
             onActionRequested: action => {

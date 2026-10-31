@@ -49,7 +49,8 @@
   ];
   hl = fg: bg: { inherit fg bg; };
 in {
-  config = lib.mkIf config.variables.desktopStyle.apps.enable {
+  config = lib.mkIf config.variables.desktopStyle.apps.enable (lib.mkMerge [
+  (lib.mkIf config.variables.desktopStyle.apps.desktopIntegration.enable {
     # Keep generated theme identifiers stable for existing installations.
     gtk.theme = { name = "adw-gtk3-dark"; package = pkgs.adw-gtk3; };
     gtk.iconTheme = { name = "Papirus-Dark"; package = pkgs.papirus-icon-theme; };
@@ -75,6 +76,8 @@ in {
     xdg.dataFile."themes/adw-gtk3-dark".source = "${pkgs.adw-gtk3}/share/themes/adw-gtk3-dark";
     xdg.dataFile."icons/Papirus-Dark".source = "${pkgs.papirus-icon-theme}/share/icons/Papirus-Dark";
     xdg.dataFile."icons/Papirus".source = "${pkgs.papirus-icon-theme}/share/icons/Papirus";
+  })
+  {
     programs.kitty.settings = {
       background = p.background;
       foreground = p.text;
@@ -129,5 +132,5 @@ in {
         fg0: ${p.text}; fg1: ${p.text}; fg2: ${p.teal};
       }
     '';
-  };
+  }]);
 }

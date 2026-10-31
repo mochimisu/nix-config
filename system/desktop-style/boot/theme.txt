@@ -9,7 +9,7 @@ terminal-font: "Unifont Regular 16"
   top = 20%
   width = 60%
   height = 24
-  text = "B L A C K M O O N"
+  text = "@hostname@"
   font = "Unifont Regular 16"
   color = "@text@"
 }

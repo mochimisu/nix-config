@@ -14,7 +14,9 @@ FocusScope {
     property bool interactive: true
     property point lastPointerPosition: Qt.point(NaN, NaN)
     property alias query: search.text
-    readonly property var results: AppSearch.rank(DesktopEntries.applications.values, search.text)
+    property var applications: DesktopEntries.applications.values
+    readonly property var results: AppSearch.rank(applications, search.text)
+    readonly property var detailApp: AppSearch.detailApp(results, search.text, grid.currentIndex)
     readonly property color ink: "#28585c"
     readonly property color mint: "#b8ece6"
     readonly property color pink: "#f5dbe9"
@@ -27,6 +29,11 @@ FocusScope {
         grid.currentIndex = results.length ? 0 : -1;
         grid.contentY = 0;
         homeInput.forceActiveFocus();
+    }
+    function beginSearch(text) {
+        search.text = text;
+        search.cursorPosition = search.text.length;
+        search.forceActiveFocus();
     }
     function moveSelection(delta) {
         if (!interactive || !searching || !results.length) return;
@@ -125,7 +132,8 @@ FocusScope {
         Keys.onPressed: event => {
             if (event.key === Qt.Key_Escape) { phone.dismissed(); event.accepted = true; return; }
             if (event.text.length && !/[\x00-\x1f\x7f]/.test(event.text)
-                    && !(event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier))) {
+                    && !(event.modifiers & (Qt.ControlModifier | Qt.AltModifier))
+                    && (!(event.modifiers & Qt.MetaModifier) || (!phone.interactive && event.key !== Qt.Key_Space))) {
                 search.text = event.text;
                 search.forceActiveFocus();
                 event.accepted = true;
@@ -217,6 +225,14 @@ FocusScope {
                     border.width: 1; border.color: search.activeFocus ? "#86c8c4" : "#c8ded9"
                 }
             }
+            Keys.onPressed: event => {
+                if (!phone.interactive && (event.modifiers & Qt.MetaModifier)
+                        && !(event.modifiers & Qt.ControlModifier) && event.text.length
+                        && !/[\x00-\x1f\x7f]/.test(event.text)) {
+                    if (event.key !== Qt.Key_Space) insert(cursorPosition, event.text);
+                    event.accepted = true;
+                }
+            }
             Keys.onDownPressed: phone.moveSelection(grid.columns)
             Keys.onUpPressed: phone.moveSelection(-grid.columns)
             Keys.onRightPressed: event => { phone.moveSelection(1); event.accepted = true; }
@@ -253,9 +269,9 @@ FocusScope {
     }
     GridView {
         id: grid
-        opacity: phone.searching ? 1 : 0
+        opacity: phone.searching && !phone.detailApp ? 1 : 0
         visible: opacity > 0
-        enabled: phone.searching
+        enabled: phone.searching && !phone.detailApp
         transform: Translate { x: phone.searching ? 0 : 12; Behavior on x { NumberAnimation { duration: 140 } } }
         Behavior on opacity { NumberAnimation { duration: 140 } }
         objectName: "apps"
@@ -362,4 +378,13 @@ FocusScope {
             font.pixelSize: 15
         }
     }
+    AppDetail {
+        objectName: "appDetail"
+        anchors { top: header.bottom; bottom: parent.bottom; left: parent.left; right: parent.right; topMargin: 17; bottomMargin: 105; leftMargin: 25; rightMargin: 25 }
+        app: phone.detailApp
+        interactive: phone.interactive
+        visible: !!app
+        onLaunchRequested: app => phone.launchRequested(app)
+    }
+
 }

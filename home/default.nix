@@ -21,6 +21,7 @@ in {
     ./wikimem.nix
     ../vars.nix
     ./theme
+    ./apps/chatgpt.nix
     ./apps/tmux.nix
     ./apps/nixvim
     ./apps/zsh

@@ -1,5 +1,6 @@
 //@ pragma UseQApplication
 import QtQuick
+import QtQml.Models
 import Quickshell
 import Quickshell.Bluetooth
 import Quickshell.Io
@@ -42,6 +43,8 @@ ShellRoot {
 
     // A small shared palette is injected only for Blackmoon.
     readonly property var theme: (@themePaletteJson@)
+    readonly property bool kirakiraMenus: @kirakiraMenusEnabled@ && themed
+    readonly property var menuPalette: (@menuPaletteJson@)
     readonly property bool themed: !!theme.ink
     readonly property color surfaceColor: themed ? theme.surface : "#cc11111b"
     readonly property color chipColor: themed ? theme.lavender : "#22ffffff"
@@ -81,27 +84,59 @@ ShellRoot {
             border { width: 1; color: "#ffffff" }
         }
     }
+    // Menus share the OSD palette; decorations never intercept input.
     component MenuCard: Rectangle {
+        id: card
         radius: root.panelRadius
+        property real twinkle: 0
+        onVisibleChanged: if (visible && root.kirakiraMenus) shimmer.restart()
+        Component.onCompleted: if (visible && root.kirakiraMenus) shimmer.start()
+        NumberAnimation { id: shimmer; target: card; property: "twinkle"; from: 0; to: 1; duration: 640 }
         Rectangle {
-            visible: root.themed
+            visible: root.kirakiraMenus
+            anchors.fill: parent; anchors.margins: 5
+            radius: parent.radius - 4; color: "transparent"
+            border { width: 1; color: root.menuPalette.raised || "transparent" }
+        }
+        Rectangle {
+            visible: root.themed && !root.kirakiraMenus
             anchors.fill: parent; anchors.margins: 4
             radius: parent.radius - 4; color: "transparent"
             border { width: 1; color: root.theme.inactive || "transparent" }
-            opacity: 0.45
+            opacity: .45
+        }
+        Repeater {
+            model: root.kirakiraMenus ? 12 : 0
+            Text {
+                required property int index
+                x: index % 2 ? card.width - width - 5 : 5
+                y: 7 + Math.floor(index / 2) * (card.height - 30) / 5
+                text: index % 3 ? "✧" : "✦"
+                color: index % 2 ? root.menuPalette.lavender : root.menuPalette.teal
+                font.pixelSize: index % 3 ? 8 : 13
+                opacity: .42 + .48 * Math.sin(Math.PI * card.twinkle)
+            }
         }
     }
     component MenuButton: Rectangle {
         objectName: "menuButton"
-        radius: root.themed ? 12 : 4
-        border.width: root.themed ? 2 : 0
-        border.color: root.themed ? (menuHover.hovered ? root.theme.teal : root.edgeColor) : "transparent"
+        Accessible.role: Accessible.Button
+        Accessible.name: { const label = children.find(c => c.text !== undefined); return label ? label.text : ""; }
+        Accessible.onPressAction: { const hit = children.find(c => c.objectName === "menuHitTarget"); if (hit) hit.clicked(null); }
+        radius: root.themed ? (root.kirakiraMenus ? 9 : 12) : 4
+        border.width: root.themed ? (root.kirakiraMenus ? 1 : 2) : 0
+        border.color: root.kirakiraMenus ? ((menuHover.hovered || children.some(c => c.activeFocus)) ? root.menuPalette.teal : root.menuPalette.raised) : (root.themed ? root.edgeColor : "transparent")
         HoverHandler { id: menuHover }
         Rectangle {
-            visible: root.themed
+            visible: root.themed && !root.kirakiraMenus
             anchors.fill: parent; anchors.margins: 3
             radius: parent.radius - 3; color: "transparent"
-            border { width: 1; color: "#ffffff" }
+            border { width: 1; color: "white" }
+        }
+        Rectangle {
+            visible: root.kirakiraMenus && menuHover.hovered
+            anchors.fill: parent; anchors.margins: 2
+            radius: parent.radius - 2; color: "#1263c6c0"
         }
     }
 
@@ -533,10 +568,18 @@ ShellRoot {
         notification.dismiss();
     }
 
-    function trayIconSource(rawIcon) {
+    function trayIconSource(rawIcon, trayId) {
         const iconRaw = String(rawIcon || "");
         if (iconRaw === "") {
             return "image://icon/image-missing";
+        }
+
+        // nm-applet animates for any connecting adapter, even when Ethernet is
+        // already online. Reflect established connectivity while keeping its menu
+        // and its original connecting/offline icon when no link is established.
+        if (String(trayId || "") === "nm-applet") {
+            if (networkState.eth) return "image://icon/network-wired";
+            if (networkState.ssid) return "image://icon/network-wireless";
         }
 
         // App-specific tray fallbacks.
@@ -613,6 +656,10 @@ ShellRoot {
             return false;
         }
 
+        if (root.kirakiraMenus) {
+            panelWindow.showTray(item, trayItem.mapToItem(panelRoot, 0, 0).y);
+            return true;
+        }
         const menuPoint = trayItem.mapToItem(panelRoot, trayItem.width, Math.round(trayItem.height / 2));
         item.display(panelWindow, Math.round(menuPoint.x), Math.round(menuPoint.y));
         return true;
@@ -730,6 +777,23 @@ ShellRoot {
 
         PanelWindow {
             id: panel
+            function closeMenus() {
+                audioPopup.visible = false;
+                controlCenterPopup.visible = false;
+                trayPopup.visible = false;
+            }
+            function showTray(item, y) {
+                const same = trayPopup.visible && trayPopup.trayItem === item;
+                closeMenus();
+                if (same) return;
+                trayPopup.trayItem = item;
+                trayPopup.menuStack = [item.menu];
+                trayPopup.originY = y;
+                trayPopup.visible = true;
+            }
+            // PopupWindow.grabFocus owns keyboard focus and outside dismissal.
+            // Do not combine its native popup grab with HyprlandFocusGrab:
+            // both compete for the same seat and can dismiss a new menu.
 
             required property ShellScreen modelData
 
@@ -887,7 +951,7 @@ ShellRoot {
                                             IconImage {
                                                 anchors.centerIn: parent
                                                 implicitSize: root.trayIconPx
-                                                source: root.trayIconSource(modelData.icon)
+                                                source: root.trayIconSource(modelData.icon, modelData.id)
                                             }
 
                                             MouseArea {
@@ -1240,14 +1304,133 @@ ShellRoot {
 
                     }
 
+                PopupWindow {
+                    id: trayPopup
+                    grabFocus: root.kirakiraMenus
+                    visible: false
+                    color: "transparent"
+                    property var trayItem: null
+                    property var menuStack: []
+                    readonly property var entries: {
+                        const opener = menuOpeners.count ? menuOpeners.objectAt(menuOpeners.count - 1) : null;
+                        return opener ? opener.children.values : [];
+                    }
+                    property real originY: 0
+                    implicitWidth: Math.min(340, panel.screen.width - root.sidebarWidth - 24)
+                    implicitHeight: Math.min(panel.height - 16, trayMenuColumn.implicitHeight + 40)
+                    anchor {
+                        window: panel
+                        rect.x: -trayPopup.implicitWidth - 8
+                        rect.y: Math.max(8, Math.min(trayPopup.originY, panel.height - trayPopup.implicitHeight - 8))
+                    }
+                    onVisibleChanged: {
+                        if (visible) trayCard.forceActiveFocus();
+                        else { menuStack = []; trayItem = null; }
+                    }
+                    Instantiator {
+                        id: menuOpeners
+                        model: trayPopup.menuStack
+                        delegate: QsMenuOpener { required property var modelData; menu: modelData }
+                    }
+                    MenuCard {
+                        id: trayCard
+                        anchors.fill: parent
+                        color: root.menuPalette.background
+                        border { width: 1; color: root.menuPalette.teal }
+                        focus: true
+                        Keys.onEscapePressed: panel.closeMenus()
+                        Keys.onLeftPressed: trayPopup.back()
+                        function navigate(step) {
+                            const n = trayEntries.count;
+                            for (let i = 1; i <= n; ++i) {
+                                const next = (trayEntries.currentIndex + step * i + n) % n;
+                                const entry = trayPopup.entries[next];
+                                if (entry.enabled && !entry.isSeparator) { trayEntries.currentIndex = next; return; }
+                            }
+                        }
+                        Keys.onDownPressed: navigate(1)
+                        Keys.onUpPressed: navigate(-1)
+                        Keys.onReturnPressed: if (trayEntries.currentItem) trayEntries.currentItem.activate()
+                        Keys.onSpacePressed: if (trayEntries.currentItem) trayEntries.currentItem.activate()
+                        Keys.onRightPressed: if (trayEntries.currentItem && trayEntries.currentItem.modelData.hasChildren) trayEntries.currentItem.activate()
+                        Column {
+                            id: trayMenuColumn
+                            anchors { left: parent.left; right: parent.right; top: parent.top; margins: 20 }
+                            spacing: 8
+                            Text {
+                                width: parent.width
+                                text: trayPopup.menuStack.length > 1 ? "‹  Back" : "✦  " + (trayPopup.trayItem ? trayPopup.trayItem.title || "Menu" : "Menu")
+                                color: root.menuPalette.text
+                                font { family: root.baseFont; pixelSize: 13 }
+                                elide: Text.ElideRight
+                                MouseArea { anchors.fill: parent; enabled: trayPopup.menuStack.length > 1; onClicked: trayPopup.back() }
+                            }
+                            ListView {
+                                id: trayEntries
+                                width: parent.width
+                                height: Math.min(contentHeight, panel.height - 90)
+                                clip: true
+                                spacing: 4
+                                model: trayPopup.entries
+                                currentIndex: -1
+                                onModelChanged: currentIndex = -1
+                                boundsBehavior: Flickable.StopAtBounds
+                                delegate: MenuButton {
+                                    required property var modelData
+                                    required property int index
+                                    width: trayEntries.width
+                                    height: modelData.isSeparator ? 7 : 36
+                                    enabled: modelData.enabled && !modelData.isSeparator
+                                    opacity: modelData.enabled || modelData.isSeparator ? 1 : .5
+                                    color: trayEntries.currentIndex === index ? root.menuPalette.selection : "transparent"
+                                    border.width: modelData.isSeparator ? 0 : 1
+                                    function activate() {
+                                        if (!enabled) return;
+                                        if (modelData.hasChildren) trayPopup.menuStack = trayPopup.menuStack.concat([modelData]);
+                                        else { modelData.triggered(); panel.closeMenus(); }
+                                    }
+                                    Accessible.role: Accessible.MenuItem
+                                    Accessible.name: modelData.text
+                                    Accessible.onPressAction: activate()
+                                    Rectangle { visible: modelData.isSeparator; width: parent.width; height: 1; anchors.centerIn: parent; color: root.menuPalette.raised }
+                                    Text {
+                                        visible: !modelData.isSeparator
+                                        anchors { fill: parent; leftMargin: 10; rightMargin: 24 }
+                                        text: (modelData.checkState === Qt.Checked ? "✓  " : modelData.checkState === Qt.PartiallyChecked ? "−  " : "") + modelData.text.replace(/&([^&])/g, "$1").replace(/&&/g, "&")
+                                        color: root.menuPalette.text
+                                        font { family: root.baseFont; pixelSize: 11 }
+                                        verticalAlignment: Text.AlignVCenter
+                                        elide: Text.ElideRight
+                                    }
+                                    Text { anchors { right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter } text: "›"; visible: modelData.hasChildren; color: root.menuPalette.teal }
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        onEntered: { trayEntries.currentIndex = index; trayCard.forceActiveFocus(); }
+                                        onClicked: parent.activate()
+                                    }
+                                }
+                            }
+                            Text { visible: trayEntries.count === 0; text: "No actions available"; color: root.menuPalette.muted; font.pixelSize: 11 }
+                        }
+                    }
+                    function back() { if (menuStack.length > 1) menuStack = menuStack.slice(0, -1); }
+                }
+
                 // Audio output popup
                 PopupWindow {
                     id: audioPopup
+                    grabFocus: root.kirakiraMenus
+                    onVisibleChanged: if (visible && root.kirakiraMenus) {
+                        controlCenterPopup.visible = false;
+                        trayPopup.visible = false;
+                        audioCard.forceActiveFocus();
+                    }
 
                     visible: false
                     color: "transparent"
                     implicitWidth: 260
-                    implicitHeight: root.themed ? Math.min(panel.height - 16, Math.max(40, sinksColumn.implicitHeight + 20)) : Math.max(40, sinksColumn.implicitHeight + 10)
+                    implicitHeight: root.themed ? Math.min(panel.height - 16, Math.max(40, sinksColumn.implicitHeight + (root.kirakiraMenus ? 40 : 20))) : Math.max(40, sinksColumn.implicitHeight + 10)
 
                     anchor {
                         window: panel
@@ -1257,15 +1440,17 @@ ShellRoot {
 
                     MenuCard {
                         id: audioCard
+                        focus: true
+                        Keys.onEscapePressed: panel.closeMenus()
                         anchors.fill: parent
-                        color: root.themed ? root.surfaceColor : "#99000000"
+                        color: root.themed ? (root.kirakiraMenus ? root.menuPalette.background : root.surfaceColor) : "#99000000"
                         border.width: root.themed ? 2 : 1
-                        border.color: root.edgeColor
+                        border.color: (root.kirakiraMenus ? root.menuPalette.teal : root.edgeColor)
 
                         Flickable {
                             id: audioViewport
                             anchors.fill: parent
-                            anchors.margins: root.themed ? 10 : 4
+                            anchors.margins: root.kirakiraMenus ? 20 : (root.themed ? 10 : 4)
                             contentHeight: sinksColumn.implicitHeight
                             interactive: root.themed && contentHeight > height
                             clip: root.themed
@@ -1290,9 +1475,9 @@ ShellRoot {
                                     height: audioOutput ? (root.themed ? 32 : 24) : 0
 
                                     visible: audioOutput
-                                    color: isDefaultOutput ? root.selectedColor : (hovered ? root.chipColor : "transparent")
+                                    color: isDefaultOutput ? (root.kirakiraMenus ? root.menuPalette.selection : root.selectedColor) : (hovered ? (root.kirakiraMenus ? root.menuPalette.raised : root.chipColor) : "transparent")
                                     border.width: root.themed ? 2 : (hovered ? 1 : 0)
-                                    border.color: root.themed ? root.theme.inactive : "#55ffffff"
+                                    border.color: root.kirakiraMenus ? ((hovered || children.some(c => c.activeFocus)) ? root.menuPalette.teal : root.menuPalette.raised) : (root.themed ? root.theme.inactive : "#55ffffff")
 
                                     Text {
                                         anchors.verticalCenter: parent.verticalCenter
@@ -1302,12 +1487,16 @@ ShellRoot {
                                         anchors.rightMargin: 6
                                         text: (isDefaultOutput ? "* " : "") + root.sinkLabel(modelData)
                                         elide: Text.ElideRight
-                                        color: root.fgColor
+                                        color: (root.kirakiraMenus ? root.menuPalette.text : root.fgColor)
                                         font.family: root.baseFont
                                         font.pixelSize: 11
                                     }
 
                                     MouseArea {
+                                        objectName: "menuHitTarget"
+                                        activeFocusOnTab: true
+                                        Keys.onReturnPressed: clicked(null)
+                                        Keys.onSpacePressed: clicked(null)
                                         anchors.fill: parent
                                         hoverEnabled: true
                                         onEntered: audioSinkRow.hovered = true
@@ -1327,11 +1516,17 @@ ShellRoot {
                 // Clock-click controls and notification history
                 PopupWindow {
                     id: controlCenterPopup
+                    grabFocus: root.kirakiraMenus
+                    onVisibleChanged: if (visible && root.kirakiraMenus) {
+                        audioPopup.visible = false;
+                        trayPopup.visible = false;
+                        controlCard.forceActiveFocus();
+                    }
 
                     visible: false
                     color: "transparent"
                     implicitWidth: 320
-                    implicitHeight: Math.min(panel.height - 16, Math.max(260, controlCenterColumn.implicitHeight + (root.themed ? 28 : 16)))
+                    implicitHeight: Math.min(panel.height - 16, Math.max(260, controlCenterColumn.implicitHeight + (root.kirakiraMenus ? 40 : (root.themed ? 28 : 16))))
 
                     anchor {
                         window: panel
@@ -1341,15 +1536,17 @@ ShellRoot {
 
                     MenuCard {
                         id: controlCard
+                        focus: true
+                        Keys.onEscapePressed: panel.closeMenus()
                         anchors.fill: parent
-                        color: root.themed ? root.surfaceColor : "#cc11111b"
+                        color: root.themed ? (root.kirakiraMenus ? root.menuPalette.background : root.surfaceColor) : "#cc11111b"
                         border.width: root.themed ? 2 : 1
-                        border.color: root.edgeColor
+                        border.color: (root.kirakiraMenus ? root.menuPalette.teal : root.edgeColor)
 
                         Flickable {
                             id: controlsViewport
                             anchors.fill: parent
-                            anchors.margins: root.themed ? 14 : 8
+                            anchors.margins: root.kirakiraMenus ? 20 : (root.themed ? 14 : 8)
                             contentHeight: controlCenterColumn.implicitHeight
                             interactive: root.themed && contentHeight > height
                             clip: root.themed
@@ -1365,7 +1562,7 @@ ShellRoot {
                                 text: "Controls"
                                 font.bold: root.themed
                                 font.italic: root.themed
-                                color: root.fgColor
+                                color: (root.kirakiraMenus ? root.menuPalette.text : root.fgColor)
                                 font.family: root.baseFont
                                 font.pixelSize: root.themed ? 16 : 14
                             }
@@ -1373,13 +1570,13 @@ ShellRoot {
                             Rectangle {
                                 width: parent.width
                                 height: root.themed ? 3 : 1
-                                color: root.selectedColor
+                                color: (root.kirakiraMenus ? root.menuPalette.selection : root.selectedColor)
                                 Row {
                                     anchors.fill: parent
                                     visible: root.themed
-                                    Rectangle { width: parent.width / 3; height: parent.height; color: root.themed ? root.theme.teal : root.selectedColor }
-                                    Rectangle { width: parent.width / 3; height: parent.height; color: root.themed ? root.theme.lavenderEdge : root.selectedColor }
-                                    Rectangle { width: parent.width / 3; height: parent.height; color: root.warningFill }
+                                    Rectangle { width: parent.width / 3; height: parent.height; color: root.themed ? root.theme.teal : (root.kirakiraMenus ? root.menuPalette.selection : root.selectedColor) }
+                                    Rectangle { width: parent.width / 3; height: parent.height; color: root.themed ? root.theme.lavenderEdge : (root.kirakiraMenus ? root.menuPalette.selection : root.selectedColor) }
+                                    Rectangle { width: parent.width / 3; height: parent.height; color: (root.kirakiraMenus ? root.menuPalette.raised : root.chipColor) }
                                 }
                             }
 
@@ -1392,18 +1589,22 @@ ShellRoot {
                                     width: root.themed ? (parent.width - parent.spacing * 2) / 3 : 92
                                     height: parent.height
 
-                                    color: root.audioMuted ? root.warningFill : root.chipColor
+                                    color: root.audioMuted ? (root.kirakiraMenus ? root.menuPalette.raised : root.chipColor) : (root.kirakiraMenus ? root.menuPalette.raised : root.chipColor)
 
                                     Text {
                                         anchors.centerIn: parent
                                         font.weight: root.themed ? Font.DemiBold : Font.Normal
                                         text: root.audioMuted ? "unmute" : "mute"
-                                        color: root.fgColor
+                                        color: (root.kirakiraMenus ? root.menuPalette.text : root.fgColor)
                                         font.family: root.baseFont
                                         font.pixelSize: 11
                                     }
 
                                     MouseArea {
+                                        objectName: "menuHitTarget"
+                                        activeFocusOnTab: true
+                                        Keys.onReturnPressed: clicked(null)
+                                        Keys.onSpacePressed: clicked(null)
                                         anchors.fill: parent
                                         onClicked: root.toggleMute()
                                     }
@@ -1413,18 +1614,22 @@ ShellRoot {
                                     width: 42
                                     height: parent.height
 
-                                    color: root.chipColor
+                                    color: (root.kirakiraMenus ? root.menuPalette.raised : root.chipColor)
 
                                     Text {
                                         anchors.centerIn: parent
                                         font.weight: root.themed ? Font.DemiBold : Font.Normal
                                         text: "-"
-                                        color: root.fgColor
+                                        color: (root.kirakiraMenus ? root.menuPalette.text : root.fgColor)
                                         font.family: root.baseFont
                                         font.pixelSize: 14
                                     }
 
                                     MouseArea {
+                                        objectName: "menuHitTarget"
+                                        activeFocusOnTab: true
+                                        Keys.onReturnPressed: clicked(null)
+                                        Keys.onSpacePressed: clicked(null)
                                         anchors.fill: parent
                                         onClicked: root.adjustVolume(-5)
                                     }
@@ -1434,7 +1639,7 @@ ShellRoot {
                                     width: 54
                                     height: parent.height
                                     text: String(root.volumePercent) + "%"
-                                    color: root.fgColor
+                                    color: (root.kirakiraMenus ? root.menuPalette.text : root.fgColor)
                                     font.family: root.baseFont
                                     font.pixelSize: 12
                                     horizontalAlignment: Text.AlignHCenter
@@ -1445,18 +1650,22 @@ ShellRoot {
                                     width: 42
                                     height: parent.height
 
-                                    color: root.chipColor
+                                    color: (root.kirakiraMenus ? root.menuPalette.raised : root.chipColor)
 
                                     Text {
                                         anchors.centerIn: parent
                                         font.weight: root.themed ? Font.DemiBold : Font.Normal
                                         text: "+"
-                                        color: root.fgColor
+                                        color: (root.kirakiraMenus ? root.menuPalette.text : root.fgColor)
                                         font.family: root.baseFont
                                         font.pixelSize: 14
                                     }
 
                                     MouseArea {
+                                        objectName: "menuHitTarget"
+                                        activeFocusOnTab: true
+                                        Keys.onReturnPressed: clicked(null)
+                                        Keys.onSpacePressed: clicked(null)
                                         anchors.fill: parent
                                         onClicked: root.adjustVolume(5)
                                     }
@@ -1466,7 +1675,7 @@ ShellRoot {
                             Text {
                                 width: parent.width
                                 text: root.sinkLabel(root.defaultSink)
-                                color: root.mutedColor
+                                color: (root.kirakiraMenus ? root.menuPalette.muted : root.mutedColor)
                                 elide: Text.ElideRight
                                 font.family: root.baseFont
                                 font.pixelSize: 10
@@ -1482,18 +1691,22 @@ ShellRoot {
                                     width: root.themed ? (parent.width - parent.spacing * 2) / 3 : 92
                                     height: parent.height
 
-                                    color: root.chipColor
+                                    color: (root.kirakiraMenus ? root.menuPalette.raised : root.chipColor)
 
                                     Text {
                                         anchors.centerIn: parent
                                         font.weight: root.themed ? Font.DemiBold : Font.Normal
                                         text: "bright -"
-                                        color: root.fgColor
+                                        color: (root.kirakiraMenus ? root.menuPalette.text : root.fgColor)
                                         font.family: root.baseFont
                                         font.pixelSize: 11
                                     }
 
                                     MouseArea {
+                                        objectName: "menuHitTarget"
+                                        activeFocusOnTab: true
+                                        Keys.onReturnPressed: clicked(null)
+                                        Keys.onSpacePressed: clicked(null)
                                         anchors.fill: parent
                                         onClicked: root.adjustBrightness(-5)
                                     }
@@ -1503,18 +1716,22 @@ ShellRoot {
                                     width: root.themed ? (parent.width - parent.spacing * 2) / 3 : 92
                                     height: parent.height
 
-                                    color: root.chipColor
+                                    color: (root.kirakiraMenus ? root.menuPalette.raised : root.chipColor)
 
                                     Text {
                                         anchors.centerIn: parent
                                         font.weight: root.themed ? Font.DemiBold : Font.Normal
                                         text: "bright +"
-                                        color: root.fgColor
+                                        color: (root.kirakiraMenus ? root.menuPalette.text : root.fgColor)
                                         font.family: root.baseFont
                                         font.pixelSize: 11
                                     }
 
                                     MouseArea {
+                                        objectName: "menuHitTarget"
+                                        activeFocusOnTab: true
+                                        Keys.onReturnPressed: clicked(null)
+                                        Keys.onSpacePressed: clicked(null)
                                         anchors.fill: parent
                                         onClicked: root.adjustBrightness(5)
                                     }
@@ -1524,18 +1741,22 @@ ShellRoot {
                                     width: root.themed ? (parent.width - parent.spacing * 2) / 3 : 92
                                     height: parent.height
 
-                                    color: root.chipColor
+                                    color: (root.kirakiraMenus ? root.menuPalette.raised : root.chipColor)
 
                                     Text {
                                         anchors.centerIn: parent
                                         font.weight: root.themed ? Font.DemiBold : Font.Normal
                                         text: root.powerProfileGlyph()
-                                        color: root.fgColor
+                                        color: (root.kirakiraMenus ? root.menuPalette.text : root.fgColor)
                                         font.family: root.baseFont
                                         font.pixelSize: 11
                                     }
 
                                     MouseArea {
+                                        objectName: "menuHitTarget"
+                                        activeFocusOnTab: true
+                                        Keys.onReturnPressed: clicked(null)
+                                        Keys.onSpacePressed: clicked(null)
                                         anchors.fill: parent
                                         onClicked: root.cyclePowerProfile()
                                     }
@@ -1552,18 +1773,22 @@ ShellRoot {
                                     width: root.themed ? (parent.width - parent.spacing * 3) / 4 : 70
                                     height: parent.height
 
-                                    color: Networking.wifiEnabled ? root.chipColor : root.warningFill
+                                    color: Networking.wifiEnabled ? (root.kirakiraMenus ? root.menuPalette.raised : root.chipColor) : (root.kirakiraMenus ? root.menuPalette.raised : root.chipColor)
 
                                     Text {
                                         anchors.centerIn: parent
                                         font.weight: root.themed ? Font.DemiBold : Font.Normal
                                         text: Networking.wifiEnabled ? "wifi on" : "wifi off"
-                                        color: root.fgColor
+                                        color: (root.kirakiraMenus ? root.menuPalette.text : root.fgColor)
                                         font.family: root.baseFont
                                         font.pixelSize: 11
                                     }
 
                                     MouseArea {
+                                        objectName: "menuHitTarget"
+                                        activeFocusOnTab: true
+                                        Keys.onReturnPressed: clicked(null)
+                                        Keys.onSpacePressed: clicked(null)
                                         anchors.fill: parent
                                         onClicked: root.toggleWifi()
                                     }
@@ -1573,18 +1798,22 @@ ShellRoot {
                                     width: root.themed ? (parent.width - parent.spacing * 3) / 4 : 70
                                     height: parent.height
 
-                                    color: root.chipColor
+                                    color: (root.kirakiraMenus ? root.menuPalette.raised : root.chipColor)
 
                                     Text {
                                         anchors.centerIn: parent
                                         font.weight: root.themed ? Font.DemiBold : Font.Normal
                                         text: "lock"
-                                        color: root.fgColor
+                                        color: (root.kirakiraMenus ? root.menuPalette.text : root.fgColor)
                                         font.family: root.baseFont
                                         font.pixelSize: 11
                                     }
 
                                     MouseArea {
+                                        objectName: "menuHitTarget"
+                                        activeFocusOnTab: true
+                                        Keys.onReturnPressed: clicked(null)
+                                        Keys.onSpacePressed: clicked(null)
                                         anchors.fill: parent
                                         onClicked: root.lockSession()
                                     }
@@ -1594,18 +1823,22 @@ ShellRoot {
                                     width: root.themed ? (parent.width - parent.spacing * 3) / 4 : 70
                                     height: parent.height
 
-                                    color: root.chipColor
+                                    color: (root.kirakiraMenus ? root.menuPalette.raised : root.chipColor)
 
                                     Text {
                                         anchors.centerIn: parent
                                         font.weight: root.themed ? Font.DemiBold : Font.Normal
                                         text: "suspend"
-                                        color: root.fgColor
+                                        color: (root.kirakiraMenus ? root.menuPalette.text : root.fgColor)
                                         font.family: root.baseFont
                                         font.pixelSize: 11
                                     }
 
                                     MouseArea {
+                                        objectName: "menuHitTarget"
+                                        activeFocusOnTab: true
+                                        Keys.onReturnPressed: clicked(null)
+                                        Keys.onSpacePressed: clicked(null)
                                         anchors.fill: parent
                                         onClicked: root.suspendSession()
                                     }
@@ -1615,18 +1848,22 @@ ShellRoot {
                                     width: root.themed ? (parent.width - parent.spacing * 3) / 4 : 70
                                     height: parent.height
 
-                                    color: root.warningFill
+                                    color: (root.kirakiraMenus ? root.menuPalette.raised : root.chipColor)
 
                                     Text {
                                         anchors.centerIn: parent
                                         font.weight: root.themed ? Font.DemiBold : Font.Normal
                                         text: "shutdown"
-                                        color: root.fgColor
+                                        color: (root.kirakiraMenus ? root.menuPalette.text : root.fgColor)
                                         font.family: root.baseFont
                                         font.pixelSize: 10
                                     }
 
                                     MouseArea {
+                                        objectName: "menuHitTarget"
+                                        activeFocusOnTab: true
+                                        Keys.onReturnPressed: clicked(null)
+                                        Keys.onSpacePressed: clicked(null)
                                         anchors.fill: parent
                                         onClicked: root.shutdownSession()
                                     }
@@ -1642,7 +1879,7 @@ ShellRoot {
                                     width: parent.width - 58
                                     height: parent.height
                                     text: "Notifications"
-                                    color: root.fgColor
+                                    color: (root.kirakiraMenus ? root.menuPalette.text : root.fgColor)
                                     font.family: root.baseFont
                                     font.pixelSize: 13
                                     verticalAlignment: Text.AlignVCenter
@@ -1652,13 +1889,17 @@ ShellRoot {
                                     width: 50
                                     height: parent.height
                                     text: "clear"
-                                    color: root.notificationCount > 0 ? root.accentColor : root.mutedColor
+                                    color: root.notificationCount > 0 ? root.accentColor : (root.kirakiraMenus ? root.menuPalette.muted : root.mutedColor)
                                     font.family: root.baseFont
                                     font.pixelSize: 10
                                     horizontalAlignment: Text.AlignRight
                                     verticalAlignment: Text.AlignVCenter
 
                                     MouseArea {
+                                        objectName: "menuHitTarget"
+                                        activeFocusOnTab: true
+                                        Keys.onReturnPressed: clicked(null)
+                                        Keys.onSpacePressed: clicked(null)
                                         anchors.fill: parent
                                         onClicked: {
                                             root.toastNotifications = [];
@@ -1680,7 +1921,7 @@ ShellRoot {
                                         width: controlCenterColumn.width
                                         height: Math.max(58, notificationHistoryContent.implicitHeight + 12)
                                         radius: 5
-                                        color: root.chipColor
+                                        color: (root.kirakiraMenus ? root.menuPalette.raised : root.chipColor)
                                         border.width: modelData.urgency === NotificationUrgency.Critical ? 1 : 0
                                         border.color: root.urgentColor
 
@@ -1709,7 +1950,7 @@ ShellRoot {
                                                     id: historyTimestamp
 
                                                     text: root.notificationTimestamp(modelData)
-                                                    color: root.mutedColor
+                                                    color: (root.kirakiraMenus ? root.menuPalette.muted : root.mutedColor)
                                                     font.family: root.baseFont
                                                     font.pixelSize: 9
                                                 }
@@ -1718,7 +1959,7 @@ ShellRoot {
                                             Text {
                                                 width: parent.width
                                                 text: root.notificationBody(modelData)
-                                                color: root.mutedColor
+                                                color: (root.kirakiraMenus ? root.menuPalette.muted : root.mutedColor)
                                                 maximumLineCount: 4
                                                 wrapMode: Text.Wrap
                                                 font.family: root.baseFont
@@ -1727,6 +1968,10 @@ ShellRoot {
                                         }
 
                                         MouseArea {
+                                        objectName: "menuHitTarget"
+                                        activeFocusOnTab: true
+                                        Keys.onReturnPressed: clicked(null)
+                                        Keys.onSpacePressed: clicked(null)
                                             anchors.fill: parent
                                             acceptedButtons: Qt.AllButtons
                                             onClicked: function(mouse) {
@@ -1744,7 +1989,7 @@ ShellRoot {
                                     visible: root.notificationCount === 0
                                     width: parent.width
                                     text: "No notifications"
-                                    color: root.mutedColor
+                                    color: (root.kirakiraMenus ? root.menuPalette.muted : root.mutedColor)
                                     font.family: root.baseFont
                                     font.pixelSize: 11
                                 }
@@ -1770,7 +2015,7 @@ ShellRoot {
 
                     MenuCard {
                         anchors.fill: parent
-                        color: root.themed ? root.surfaceColor : "#ee050508"
+                        color: root.themed ? (root.kirakiraMenus ? root.menuPalette.background : root.surfaceColor) : "#ee050508"
                         border.width: 1
                         border.color: root.accentColor
 
@@ -1794,7 +2039,7 @@ ShellRoot {
                                     width: 14
                                     height: 14
                                     radius: 7
-                                    color: root.themed ? root.surfaceColor : "#ee050508"
+                                    color: root.themed ? (root.kirakiraMenus ? root.menuPalette.background : root.surfaceColor) : "#ee050508"
                                     anchors.right: parent.right
                                     anchors.top: parent.top
                                 }
@@ -1811,7 +2056,7 @@ ShellRoot {
                             Text {
                                 width: parent.width
                                 text: root.powerActionLabel
-                                color: root.fgColor
+                                color: (root.kirakiraMenus ? root.menuPalette.text : root.fgColor)
                                 font.family: root.baseFont
                                 font.pixelSize: 22
                                 horizontalAlignment: Text.AlignHCenter
@@ -1822,7 +2067,7 @@ ShellRoot {
                             Text {
                                 width: parent.width
                                 text: "Waiting for system services to finish"
-                                color: root.mutedColor
+                                color: (root.kirakiraMenus ? root.menuPalette.muted : root.mutedColor)
                                 font.family: root.baseFont
                                 font.pixelSize: 12
                                 horizontalAlignment: Text.AlignHCenter
@@ -1875,11 +2120,11 @@ ShellRoot {
                                 width: toastStack.width
                                 height: Math.max(76, toastContent.implicitHeight + 16)
                                 radius: root.panelRadius
-                                color: root.themed ? root.surfaceColor : "#dd11111b"
+                                color: root.themed ? (root.kirakiraMenus ? root.menuPalette.background : root.surfaceColor) : "#dd11111b"
                                 border.width: 1
                                 border.color: modelData.critical
                                     ? root.urgentColor
-                                    : root.edgeColor
+                                    : (root.kirakiraMenus ? root.menuPalette.teal : root.edgeColor)
 
                                 Row {
                                     id: toastContent
@@ -1894,7 +2139,7 @@ ShellRoot {
                                         height: visible ? 38 : 0
                                         anchors.verticalCenter: parent.verticalCenter
                                         radius: 6
-                                        color: root.chipColor
+                                        color: (root.kirakiraMenus ? root.menuPalette.raised : root.chipColor)
                                         clip: true
 
                                         IconImage {
@@ -1927,7 +2172,7 @@ ShellRoot {
                                                 id: toastTimestamp
 
                                                 text: modelData.timestamp || ""
-                                                color: root.mutedColor
+                                                color: (root.kirakiraMenus ? root.menuPalette.muted : root.mutedColor)
                                                 font.family: root.baseFont
                                                 font.pixelSize: 9
                                             }
@@ -1936,7 +2181,7 @@ ShellRoot {
                                         Text {
                                             width: parent.width
                                             text: modelData.body || ""
-                                            color: root.fgColor
+                                            color: (root.kirakiraMenus ? root.menuPalette.text : root.fgColor)
                                             maximumLineCount: 5
                                             wrapMode: Text.Wrap
                                             font.family: root.baseFont

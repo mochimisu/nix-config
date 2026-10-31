@@ -1,0 +1,71 @@
+--- a/Globals.hpp
++++ b/Globals.hpp
+@@ -362,6 +362,7 @@
+     GLint     alphaLoc        = -1;
+     GLint     resolutionLoc   = -1; // vec2: current monitor pixel size
+     GLint     outputTransformLoc = -1; // int: wl_output_transform of the rendering monitor
++    GLint     monitorTransformLoc = -1; // coordinate orientation of this individual draw
+     GLint     intermediateLoc = -1; // float: shader runs over the source buffer offscreen
+     GLint     surfaceSizeLoc  = -1; // vec2: the view's own size; 0,0 when unknown
+     GLint     mouseLoc        = -1; // vec2: pointer position
+--- a/Hooks.cpp
++++ b/Hooks.cpp
+@@ -1579,6 +1579,12 @@
+                 res = mon->m_pixelSize;
+             glUniform2f(activeEntry->resolutionLoc, (float)res.x, (float)res.y);
+         }
++        // The blur background is drawn with monitor transform enabled, then
++        // foreground rendering restores the prior state. Both use this hook.
++        if (activeEntry->monitorTransformLoc >= 0)
++            glUniform1i(activeEntry->monitorTransformLoc,
++                        !g_bIntermediatePass && g_pHyprRenderer->monitorTransformEnabled()
++                            ? static_cast<int>(g_pHyprRenderer->m_renderData.pMonitor->m_transform) : 0);
+         if (activeEntry->intermediateLoc >= 0)
+             glUniform1f(activeEntry->intermediateLoc, g_bIntermediatePass ? 1.0f : 0.0f);
+         if (activeEntry->outputTransformLoc >= 0) {
+--- a/ShaderEngine.cpp
++++ b/ShaderEngine.cpp
+@@ -280,11 +280,22 @@
+         "out vec2 v_texcoord;\n"
+         "out vec2 v_windowcoord;\n"
+         "uniform vec4 window_rect;\n"
+-        "uniform float plugin_intermediate;\n");
++        "uniform float plugin_intermediate;\n"
++        "uniform int plugin_draw_transform;\n"
++        "vec2 pluginWindowCoord(vec2 p) {\n"
++        "  if (plugin_draw_transform == 0) return p;\n"
++        "  if (plugin_draw_transform == 1) return vec2(1.0-p.y,p.x);\n"
++        "  if (plugin_draw_transform == 2) return 1.0-p;\n"
++        "  if (plugin_draw_transform == 3) return vec2(p.y,1.0-p.x);\n"
++        "  if (plugin_draw_transform == 4) return vec2(1.0-p.x,p.y);\n"
++        "  if (plugin_draw_transform == 5) return vec2(1.0-p.y,1.0-p.x);\n"
++        "  if (plugin_draw_transform == 6) return vec2(p.x,1.0-p.y);\n"
++        "  if (plugin_draw_transform == 7) return p.yx;\n"
++        "  return p;\n}\n");
+     vertexCode = std::regex_replace(vertexCode, std::regex(R"(v_texcoord\s*=\s*texcoord\s*;)"),
+         "v_texcoord = texcoord;\n"
+         "v_windowcoord = plugin_intermediate > 0.5 ? "
+-        "(texcoord - window_rect.xy) / max(window_rect.zw, vec2(0.00001)) : pos;");
++        "(texcoord - window_rect.xy) / max(window_rect.zw, vec2(0.00001)) : pluginWindowCoord(pos);");
+     entry.shader->createProgram(vertexCode, shaderCode, true, true);
+ 
+     const GLuint prog = entry.shader->program();
+@@ -310,6 +321,7 @@
+     entry.resolutionLoc   = glGetUniformLocation(prog, "resolution");
+     entry.outputTransformLoc = glGetUniformLocation(prog, "output_transform");
+     entry.intermediateLoc = glGetUniformLocation(prog, "plugin_intermediate");
++    entry.monitorTransformLoc = glGetUniformLocation(prog, "plugin_draw_transform");
+     entry.surfaceSizeLoc  = glGetUniformLocation(prog, "surface_size");
+     entry.mouseLoc        = glGetUniformLocation(prog, "mouse");
+     entry.isActiveLoc     = glGetUniformLocation(prog, "is_active");
+--- a/main.cpp
++++ b/main.cpp
+@@ -550,7 +550,7 @@
+     // Version is deliberately empty: releases are GitHub tags, and hyprpm ships
+     // whatever commit `commit_pins` names. A number maintained here would be a
+     // second source of truth that silently drifts from both.
+-    return {"HyprWindowShade", "Native CShader Injection (v0.56)", "ManofJELLO", ""};
++    return {"HyprWindowShade", "Native CShader Injection (v0.56)", "ManofJELLO", "a4c6b8a-window-blur-coordinates-v2"};
+ }
+ 
+ APICALL EXPORT void PLUGIN_EXIT() {

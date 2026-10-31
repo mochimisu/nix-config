@@ -68,6 +68,14 @@ in {
     steam = lib.mkForce "steam";
   };
 
+  # SteamOS owns the desktop and native Qt plugin environment. Share only
+  # managed app colors (and existing private Mako on Comet), not session components.
+  variables.desktopStyle = {
+    apps.desktopIntegration.enable = false;
+    shell.enable = false;
+    launcher.enable = false;
+    mediaFeedback.enable = false;
+  };
   home.username = "steamos";
   home.homeDirectory = "/home/steamos";
 

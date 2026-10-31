@@ -3,6 +3,7 @@
 import hashlib
 import json
 import os
+import runpy
 from pathlib import Path
 import shutil
 import struct
@@ -11,21 +12,22 @@ import sys
 import tempfile
 
 
+# Anchors reviewed against ChatGPT 26.1023.50603.
 # Match this complete upstream helper, including its final .mcp.json write.
 # Never replace the similar cp calls used by other plugin installation paths.
-EXECUTOR_COPY = "await x.default.cp(n.cwd,e,{recursive:!0})"
+EXECUTOR_COPY = "await j.default.cp(n.cwd,e,{recursive:!0})"
 EXECUTOR_HELPER = (
-    "async function Zc({executorPluginRoot:e,resourcesPath:t}){"
-    "let n=await $c({useWsl:!1,resourcesPath:t});return n==null?null:("
+    "async function ese({executorPluginRoot:e,resourcesPath:t}){"
+    "let n=await Rc({useWsl:!1,resourcesPath:t});return n==null?null:("
     + EXECUTOR_COPY +
-    ",process.platform!==`win32`&&(n.command=C.default.join(e,"
-    "C.default.relative(n.cwd,n.command))),n.cwd=e,n.enabled=!0,"
-    "n.env={...n.env,CODEX_APP_TOOLS_CALLER_HOST_ID:r.ki},"
-    "await x.default.writeFile(C.default.join(e,`.mcp.json`),"
+    ",process.platform!==`win32`&&(n.command=w.default.join(e,"
+    "w.default.relative(n.cwd,n.command))),n.cwd=e,n.enabled=!0,"
+    "n.env={...n.env,CODEX_APP_TOOLS_CALLER_HOST_ID:i.Ti},"
+    "await j.default.writeFile(w.default.join(e,`.mcp.json`),"
     "`${JSON.stringify({mcpServers:{codex_app:n}},null,2)}\\n`,`utf8`),e)}"
 )
 EXECUTOR_REPLACEMENT = (
-    "await codexNixCopyExecutorPlugin({fs:x.default,path:C.default,"
+    "await codexNixCopyExecutorPlugin({fs:j.default,path:w.default,"
     "sourceRoot:n.cwd,pluginRoot:e})"
 )
 
@@ -67,7 +69,7 @@ def integrity(data, block_size):
     }
 
 
-def main(archive, helper):
+def main(archive, helper, window_patch, window_test):
     export = "\nmodule.exports = codexNixPrepareBundledCopy;\n"
     helper_text = helper.read_text()
     if not helper_text.endswith(export):
@@ -76,11 +78,11 @@ def main(archive, helper):
     if any(helper_text.count("async function " + name + "(") != 1 for name in (
             "codexNixPrepareBundledCopy", "codexNixCopyExecutorPlugin")):
         raise ValueError("Expected both permission helper definitions exactly once")
-    copy_call = "await Qne(n,r),await Tne({"
-    replacement = ("await Qne(n,r),await codexNixPrepareBundledCopy({"
-                   "fs:x.default,path:C,pluginRoot:r,pluginName:t.name,"
-                   "computerUseAudioEnabled:t.name===`computer-use`&&jo()}),await Tne({")
-    definition = "async function Tne(e){"
+    copy_call = "await vae(n,r),await Fie({"
+    replacement = ("await vae(n,r),await codexNixPrepareBundledCopy({"
+                   "fs:j.default,path:w,pluginRoot:r,pluginName:t.name,"
+                   "computerUseAudioEnabled:t.name===`computer-use`&&gs()}),await Fie({")
+    definition = "async function Fie(e){"
     with archive.open("rb") as src:
         index, body_start = header(src)
         candidates = [(p, e) for p, e in entries(index)
@@ -125,22 +127,24 @@ def main(archive, helper):
         if text.count(copy_call) != 1 or text.count(definition) != 1:
             raise ValueError("Upstream copy/customization code changed; review patch")
         if (text.count(EXECUTOR_HELPER) != 1 or
-                text.count("async function Zc(") != 1):
+                text.count("async function ese(") != 1):
             raise ValueError("Upstream executor copy helper changed; review patch")
         # Guard the narrow mutation paths that determine the writable-file list.
         expected = [
-            'e.pluginName===`computer-use`&&jo()',
+            'e.pluginName===`computer-use`&&gs()',
             'e.pluginName===`visualize`',
             '(e.pluginRoot,`skills`,`computer-use`,`SKILL.md`)',
             '(e.pluginRoot,`.codex-plugin`,`plugin.json`)',
         ]
-        customization = text.split(definition, 1)[1].split("var Mo=", 1)[0]
+        customization = text.split(definition, 1)[1].split("var _s=", 1)[0]
         if any(fragment not in customization for fragment in expected):
             raise ValueError("Upstream customization targets changed; review patch")
         patched = text.replace(copy_call, replacement).replace(
             EXECUTOR_HELPER,
             EXECUTOR_HELPER.replace(EXECUTOR_COPY, EXECUTOR_REPLACEMENT),
-        ).replace(definition, helper_text + "\n" + definition).encode("utf-8")
+        ).replace(definition, helper_text + "\n" + definition)
+        patched = runpy.run_path(str(window_patch))["patch"](patched).encode("utf-8")
+        subprocess.run(["node", str(window_test)], input=patched, check=True)
         subprocess.run(["node", "--check"], input=patched, check=True)
         delta = len(patched) - size
         for path, item in entries(index):
@@ -180,6 +184,6 @@ def main(archive, helper):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        raise SystemExit("usage: patch-bundled-copy.py APP.ASAR HELPER.CJS")
-    main(Path(sys.argv[1]), Path(sys.argv[2]))
+    if len(sys.argv) != 5:
+        raise SystemExit("usage: patch-bundled-copy.py APP.ASAR HELPER.CJS WINDOW_PATCH.PY WINDOW_TEST.CJS")
+    main(*(Path(arg) for arg in sys.argv[1:]))

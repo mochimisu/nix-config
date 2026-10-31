@@ -25,7 +25,8 @@ def sidebar(source, repo, fixtures, height, themed, output):
     palette = json.loads((repo/'home/theme/sekai-palette.json').read_text())
     palette.update(railForeground=app['text'], railMuted=app['muted'])
     values = dict(sessionControlsEnabled='true', sidebarScreensJson='["0"]',
-                  hostName='blackmoon' if themed else 'oasis', mediaFeedbackEnabled=str(themed).lower(),
+                  hostName='blackmoon' if themed else 'oasis', kirakiraMenusEnabled=str(themed).lower(),
+                  menuPaletteJson=json.dumps(dict(app, background='#c2181d21')), mediaFeedbackEnabled=str(themed).lower(),
                   blockedAudioDescriptionsJson='[]', pttStateFile='', iconSize='16', fontSize='13px',
                   workspaceHeight='18', workspaceSpacing='2', themePaletteJson=json.dumps(palette if themed else {}))
     for key in re.findall(r'@(\w+)@', s):
@@ -61,6 +62,19 @@ def sidebar(source, repo, fixtures, height, themed, output):
     s = re.sub(r'^            WlrLayershell\..*\n','',s,flags=re.M)
     s = s.replace('running: true\n        command:', 'running: false\n        command:')
     checks = (fixtures/'sidebar-checks.qml.inc').read_text()
+    if 'readonly property bool kirakiraMenus:' in s:
+        # Private X11/offscreen tests have no Hyprland focus-grab protocol.
+        if '            HyprlandFocusGrab {' in s:
+            start = s.index('            HyprlandFocusGrab {')
+            s = s[:start] + s[block_end(s, start):]
+        # Shape-match the real opener; no app's D-Bus actions enter this fixture.
+        s = s.replace('delegate: QsMenuOpener { required property var modelData; menu: modelData }',
+                      'delegate: QtObject { required property var modelData; property var children: ({values: modelData.children}) }')
+        for card, key in [('audioCard','audioKeys'), ('controlCard','controlKeys'), ('trayCard','trayKeys')]:
+            s = s.replace('id: '+card, 'id: '+card+'\n TestCase { id: '+key+'; when: false }')
+        checks = checks.replace('                function runChecks()',
+                                (fixtures/'sidebar-menus.qml.inc').read_text()+'                function runChecks()')
+
     fixture = '''
             Timer {
                 interval: 300; running: true
@@ -70,7 +84,7 @@ def sidebar(source, repo, fixtures, height, themed, output):
                     root.windowState = {[name]: {title:"Desktop regression fixture"}};
                     root.clockState = {hour:"03",minute:"45",ampm:"pm",date:"10/14"};
                     root.networkState = {eth:"fixture"}; root.cavaBars="▂▄▆▃▅";
-                    controlCenterPopup.visible=true; audioPopup.visible=true;
+                    audioPopup.visible=false; controlCenterPopup.visible=true;
                     checkTimer.start();
                 }
             }
@@ -85,16 +99,29 @@ def sidebar(source, repo, fixtures, height, themed, output):
                 }
             }
 '''.replace('@output@', str(output))
+    if 'readonly property bool kirakiraMenus:' in s:
+        fixture = fixture.replace('tests.runChecks();', 'tests.runChecks(); tests.runMenuChecks();')
     return s.replace('            id: panel','            id: panel\n'+checks+fixture,1)
 
 
 def run_qml(path, env, output):
     (output/(path.stem+".qml")).write_text(path.read_text())
-    result = subprocess.run(['dbus-run-session','--','qs','-n','-p',str(path)], env=env,
-                            text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=35)
+    capture = output/(path.stem+'.png')
+    is_greeter = path.stem.startswith('greeter-')
+    if is_greeter: capture.unlink(missing_ok=True)
+    command = ['qml', '--verbose', str(path)] if path.stem.startswith('greeter-') else ['qs','-n','-p',str(path)]
+    try:
+        result = subprocess.run(['dbus-run-session','--'] + command, env=env,
+                                text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=35)
+    except subprocess.TimeoutExpired as error:
+        log = error.stdout or b''
+        if isinstance(log, bytes): log = log.decode(errors='replace')
+        (output/(path.stem+'.log')).write_text(log)
+        raise RuntimeError(f'{path.name} timed out: {log[-5000:]}') from error
     (output/(path.stem+'.log')).write_text(result.stdout)
-    if result.returncode or 'TESTS PASSED' not in result.stdout or 'ASSERT' in result.stdout:
-        raise RuntimeError(f'{path.name} failed: {result.stdout[-5000:]}')
+    passed = capture.exists() if is_greeter else 'TESTS PASSED' in result.stdout
+    if result.returncode or not passed or 'ASSERT' in result.stdout:
+        raise RuntimeError(f'{path.name} failed (exit {result.returncode}): {result.stdout[-5000:]}')
     print('PASS',path.stem,flush=True)
 
 
@@ -146,18 +173,22 @@ def main():
     ap.add_argument('--repo',type=Path,default=Path.cwd());ap.add_argument('--fixtures',type=Path,required=True)
     ap.add_argument('--generation',type=Path,required=True,help='Built Blackmoon Home Manager generation')
     ap.add_argument('--output',type=Path,required=True);ap.add_argument('--baseline-sidebar',type=Path)
-    args=ap.parse_args();repo=args.repo.resolve();out=args.output.resolve();out.mkdir(parents=True,exist_ok=True)
+    args=ap.parse_args()
+    import sys
+    sys.path.insert(0,str(args.fixtures))
+    from greeter import greeter
+    repo=args.repo.resolve();out=args.output.resolve();out.mkdir(parents=True,exist_ok=True)
     for script in ['home/apps/quickshell/phone-launcher/test_context.py','machines/blackmoon/sddm/test_rotate_displays.py','home/theme/media-osd/test_media_osd.py']:
         subprocess.run(['python3',str(repo/script)],env=dict(os.environ,PYTHONDONTWRITEBYTECODE='1'),check=True)
     subprocess.run(['node',str(repo/'home/apps/quickshell/phone-launcher/test-search.cjs')],check=True)
     with tempfile.TemporaryDirectory(prefix='desktop-style-') as directory:
         temp=Path(directory);runtime=temp/'runtime';runtime.mkdir(mode=0o700)
         env=dict(os.environ)
-        for name in ['WAYLAND_DISPLAY','HYPRLAND_INSTANCE_SIGNATURE','DBUS_SESSION_BUS_ADDRESS','SWAYSOCK','QT_STYLE_OVERRIDE','QT_PLUGIN_PATH','QML_IMPORT_PATH','QML2_IMPORT_PATH']:
+        for name in ['WAYLAND_DISPLAY','HYPRLAND_INSTANCE_SIGNATURE','DBUS_SESSION_BUS_ADDRESS','SWAYSOCK','QT_STYLE_OVERRIDE','QT_QPA_PLATFORMTHEME','QT_IM_MODULE','QT_PLUGIN_PATH','QML_IMPORT_PATH','QML2_IMPORT_PATH']:
             env.pop(name,None)
         env.update(XDG_RUNTIME_DIR=str(runtime),XDG_CONFIG_HOME=str(temp/'config'),XDG_CACHE_HOME=str(temp/'cache'),
-                   XDG_DATA_HOME=str(temp/'data'),DBUS_SYSTEM_BUS_ADDRESS='unix:path=/nonexistent/test-bus',
-                   QT_QPA_PLATFORM='xcb',QT_QUICK_BACKEND='rhi',QSG_RHI_BACKEND='opengl',
+                   XDG_DATA_HOME=str(temp/'data'),XDG_DATA_DIRS=str(temp/'data-dirs'),DBUS_SYSTEM_BUS_ADDRESS='unix:path=/nonexistent/test-bus',
+                   QT_QPA_PLATFORM='xcb',QT_QPA_PLATFORMTHEME='',GTK_USE_PORTAL='0',QT_NO_XDG_DESKTOP_PORTAL='1',QT_QUICK_BACKEND='rhi',QSG_RHI_BACKEND='opengl',
                    QML_IMPORT_PATH=os.environ['DESKTOP_QML_IMPORTS'],QT_PLUGIN_PATH=os.environ['DESKTOP_QT_PLUGINS'])
         read,write=os.pipe()
         xvfb=subprocess.Popen(['Xvfb','-displayfd',str(write),'-screen','0','1600x1000x24','-nolisten','tcp'],pass_fds=[write],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
@@ -178,8 +209,13 @@ def main():
                         raise RuntimeError(f'{name}: {len(differences)} image channels differ; maximum {max(differences)}')
                     print(f'PASS {name} visual equivalence: {len(differences)} channels differ, max {max(differences, default=0)}/255',flush=True)
             for width,height in [(560,900),(390,580)]:
-                q=(args.fixtures/'launcher.qml.in').read_text().replace('@launcher@',(repo/'home/apps/quickshell/phone-launcher').as_uri()).replace('@width@',str(width)).replace('@height@',str(height))
+                q=(args.fixtures/'launcher.qml.in').read_text().replace('@launcher@',(repo/'home/apps/quickshell/phone-launcher').as_uri()).replace('@width@',str(width)).replace('@height@',str(height)).replace('@output@',str(out/f'launcher-detail-{width}.png'))
                 path=temp/f'launcher-{width}-{height}.qml';path.write_text(q);run_qml(path,env,out)
+            for width,height,keyboard in [(1280,800,False),(800,600,False),(1280,800,True),(800,600,True)]:
+                path=temp/f'greeter-{width}-{height}-{keyboard}.qml'
+                path.write_text(greeter(repo,args.fixtures,width,height,keyboard,out/(path.stem+'.png')))
+                (temp/'VirtualKeyboard.qml').write_text((repo/'system/desktop-style/sddm/VirtualKeyboard.qml').read_text())
+                run_qml(path,dict(env,QT_IM_MODULE='qtvirtualkeyboard' if keyboard else ''),out)
             test_eww(repo,args.generation.resolve(),env,out,temp)
         finally:xvfb.terminate();xvfb.wait(timeout=10)
     print('All desktop style checks passed. No live session was changed.')

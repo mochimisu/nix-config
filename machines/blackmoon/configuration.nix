@@ -30,7 +30,6 @@
 in {
 
   imports = [
-    ./boot-style
     ./sddm
     ../../nvidia.nix
     ./scanner.nix
@@ -38,6 +37,12 @@ in {
   ];
 
   networking.hostName = "blackmoon";
+  # Balance independent builds and parallel compilation on 32 hardware threads,
+  # targeting 24 build threads while leaving headroom for the desktop.
+  nix.settings = {
+    max-jobs = 4;
+    cores = 6;
+  };
   programs.steam.remotePlay.openFirewall = true;
   # GeoClue has occasionally alternated between Los Angeles and New York while
   # this stationary desktop is under load, making every local-time display jump
