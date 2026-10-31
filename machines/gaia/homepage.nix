@@ -95,10 +95,37 @@ in {
     recommendedGzipSettings = true;
     recommendedOptimisation = true;
 
+    # Approved house model: LAN sources on the LAN destination only.
+    appendHttpConfig = ''
+      geo $house_lan_client {
+        default 0;
+        192.168.1.0/24 1;
+      }
+      # Exact destination/source pairs: existing LAN plus the approved Z Flip7.
+      map "$server_addr:$house_lan_client:$remote_addr" $house_route_allowed {
+        default 0;
+        ~^192[.]168[.]1[.]35:1: 1;
+        "100.120.132.40:0:100.106.218.115" 1;
+      }
+    '';
+
     virtualHosts.gaia-home = {
       default = true;
       listen = homepageListen;
       root = homepage;
+      locations."= /house" = {
+        extraConfig = ''
+          if ($house_route_allowed = 0) { return 403; }
+          return 302 /house/;
+        '';
+      };
+      locations."/house/" = {
+        proxyPass = "http://100.120.132.40:18841/";
+        extraConfig = ''
+          if ($house_route_allowed = 0) { return 403; }
+          proxy_set_header Host $host;
+        '';
+      };
       locations."= /stats.json" = {
         alias = "/run/gaia-homepage/stats.json";
         extraConfig = ''

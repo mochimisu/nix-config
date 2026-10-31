@@ -101,6 +101,7 @@ in {
     ./blackvue-sync.nix
     ./blackvue-viewer.nix
     ./ebooks.nix
+    ./ups.nix
     ./jellyfin.nix
     ./sops.nix
     ./teslausb.nix
