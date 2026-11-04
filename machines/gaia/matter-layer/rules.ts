@@ -1,4 +1,5 @@
 import { defineRules } from "matter-layer/rules";
+import carDevices from "./rooms/cars.devices";
 
 import guestBedroomDevices from "./rooms/guest-bedroom.devices";
 import mbrBathroomDevices from "./rooms/mbr-bathroom.devices";
@@ -20,6 +21,7 @@ import upstairsBathroomRules from "./rooms/upstairs-bathroom.rules";
 
 export default defineRules({
   devices: [
+    carDevices,
     officeDevices,
     mbrBathroomDevices,
     mbrDevices,

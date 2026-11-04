@@ -1,0 +1,15 @@
+--- a/custom_components/bm6/battery.py
++++ b/custom_components/bm6/battery.py
+@@ -397,7 +397,11 @@
+             self._state = BatteryState.Idle
+ 
+     def _bm6_status_to_battery_state(self, state: BM6RealTimeState) -> BatteryState:
+-        """Convert BM6 real-time status to BatteryState."""
++        """Convert the decoded integer status using the upstream enum mapping."""
++        try:
++            state = BM6RealTimeState(state)
++        except (TypeError, ValueError):
++            return BatteryState.Unknown
+         state_mapping = {
+             BM6RealTimeState.BatteryOk: BatteryState.Ok,
+             BM6RealTimeState.LowVoltage: BatteryState.LowVoltage,

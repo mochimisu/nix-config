@@ -78,6 +78,8 @@
       coreutils = "${pkgs.coreutils}";
       btrfs = "${pkgs.btrfs-progs}";
       procps = "${pkgs.procps}";
+      nut = "${pkgs.nut}";
+      haEnvFile = "/etc/secret/matter-reconcile.env";
       iproute2 = "${pkgs.iproute2}";
       inherit statsMountsJson btrfsMountsJson;
     };
@@ -271,6 +273,7 @@ in {
       ExecStart = statsCollector;
       Restart = "always";
       RestartSec = "2s";
+      StateDirectory = "gaia-homepage";
       RuntimeDirectory = "gaia-homepage";
       RuntimeDirectoryMode = "0755";
     };
