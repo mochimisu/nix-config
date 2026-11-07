@@ -10,6 +10,13 @@
     sha256 = "sha256:1571r0sz1qfz9xdqqkbpzfx8wx22azrhmsmdj14km427qcyiiap6";
   };
   lua = lib.generators.mkLuaInline;
+  steamCaptureOutput = pkgs.writeScriptBin "steam-capture-output" (
+    "#!${pkgs.python3}/bin/python3\n"
+    + builtins.replaceStrings
+      ["@busctl@" "@hyprctl@"]
+      ["${pkgs.systemd}/bin/busctl" "${pkgs.hyprland}/bin/hyprctl"]
+      (builtins.readFile ./steam-capture-output.py)
+  );
 
 in {
   variables.desktopStyle = {
@@ -46,6 +53,7 @@ in {
   home.packages = with pkgs; [
     wlr-randr
     nvidia-vaapi-driver
+    steamCaptureOutput
   ];
 
   programs.kitty.settings = {
@@ -65,6 +73,8 @@ in {
 
     Service = {
       Type = "exec";
+      # Reconcile only Steam's existing permission; never bypass the portal picker.
+      ExecStartPre = "${steamCaptureOutput}/bin/steam-capture-output";
       ExecStart = "/run/current-system/sw/bin/steam -silent -pipewire";
     };
 

@@ -2,8 +2,11 @@
 import asyncio
 import ipaddress
 import json
+import math
 import os
 import subprocess
+import shlex
+import urllib.request
 import time
 from pathlib import Path
 
@@ -50,6 +53,116 @@ def read_df():
 
 def run_text(cmd, timeout=10):
     return subprocess.check_output(cmd, text=True, stderr=subprocess.STDOUT, timeout=timeout)
+
+def read_ups():
+    # Read-only, unauthenticated query to the existing loopback NUT server.
+    # Whitelist public telemetry; never forward serials or raw diagnostic output.
+    try:
+        result = subprocess.run(
+            ["@nut@/bin/upsc", "gaia@127.0.0.1"],
+            capture_output=True, text=True, timeout=2, check=True,
+        )
+        values = dict(line.split(": ", 1) for line in result.stdout.splitlines() if ": " in line)
+        status = values.get("ups.status", "").split()
+        if not status:
+            return {"ok": False, "error": "UPS status unavailable", "checkedAt": int(time.time())}
+        metrics = {}
+        for key in ("battery.charge", "ups.load", "ups.realpower", "input.voltage", "output.voltage", "input.current", "output.current"):
+            try:
+                value = float(values[key])
+                if math.isfinite(value) and value >= 0 and (key not in ("battery.charge", "ups.load") or value <= 100):
+                    metrics[key] = value
+            except (KeyError, ValueError):
+                pass
+        return {"ok": True, "checkedAt": int(time.time()), "status": status,
+                "metrics": metrics, "batteryType": values.get("battery.type"),
+                "runtimeReliable": False}
+    except subprocess.TimeoutExpired:
+        error = "UPS query timed out"
+    except (subprocess.CalledProcessError, OSError):
+        error = "UPS connection unavailable"
+    return {"ok": False, "error": error, "checkedAt": int(time.time())}
+
+boxster_cache_file = Path("/var/lib/gaia-homepage/boxster-last-known.json")
+
+def valid_boxster_sample(sample, now):
+    try:
+        stamp = sample["lastSeen"]
+        metrics = sample["metrics"]
+        return (isinstance(stamp, (int, float)) and not isinstance(stamp, bool)
+                and math.isfinite(stamp) and 946684800 <= stamp <= now
+                and all(isinstance(metrics[k], (int, float)) and not isinstance(metrics[k], bool)
+                        and math.isfinite(metrics[k]) for k in ("voltage", "temperature", "charge"))
+                and metrics["voltage"] >= 0 and 0 <= metrics["charge"] <= 100)
+    except (KeyError, TypeError):
+        return False
+
+def read_boxster_cache(now):
+    try:
+        sample = json.loads(boxster_cache_file.read_text())
+        return sample if valid_boxster_sample(sample, now) else None
+    except (OSError, ValueError, TypeError):
+        return None
+
+def write_boxster_cache(sample):
+    boxster_cache_file.parent.mkdir(parents=True, exist_ok=True)
+    tmp = boxster_cache_file.with_suffix(".tmp")
+    tmp.write_text(json.dumps(sample), encoding="utf-8")
+    tmp.chmod(0o600)
+    os.replace(tmp, boxster_cache_file)
+
+def read_boxster():
+    # lastSeen comes only from a successful BM6 measurement, not an HA fetch
+    # or value-change timestamp. Failed reads never replace the durable sample.
+    now = time.time()
+    sample = read_boxster_cache(now)
+    status = "backend_unavailable"
+    error = "Home Assistant unreachable"
+    cache_saved = True
+    try:
+        token = None
+        for line in Path("@haEnvFile@").read_text().splitlines():
+            if line.startswith("MATTER_HA_TOKEN="):
+                parts = shlex.split(line.split("=", 1)[1])
+                token = parts[0] if parts else None
+                break
+        if not token:
+            raise ValueError("No existing HA credential")
+        request = urllib.request.Request("http://127.0.0.1:8123/api/states",
+                                         headers={"Authorization": "Bearer " + token})
+        with urllib.request.urlopen(request, timeout=3) as response:
+            states = json.load(response)
+        matches = [item for item in states if item["entity_id"].startswith("sensor.bm6_") and item["entity_id"].endswith("_tension")]
+        status, error = "disconnected", "Monitor disconnected"
+        if len(matches) != 1:
+            status, error = "unavailable", "Boxster monitor could not be identified uniquely"
+        else:
+            entity = matches[0]
+            attrs = entity.get("attributes", {})
+            candidate = {"lastSeen": attrs.get("last_successful_read"), "metrics": {
+                "voltage": attrs.get("voltage_device"),
+                "temperature": attrs.get("temperature_device"),
+                "charge": attrs.get("device_percentage"),
+            }}
+            now = time.time()
+            if valid_boxster_sample(candidate, now):
+                if sample is None or candidate["lastSeen"] > sample["lastSeen"]:
+                    sample = candidate
+                    try:
+                        write_boxster_cache(sample)
+                    except OSError:
+                        cache_saved = False
+                if entity.get("state") not in (None, "unknown", "unavailable"):
+                    status = "connected" if now - sample["lastSeen"] <= 180 else "stale"
+                    error = None if status == "connected" else "No recent successful measurement"
+            elif entity.get("state") not in (None, "unknown", "unavailable"):
+                status, error = "unavailable", "Waiting for a timestamped measurement"
+    except Exception:
+        pass  # Never publish credentials or raw HTTP exception messages.
+    return {"ok": status == "connected", "status": status, "checkedAt": int(time.time()),
+            "metrics": sample["metrics"] if sample else {},
+            "lastSeen": sample["lastSeen"] if sample else None,
+            "error": error, "cacheSaved": cache_saved}
 
 def read_btrfs_device_stats(mount):
     errors = []
@@ -252,6 +365,8 @@ async def keepalive_loop():
 
 async def stats_loop():
     global latest_payload
+    boxster = None
+    boxster_checked = 0
     previous_total, previous_idle = read_cpu()
     await asyncio.sleep(1)
     while True:
@@ -260,6 +375,10 @@ async def stats_loop():
         idle_delta = idle - previous_idle
         cpu_percent = (100.0 * (total_delta - idle_delta) / total_delta) if total_delta else 0.0
         previous_total, previous_idle = total, idle
+
+        if time.monotonic() - boxster_checked >= 30:
+            boxster = await asyncio.to_thread(read_boxster)
+            boxster_checked = time.monotonic()
 
         payload = {
             "updatedAt": int(time.time()),
@@ -271,6 +390,8 @@ async def stats_loop():
             "cpuTemp": read_temp(),
             "uptimeSeconds": read_uptime(),
             "networkAddresses": read_addresses(),
+            "ups": await asyncio.to_thread(read_ups),
+            "boxster": boxster,
         }
         latest_payload = json.dumps(payload, separators=(",", ":"))
         tmp = out_file.with_suffix(".json.tmp")
@@ -322,4 +443,5 @@ async def main():
     async with server:
         await asyncio.gather(server.serve_forever(), stats_loop(), keepalive_loop())
 
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())

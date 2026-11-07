@@ -1,15 +1,15 @@
 {lib, fetchFromGitHub, hyprlandPlugins, libglvnd}:
 hyprlandPlugins.mkHyprlandPlugin {
   pluginName = "HyprWindowShade";
-  version = "0-unstable-a4c6b8a";
-  # Upstream hyprpm.toml explicitly pairs this revision with Hyprland 0.56.2.
+  version = "0-unstable-c84e9ba";
+  # Upstream hyprpm.toml explicitly pairs this revision with Hyprland 0.57.1.
   src = fetchFromGitHub {
     owner = "ManofJELLO";
     repo = "HyprWindowShade";
-    rev = "a4c6b8af424a189072427c4c90ef2938e1b481d3";
-    sha256 = "1p0c79bh7gfs9xlnv5smx8xmrgq0d5gipprwkickzsn7b40kfnw4";
+    rev = "c84e9bae0503773e647eee50ef3e2ea484660fd4";
+    sha256 = "11sgaiqfckxxcpq4lp2j6pi44rcdvyhdrabi02vgchff07vncwbb";
   };
-  patches = [./window-coordinates.patch ./blur-pass-coordinates.patch];
+  patches = [./window-coordinates.patch];
   buildInputs = [libglvnd];
   dontUseCmakeConfigure = true;
   installPhase = ''

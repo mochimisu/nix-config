@@ -26,6 +26,7 @@
   haCustomComponents = [
     pkgs.home-assistant-custom-components.ac_infinity
     pkgs.home-assistant-custom-components.bambu_lab
+    pkgs.home-assistant-custom-components.bm6
   ];
   matterThreadZbt2Recover = pkgs.writeShellApplication {
     name = "matter-thread-zbt2-recover";
@@ -41,6 +42,7 @@ in {
   nixpkgs.overlays = [
     (import ../../../overlays/ha-ac-infinity.nix)
     (import ../../../overlays/ha-bambulab.nix)
+    (import ../../../overlays/ha-bm6.nix)
   ];
 
   imports = [

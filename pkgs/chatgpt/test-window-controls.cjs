@@ -9,39 +9,35 @@ function between(start, end) {
   return tail.slice(0, tail.indexOf(end));
 }
 const ensure = between('async ensureWindow(e){', 'refreshNativeActiveAppearance(e){');
-const present = between('shouldPresentWindow(){', 'updateRendererBackgroundThrottling(){');
-const initial = between('let lt=Ge.deepLinks.isWakeOnlyLaunch()', 'let ut=null,dt=');
-const fallback = between('let yt=lt;', 'V.add(Pjt(');
+const present = between('shouldPresentWindow(){', 'updateRendererActivity(){');
+const initial = between('let tO=tT.deepLinks.isWakeOnlyLaunch()', 'let tH=null,tQ=');
+const fallback = between('let t2=tO;', 'eA.add((o=');
 (async () => {
-  for (const disabled of [false, true]) {
-    const manager = vm.runInNewContext(`({${ensure},${present}})`, {codexNixDisableMini: disabled});
-    let created = 0;
-    const window = {isDestroyed: () => false};
-    Object.assign(manager, {
-      petOpenIntent: true,
-      realtimeController: {prepareForWindowCreation() {}},
-      createWindow: async () => { created++; return window; },
-    });
-    assert.equal(await manager.ensureWindow(0), disabled ? null : window);
-    assert.equal(created, disabled ? 0 : 1);
-    assert.equal(manager.shouldPresentWindow(), !disabled);
-    manager.presentationVisibility = true;
-    assert.equal(manager.shouldPresentWindow(), !disabled);
-  }
-  // Explicit opens must return before touching the saved preference or creating a window.
-  const opening = 'async open(e,{forcePetView:t=!1,focusQuickChat:n=!1,persistPetIntent:r=!0}={}){if(codexNixDisableMini)return;';
-  assert.equal(source.split(opening).length, 2);
+  assert.ok(!source.includes('codexNixDisableMini'), 'no injected Mini suppression');
+  const manager = vm.runInNewContext(`({${ensure},${present}})`);
+  let created = 0;
+  const window = {isDestroyed: () => false};
+  Object.assign(manager, {
+    petOpenIntent: false,
+    realtimeController: {prepareForWindowCreation() {}},
+    createWindow: async () => { created++; return window; },
+  });
+  assert.equal(await manager.ensureWindow(0), window, 'native overlay allocation preserved');
+  assert.equal(created, 1);
+  assert.equal(manager.shouldPresentWindow(), false, 'native hidden preference respected');
+  manager.petOpenIntent = true;
+  assert.equal(manager.shouldPresentWindow(), true, 'native Show pet remains available');
   for (const hidden of [false, true]) {
     for (const background of [false, true]) {
-      for (const code of [initial + 'return lt;', fallback + 'return yt;']) {
+      for (const code of [initial + 'return tO;', fallback + 'return t2;']) {
         const creations = [], reveals = [];
         const window = {once() {}, isDestroyed: () => false};
         const result = await vm.runInNewContext(`(async()=>{${code}})()`, {
-          codexNixStartHidden: hidden, e: {isBackgroundLaunch: background, windowsActivation: null},
-          Ge: {deepLinks: {isWakeOnlyLaunch: () => false}}, xe: false,
-          K: {ensureWindow: async options => { creations.push(options.background); return window; }},
-          Je: w => reveals.push(w), qe: false, ge: {handleInitialWindowVisible() {}},
-          lt: null, b: {reach() {}},
+          codexNixStartHidden: hidden, Z: {isBackgroundLaunch: background, windowsActivation: null},
+          tT: {deepLinks: {isWakeOnlyLaunch: () => false}}, eq: false,
+          eQ: {ensureWindow: async options => { creations.push(options.background); return window; }},
+          tV: w => reveals.push(w), tB: false, eO: {handleInitialWindowVisible() {}},
+          tO: null, j: {reach() {}},
         });
         assert.equal(result, window);
         assert.deepEqual(creations, [hidden || background]);
@@ -50,7 +46,7 @@ const fallback = between('let yt=lt;', 'V.add(Pjt(');
     }
   }
   // Reopening still uses the original interactive show/restore/focus path.
-  assert.ok(source.includes('e.onInteractiveLaunch=()=>{lt!=null&&!lt.isDestroyed()&&Je(lt)'));
-  assert.ok(source.includes('let n=K.getPrimaryWindow()??await Ce(`/`);if(n==null)return;Je(n)'));
-  console.log('Window controls: actual startup/fallback and overlay methods passed');
+  assert.ok(source.includes('Z.onInteractiveLaunch=()=>{null==tO||tO.isDestroyed()||tV(tO)'));
+  assert.ok(source.includes('let r=eQ.getPrimaryWindow()??await e0("/");if(null==r)return;tV(r)'));
+  console.log('Window controls: actual hidden startup and native overlay methods passed');
 })().catch(error => { console.error(error); process.exitCode = 1; });

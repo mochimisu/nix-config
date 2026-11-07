@@ -345,6 +345,26 @@
         color: rgba(37,41,44,0.78);
       }
 
+      .ups-panel { margin-top: 0.75rem; }
+      .battery-level { display: flex; align-items: center; gap: 1.25rem; padding: 0.35rem 0 0.15rem; --battery-color: #2199b3; }
+      #ups-panel .battery-level { --battery-color: #7fa637; }
+      #ups-panel[data-state="attention"] .battery-level { --battery-color: #d58a2e; }
+      #ups-panel[data-state="critical"] .battery-level { --battery-color: #be4b37; }
+      .battery-shell { position: relative; width: 8.2rem; height: 3rem; flex: 0 0 auto; padding: 0.25rem; border: 2px solid #596165; border-radius: 0.4rem; background: rgba(255,255,255,0.55); }
+      .battery-shell::after { content: ''; position: absolute; right: -0.5rem; top: 0.75rem; width: 0.35rem; height: 1.2rem; border-radius: 0 0.15rem 0.15rem 0; background: #596165; }
+      .battery-track { height: 100%; overflow: hidden; border-radius: 0.16rem; background: #e0e3de; }
+      .battery-fill { height: 100%; width: var(--level, 0%); background: repeating-linear-gradient(90deg, transparent 0, transparent calc(20% - 2px), rgba(255,255,255,0.55) calc(20% - 2px), rgba(255,255,255,0.55) 20%), linear-gradient(135deg, color-mix(in srgb, var(--battery-color), white 24%), var(--battery-color)); transition: width 400ms ease; }
+      .battery-number { display: block; font-size: 1.9rem; font-weight: 680; line-height: 1.1; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
+      .battery-caption { display: block; margin-top: 0.3rem; font-size: 0.65rem; color: var(--muted); letter-spacing: 0.06em; }
+      .battery-level[data-available="false"] .battery-track { background: repeating-linear-gradient(135deg, #e3e5e1 0 5px, #f0f1ed 5px 10px); }
+      .battery-level[data-available="false"] .battery-number { color: var(--muted); font-size: 1.2rem; letter-spacing: 0; }
+      @media (prefers-reduced-motion: reduce) { .battery-fill { transition: none; } }
+
+      .ups-note { margin: 0; color: var(--muted); font-size: 0.75rem; line-height: 1.5; }
+      .ups-panel .health-head { flex-wrap: wrap; }
+      .ups-panel .health-facts { grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr)); }
+      .ups-panel[data-state="critical"] { border-color: #b74735; }
+      .ups-panel[data-state="critical"] .health-pill { color: #a42c20; background: #fbe4df; }
       .stats-wide { grid-column: span 2; }
 
       .stat-combo {
@@ -524,6 +544,26 @@
               <div class="stat-card stats-wide"><div class="stat-label">Top CPU</div><ul class="stat-list" id="top-procs"></ul></div>
               <div class="stat-card stats-wide"><div class="stat-label">Disk</div><ul class="stat-list" id="df"></ul></div>
             </div>
+            <article class="health-card ups-panel attention" id="ups-panel" aria-label="UPS power status">
+              <div class="health-head"><div class="health-mount">UPS / Power</div><div class="health-pill" id="ups-status" role="status">Connecting</div></div>
+              <div class="battery-level" id="ups-battery" data-available="false" role="meter" aria-label="Battery charge" aria-valuemin="0" aria-valuemax="100" aria-valuetext="Unavailable">
+                <div class="battery-shell" aria-hidden="true"><div class="battery-track"><div class="battery-fill"></div></div></div>
+                <div><span class="battery-number" id="ups-battery-number">Unavailable</span><span class="battery-caption">Battery charge</span></div>
+              </div>
+              <div class="health-facts" id="ups-facts"></div>
+              <p class="ups-note" id="ups-note">Waiting for USB UPS telemetry.</p>
+              <p class="ups-note" id="ups-freshness">No reading yet</p>
+            </article>
+            <article class="health-card ups-panel attention" id="boxster-panel" aria-label="Boxster battery monitor">
+              <div class="health-head"><div class="health-mount">Boxster / BM200</div><div class="health-pill" id="boxster-status" role="status">Connecting</div></div>
+              <div class="battery-level" id="boxster-battery" data-available="false" role="meter" aria-label="Device-reported SOC" aria-valuemin="0" aria-valuemax="100" aria-valuetext="Unavailable">
+                <div class="battery-shell" aria-hidden="true"><div class="battery-track"><div class="battery-fill"></div></div></div>
+                <div><span class="battery-number" id="boxster-battery-number">Unavailable</span><span class="battery-caption">Device-reported SOC</span></div>
+              </div>
+              <div class="health-facts" id="boxster-facts"></div>
+              <p class="ups-note" id="boxster-note">Waiting for Home Assistant telemetry.</p>
+              <p class="ups-note" id="boxster-freshness">No reading yet</p>
+            </article>
         </section>
 
         <div class="section-icon" aria-hidden="true"><button class="rail-item" type="button" data-target="btrfs-title" aria-label="BTRFS Health"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="16"/><path d="M8 8h8"/><path d="M8 12h8"/><path d="M8 16h3"/><path d="m14 16 1.6 1.6L19 14"/></svg></button></div>
@@ -629,6 +669,92 @@
         });
       };
 
+      function renderBattery(id, value, available) {
+        const root = document.getElementById(id + '-battery');
+        const valid = available && Number.isFinite(value) && value >= 0 && value <= 100;
+        root.dataset.available = String(Boolean(valid));
+        root.style.setProperty('--level', valid ? value + '%' : '0%');
+        document.getElementById(id + '-battery-number').textContent = valid ? Math.round(value) + '%' : 'Unavailable';
+        root.setAttribute('aria-valuetext', valid ? Math.round(value) + ' percent' : 'Unavailable');
+        if (valid) root.setAttribute('aria-valuenow', String(value));
+        else root.removeAttribute('aria-valuenow');
+      }
+
+      let latestUps = null;
+      const upsStartedAt = Date.now();
+      function renderUps(ups) {
+        latestUps = ups;
+        const panel = document.getElementById('ups-panel');
+        const pill = document.getElementById('ups-status');
+        const facts = document.getElementById('ups-facts');
+        const note = document.getElementById('ups-note');
+        const freshness = document.getElementById('ups-freshness');
+        const age = ups?.checkedAt ? Math.max(0, Date.now() / 1000 - ups.checkedAt) : null;
+        const stale = age !== null && age > 20;
+        const codes = new Set(ups?.status || []);
+        let label = 'Unknown';
+        let state = 'attention';
+        if (stale) label = 'Stale';
+        else if (!ups?.ok) label = ups || Date.now() - upsStartedAt > 20000 ? 'Disconnected' : 'Connecting';
+        else if (codes.has('FSD')) { label = 'Shutdown requested'; state = 'critical'; }
+        else if (codes.has('LB')) { label = codes.has('OB') ? 'On battery · Low' : 'Low battery'; state = 'critical'; }
+        else if (codes.has('OB')) label = 'On battery';
+        else if (codes.has('OFF')) label = 'Output off';
+        else if (codes.has('BYPASS')) label = 'Bypass';
+        else if (codes.has('ALARM') || codes.has('OVER') || codes.has('RB')) label = 'Needs attention';
+        else if (codes.has('OL')) { label = 'On mains'; state = 'ok'; }
+        panel.dataset.state = state;
+        panel.classList.toggle('attention', state !== 'ok');
+        pill.textContent = label;
+        renderBattery('ups', ups?.metrics?.['battery.charge'], ups?.ok && !stale);
+        facts.textContent = '';
+        if (ups?.ok && !stale) {
+          const metrics = ups.metrics || {};
+          const labels = {'ups.load': ['Load', '%'], 'ups.realpower': ['Output power', ' W'], 'input.voltage': ['Input voltage', ' V'], 'output.voltage': ['Output voltage', ' V'], 'input.current': ['Input current', ' A'], 'output.current': ['Output current', ' A']};
+          Object.entries(labels).forEach(([key, [title, unit]]) => {
+            if (Number.isFinite(metrics[key])) addFact(facts, title, metrics[key] + unit);
+          });
+          if (ups.batteryType) addFact(facts, 'Battery type', ups.batteryType === 'Lion' ? 'Lithium-ion' : ups.batteryType);
+          note.textContent = '';
+          note.hidden = true;
+        } else {
+          note.hidden = false;
+          note.textContent = stale ? 'Updates stopped. Power status and battery readings are unavailable until telemetry resumes.' : (ups?.error || 'Waiting for USB UPS telemetry.');
+        }
+        freshness.textContent = age === null ? 'No reading yet' : (stale ? 'Last checked ' : 'Checked ') + Math.floor(age) + 's ago · USB';
+      }
+      setInterval(() => renderUps(latestUps), 1000);
+
+      let latestBoxster = null;
+      function renderBoxster(data) {
+        latestBoxster = data;
+        const now = Date.now()/1000;
+        const age = data?.checkedAt ? Math.max(0, now - data.checkedAt) : null;
+        const stale = age !== null && age > 75;
+        const hasSample = Number.isFinite(data?.lastSeen) && data.lastSeen >= 946684800 && data.lastSeen <= now;
+        const connected = data?.status === 'connected' && !stale && hasSample && now - data.lastSeen <= 180;
+        const panel = document.getElementById('boxster-panel');
+        panel.classList.toggle('attention', !connected);
+        document.getElementById('boxster-status').textContent = stale ? 'Updates offline' : connected ? 'Connected' : data?.status === 'backend_unavailable' ? 'HA unreachable' : data?.status === 'disconnected' ? 'Monitor offline' : data ? 'No fresh reading' : 'Connecting';
+        const label = hasSample && !connected ? 'Last known · Device-reported SOC' : 'Device-reported SOC';
+        document.querySelector('#boxster-battery .battery-caption').textContent = label;
+        document.getElementById('boxster-battery').setAttribute('aria-label', label);
+        renderBattery('boxster', data?.metrics?.charge, hasSample);
+        const facts = document.getElementById('boxster-facts');
+        facts.textContent = '';
+        if (hasSample) {
+          const m = data.metrics || {};
+          if (Number.isFinite(m.voltage)) addFact(facts, connected ? 'Raw voltage' : 'Last known voltage', m.voltage.toFixed(2) + ' V');
+          if (Number.isFinite(m.temperature)) addFact(facts, connected ? 'Temperature' : 'Last known temperature', m.temperature + ' °C');
+        }
+        const reason = stale ? 'Live updates unavailable' : data?.error || 'Waiting for a successful measurement';
+        document.getElementById('boxster-note').textContent = connected ? 'Via the garage BLE proxy. Charge is the monitor’s estimate, not a battery health assessment.' : reason + (hasSample ? '. Showing the last successful measurement.' : '. No previous reading saved.');
+        const lastSeen = document.getElementById('boxster-freshness');
+        lastSeen.textContent = hasSample ? 'Last seen ' + new Date(data.lastSeen * 1000).toLocaleString() + ' · ' + Math.floor((now - data.lastSeen) / 60) + 'm ago' : 'Last seen: unavailable';
+        lastSeen.title = hasSample ? new Date(data.lastSeen * 1000).toISOString() : '';
+      }
+      setInterval(() => renderBoxster(latestBoxster), 1000);
+
       const railItems = Array.from(document.querySelectorAll('.rail-item'));
       const sections = railItems.map((item) => document.getElementById(item.dataset.target)).filter(Boolean);
       railItems.forEach((item) => {
@@ -647,6 +773,8 @@
       document.addEventListener('scroll', setActiveRail, { passive: true });
       window.addEventListener('resize', setActiveRail);
       function renderStats(stats) {
+        renderUps(stats.ups || null);
+        renderBoxster(stats.boxster || null);
         document.getElementById('cpu').textContent = stats.cpuPercent.toFixed(1) + '%';
         setMeter('cpu-meter', stats.cpuPercent);
         document.getElementById('ram').textContent = stats.memory.percent.toFixed(1) + '%';
@@ -671,6 +799,7 @@
           document.getElementById('cpu').textContent = 'offline';
         }
       }
+      // One shared push stream for all monitors; no per-panel browser polling.
       function connectStatsEvents() {
         const events = new EventSource('/stats-events');
         events.onmessage = (event) => renderStats(JSON.parse(event.data));

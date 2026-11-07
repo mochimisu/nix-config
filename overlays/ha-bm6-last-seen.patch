@@ -1,0 +1,31 @@
+--- a/custom_components/bm6/coordinator.py
++++ b/custom_components/bm6/coordinator.py
+@@ -5,6 +5,7 @@
+ from __future__ import annotations
+ 
+ import logging
++import time
+ from datetime import timedelta
+ from typing import TYPE_CHECKING
+ 
+@@ -84,6 +85,7 @@
+             )
+             self._battery.update(data.RealTime, voltage_corrected)
+             return {
++                "last_successful_read": time.time(),
+                 KEY_VOLTAGE_DEVICE: data.RealTime.Voltage,
+                 KEY_VOLTAGE_CORRECTED: voltage_corrected,
+                 KEY_TEMPERATURE_DEVICE: data.RealTime.Temperature,
+--- a/custom_components/bm6/sensor.py
++++ b/custom_components/bm6/sensor.py
+@@ -145,7 +145,9 @@
+     def extra_state_attributes(self) -> Dict[str, Any]:
+         return {
+             key: self.coordinator.data.get(key)
+-            for key in [KEY_VOLTAGE_DEVICE, KEY_VOLTAGE_CORRECTED]
++            for key in [KEY_VOLTAGE_DEVICE, KEY_VOLTAGE_CORRECTED,
++                        KEY_TEMPERATURE_DEVICE, KEY_DEVICE_PERCENTAGE,
++                        "last_successful_read"]
+         }
+ 
+ 

@@ -3,9 +3,14 @@
   lib,
   ...
 }: let
+  # gscan2pdf uses GTK3; its SANE dependency only needs scanadf, not the
+  # obsolete GTK2 xscanimage/xcam GUIs disabled by current nixpkgs.
+  saneFrontendsCli = (pkgs.sane-frontends.override {gtk2 = null;}).overrideAttrs (old: {
+    configureFlags = (old.configureFlags or []) ++ ["--disable-guis"];
+  });
   gscan2pdfWithSane = pkgs.symlinkJoin {
     name = "gscan2pdf-with-sane";
-    paths = [pkgs.gscan2pdf];
+    paths = [(pkgs.gscan2pdf.override {sane-frontends = saneFrontendsCli;})];
     nativeBuildInputs = [pkgs.makeWrapper];
     postBuild = ''
       wrapProgram $out/bin/gscan2pdf \

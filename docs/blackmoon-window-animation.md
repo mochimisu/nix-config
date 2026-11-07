@@ -10,8 +10,8 @@ holographic effect. Host-only Home Manager module:
 - Fullscreen shader exclusion is the plugin default. Layers/phone are not tagged.
 
 `pkgs/hyprwindowshade/package.nix` builds upstream HyprWindowShade revision
-`a4c6b8af424a189072427c4c90ef2938e1b481d3`, the explicit upstream `hyprpm.toml`
-pairing for Hyprland commit `efb50993780079460b0cbed1363e2166a2de1d9f` (0.56.2).
+`c84e9bae0503773e647eee50ef3e2ea484660fd4`, the explicit upstream `hyprpm.toml`
+pairing for Hyprland 0.57.1.
 Revisit together with compositor upgrades. Home Manager expects the library name
 `libHyprWindowShade.so`. Source: https://github.com/ManofJELLO/HyprWindowShade
 
@@ -1253,3 +1253,14 @@ libfile_4ffde120a918819188f3701bb6af9a19 /
 file_00000000fadc81fd9720e11a4fc06529. Local task
 materialize/prosekai-chunky-borders-{preview.mp4,keyframes.png}; version0 xattrs
 verified. Supersedes thinner kira-edge preview for current style.
+
+## 2026-11-07: Hyprland 0.57.1 build compatibility
+
+Advanced the plugin to upstream’s published 0.57.1 pairing. The source-crop
+patch now reads the per-draw render context. Hyprland 0.57 composes live
+windows, blur and snapshots in monitor orientation before scanout, so the
+old per-draw monitor-rotation patch is retired and the compatibility shader
+uniform `output_transform` is zero. Window-local coordinates and snapshot
+crop normalization remain. Package marker: `c84e9ba-window-coordinates-v3`.
+Live rendering on both monitors still needs checking after the system upgrade;
+this build repair does not load the new plugin into the running compositor.

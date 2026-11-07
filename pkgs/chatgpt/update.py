@@ -10,6 +10,10 @@ import tempfile
 
 BASE = "https://persistent.oaistatic.com/codex-app-prod/linux/deb"
 ARCHES = {"x86_64-linux": "amd64", "aarch64-linux": "arm64"}
+# Anchor to the application, not dependency overrides such as patchelfCompat.
+VERSION_FIELD = re.compile(
+    r'(?m)^  pname = "chatgpt";\n  version = "(?P<version>\d+(?:\.\d+)+)";$'
+)
 
 
 def releases(index, arch):
@@ -50,10 +54,11 @@ def replace_once(pattern, value, text):
 def main():
     package = Path("pkgs/chatgpt/package.nix")
     original = package.read_text()
-    versions = re.findall(r'  version = "([0-9.]+)";', original)
+    versions = list(VERSION_FIELD.finditer(original))
     if len(versions) != 1:
         raise ValueError("Expected exactly one pinned ChatGPT version")
-    current = versions[0]
+    version_match = versions[0]
+    current = version_match["version"]
     indexes = {}
     for system, arch in ARCHES.items():
         index = subprocess.check_output(
@@ -71,7 +76,8 @@ def main():
     if version_key(latest) < version_key(current):
         print(f"ChatGPT: keeping {current}; upstream common release is older ({latest}).")
         return
-    updated = replace_once(r'(  version = ")[^"]+(";)', latest, original)
+    start, end = version_match.span("version")
+    updated = original[:start] + latest + original[end:]
     for system in ARCHES:
         pattern = rf'({re.escape(system)} = \{{\s*arch = "[^"]+";\s*hash = ")[^"]+(";)'
         updated = replace_once(pattern, indexes[system][latest], updated)
