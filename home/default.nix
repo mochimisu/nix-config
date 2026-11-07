@@ -5,7 +5,6 @@
   ...
 }: let
   configsDir = "${config.home.homeDirectory}/stuff/nix-config";
-  chatgptUpdater = pkgs.callPackage ../pkgs/chatgpt/update.nix {};
 in {
   home.stateVersion = "24.11";
   catppuccin.autoEnable = false;
@@ -51,7 +50,7 @@ in {
   home.shellAliases = {
     "nix-rs" = "nh os switch ${configsDir}";
     "nix-rsf" = "nh os switch ${configsDir} -- --fast";
-    "nix-up" = "(cd ${lib.escapeShellArg configsDir} && nix flake update && ${lib.getExe chatgptUpdater})";
+    "nix-up" = "(cd ${lib.escapeShellArg configsDir} && nix flake update && nix run .#update-chatgpt)";
     "nixpkgs" = "nix search nixpkgs";
     "nixdir" = "cd ${configsDir}";
     "steam" = "mangohud steam";

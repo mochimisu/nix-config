@@ -101,3 +101,66 @@ experiments; current module files and this document define operational policy.
 - Nothing was deployed, pushed, restarted or rebooted by this work. Real boot,
   greeter authentication, touch/plugin behavior and notification placement remain
   rollout checks on the target hardware.
+
+## Blackmoon dial greeter — updated 2026-11-07
+
+Blackmoon alone uses a blue dial variant of the existing SDDM theme.
+The original geometry reference was monochrome:
+Reference: https://www.reddit.com/r/QuickShell/comments/1tb88nq/made_some_pretty_lockscreen_themes_for_quickshell/
+The public video is 95.033 seconds long; the requested -0:22 frame is at
+73.033 seconds elapsed. The frame was actually extracted and viewed. It has a
+black background, faint radial minute markings, large white hour, rounded
+minute/second capsule, spaced date text, and a right-side login area.
+
+The current color reference is the blue dial of the [A. Lange & Söhne 1815,
+220.037](https://www.alange-soehne.com/us-en/timepieces/1815/1815/1815-in-750-pink-gold-220-037).
+The deep-blue surface (`#102038`) has a broad off-center radial gradient from
+steel blue (`#243e5a`) at the upper left into midnight navy (`#080f20`), with
+a quieter matching gradient in the time capsule. The login background is
+transparent so the dial lighting continues behind it. These colors and white seconds railway notches
+are an interpretation of the reference photograph, not a manufacturer color specification.
+
+`system/desktop-style/greeter.nix` selects `DialStyle=true` and the blue palette
+only for hostname `blackmoon`. `sddm/Main.qml` reuses the existing account,
+password, session, keyboard and power controls. Other hosts retain the illustrated
+palette. PAM, session launching, EDID rotation and Hyprlock are unchanged.
+
+Deliberate approximation: the SDDM form stays expanded and readable, including
+session/layout selectors, instead of the reference's almost invisible idle prompt
+and top-edge actions. The login is centered, with the date to its right. Three
+concentric wheels run from hours (00–23) inside to minutes and seconds outside.
+Each wheel places its current index at three o’clock underneath its readout field;
+all use the same wall-time snapshot sampled at display cadence by `FrameAnimation`.
+Fractional hours, minutes and seconds produce continuous linear motion (one
+revolution per 24 hours, hour and minute respectively), with no tick pauses, easing
+or accumulated drift. Midnight wraps to an equivalent angle without a reverse sweep. Only the seconds wheel has notches and a double border;
+hour and minute wheels keep a single border. Circle strokes are 2 px analytic
+Qt Quick Shapes curves, avoiding polygonal edges during rotation; seconds
+notches explicitly enable antialiasing. Ring labels share the corresponding
+readout font (40/26/20 px on desktop, 32/24/18 px compact); the hour is moderately
+larger than minutes. Hour labels use two-hour spacing, four-hour on compact
+displays, to keep the larger type legible. The capsule includes the hour and uses fixed
+field widths, centered text and tabular numerals. Narrow displays place the clock
+above the scrollable form and reduce inner-wheel labels to avoid crowding.
+All shapes are original QML; no upstream
+code, fonts or wallpaper were downloaded into the theme.
+
+Original validation: full Blackmoon system and isolated theme builds; private Xvfb QML
+checks at 1920x1080, 3440x1440, 1280x800 and 800x600; existing remembered-user,
+session, duplicate-submit, failure-clear and keyboard checks; legacy touchscreen
+variant at 800x600. Authentication and power actions are mocked. Real login and
+physical hardware remain next-boot checks. No activation or SDDM restart.
+
+November 7 iteration: theme derivation built successfully; QML checks and rendered
+previews passed at 3440×1440, 1920×1080, 1280×800 and 800×600, plus the
+legacy touchscreen variant at 800×600. Added ring order/time-index, midnight
+rollover (including constant angular speed across midnight and subsecond frame updates), fixed readout geometry and
+centered-login checks. Tests ran through
+`isolated-desktop-test` with private filesystem/network X11 sockets and read-only
+host mounts; host X11 socket names/inodes were unchanged. No system activation
+or SDDM restart was performed. Real PAM login remains a next-login check.
+
+Apply with the normal rebuild, or stage for next boot without switching the
+running desktop: `sudo nixos-rebuild boot --flake /home/brandon/stuff/nix-config#blackmoon`.
+This stages the whole current checkout, including any other pending changes;
+review those before deployment. Reboot only when convenient.

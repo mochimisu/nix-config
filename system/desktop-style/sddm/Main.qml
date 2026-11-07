@@ -2,11 +2,13 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Controls.Basic
 import QtQuick.Layouts
+import QtQuick.Shapes
 
 Rectangle {
     id: root
     width: 1280; height: 800
     color: config.Surface
+    readonly property bool dialStyle: config.DialStyle === "true"
     property date now: new Date()
     readonly property bool virtualKeyboardEnabled: config.VirtualKeyboardEnabled === "true"
     property bool busy: false
@@ -57,7 +59,14 @@ Rectangle {
         message = "";
         sddm.login(loginUser, password.text, sessions.currentIndex);
     }
-    Timer { interval: 1000; running: true; repeat: true; onTriggered: root.now = new Date() }
+    Timer { id: clockTimer; interval: 1000; running: !root.dialStyle; repeat: true; onTriggered: root.now = new Date() }
+    // Sample wall time at the display cadence: no easing, tick pauses, cumulative
+    // animation drift, or catch-up sweep after the greeter has been suspended.
+    FrameAnimation {
+        id: dialFrames
+        running: root.dialStyle && root.visible
+        onTriggered: root.now = new Date()
+    }
     Connections {
         target: sddm
         function onLoginFailed() {
@@ -67,9 +76,32 @@ Rectangle {
         function onLoginSucceeded() { root.message = qsTr("Starting your session…"); }
         function onInformationMessage(message) { root.message = message; }
     }
+    // Broad, off-center light like the blue watch dial: a restrained steel-blue
+    // highlight falls into deep navy, rather than a flat slate-colored surface.
+    Shape {
+        anchors.fill: parent; visible: root.dialStyle
+        ShapePath {
+            strokeWidth: 0
+            fillGradient: RadialGradient {
+                centerX: root.width * 0.22; centerY: root.height * 0.16
+                focalX: centerX; focalY: centerY
+                centerRadius: Math.max(root.width * 0.9, root.height * 1.15)
+                GradientStop { position: 0; color: "#243e5a" }
+                GradientStop { position: 0.30; color: "#192f4b" }
+                GradientStop { position: 0.66; color: config.Surface }
+                GradientStop { position: 1; color: "#080f20" }
+            }
+            startX: 0; startY: 0
+            PathLine { x: root.width; y: 0 }
+            PathLine { x: root.width; y: root.height }
+            PathLine { x: 0; y: root.height }
+            PathLine { x: 0; y: 0 }
+        }
+    }
+
     // Graphic motifs from the reference: slanted pastel bands and outlined modules.
     Item {
-        anchors.fill: parent; clip: true
+        anchors.fill: parent; clip: true; visible: !root.dialStyle
         Rectangle {
             width: root.width * 0.6; height: root.compact ? 70 : 130
             x: -width * 0.22; y: root.height * 0.79; rotation: -14
@@ -87,15 +119,145 @@ Rectangle {
         }
     }
 
+    // Analytic curve rendering keeps large circular strokes smooth while rotating,
+    // without a large offscreen texture or polygonal rounded-rectangle edges.
+    component DialCircle: Shape {
+        id: outline
+        preferredRendererType: Shape.CurveRenderer
+        ShapePath {
+            strokeWidth: 2
+            strokeColor: "#60798e"
+            fillColor: "transparent"
+            PathAngleArc {
+                centerX: outline.width / 2; centerY: outline.height / 2
+                radiusX: (outline.width - 2) / 2; radiusY: (outline.height - 2) / 2
+                startAngle: 0; sweepAngle: 360
+            }
+        }
+    }
+
+    // Three continuous wheels share the readout axis. Fractional hours/minutes/
+    // seconds carry each wheel toward its next index at a constant angular speed.
+    Item {
+        anchors.fill: parent; clip: true; visible: root.dialStyle
+        Item {
+            id: dial
+            readonly property real centerX: Math.min(root.height * 0.88, root.width * 0.66) * 0.02
+            readonly property real centerY: timeReadout.y + timeReadout.height / 2
+            Repeater {
+                id: timeRings
+                model: 3
+                Item {
+                    id: ring
+                    required property int index
+                    readonly property int divisions: index === 0 ? 24 : 60
+                    readonly property real seconds: root.now.getSeconds() + root.now.getMilliseconds() / 1000
+                    readonly property real minutes: root.now.getMinutes() + seconds / 60
+                    readonly property real value: index === 0 ? root.now.getHours() + minutes / 60 : index === 1 ? minutes : seconds
+                    readonly property real readoutX: timeReadout.x + (index === 0 ? timeReadout.hourWidth / 2 : timeReadout.hourWidth + (index === 1 ? timeReadout.minuteWidth / 2 : timeReadout.minuteWidth + timeReadout.secondWidth / 2))
+                    readonly property font readoutFont: index === 0 ? hourText.font : index === 1 ? minuteText.font : secondText.font
+                    FontMetrics { id: ringMetrics; font: ring.readoutFont }
+                    // Center the selected ring glyph under its overlay glyph, including
+                    // the inset and font height, so large hours cannot peek past the pill.
+                    readonly property real radius: readoutX - dial.centerX + 21 + ringMetrics.height / 2
+                    width: radius * 2; height: width
+                    x: dial.centerX - radius; y: dial.centerY - radius
+                    rotation: 90 - value * 360 / divisions
+                    DialCircle {
+                        anchors.fill: parent; anchors.margins: 1
+                    }
+                    DialCircle {
+                        visible: ring.index === 2
+                        anchors.fill: parent; anchors.margins: 12
+                    }
+                    Repeater {
+                        model: ring.divisions
+                        Item {
+                            required property int index
+                            anchors.fill: parent
+                            rotation: index * 360 / ring.divisions
+                            Rectangle {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                visible: ring.index === 2
+                                y: 2; width: index % 5 === 0 ? 2 : 1
+                                height: 10; color: config.Ink; antialiasing: true
+                            }
+                            Text {
+                                anchors.horizontalCenter: parent.horizontalCenter; y: 21; height: ringMetrics.height
+                                text: String(index).padStart(2, "0")
+                                visible: ring.index === 0 ? index % (root.compact ? 4 : 2) === 0 : index % 5 === 0
+                                rotation: -90
+                                font: ring.readoutFont
+                                color: config.Muted
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Rectangle {
+            id: timeReadout
+            readonly property real hourSize: root.compact ? 32 : 40
+            readonly property real hourWidth: root.compact ? 90 : 120
+            readonly property real minuteWidth: root.compact ? 86 : 120
+            readonly property real secondWidth: root.compact ? 64 : 80
+            x: root.compact ? 32 : root.width * 0.075
+            y: root.compact ? 20 : root.height / 2 - height / 2
+            width: hourWidth + minuteWidth + secondWidth
+            height: root.compact ? 64 : 80
+            radius: height / 2; color: config.Lavender
+            gradient: Gradient {
+                GradientStop { position: 0; color: "#1a304a" }
+                GradientStop { position: 1; color: config.Lavender }
+            }
+            border.width: 1; border.color: "#526b81"
+            Text {
+                id: hourText
+                width: timeReadout.hourWidth; height: parent.height
+                horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
+                text: Qt.formatTime(root.now, "HH")
+                color: config.Ink; font.family: config.Font
+                font.pixelSize: timeReadout.hourSize; font.bold: true
+                font.features: { "tnum": 1 }
+            }
+            Text {
+                id: minuteText
+                x: timeReadout.hourWidth; width: timeReadout.minuteWidth; height: parent.height
+                horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
+                text: Qt.formatTime(root.now, "mm")
+                color: config.Ink; font.family: config.Font; font.pixelSize: root.compact ? 24 : 26; font.bold: true
+                font.features: { "tnum": 1 }
+            }
+            Rectangle {
+                x: timeReadout.hourWidth + timeReadout.minuteWidth; width: 1; height: 24
+                anchors.verticalCenter: parent.verticalCenter; color: "#526b81"
+            }
+            Text {
+                id: secondText
+                x: timeReadout.hourWidth + timeReadout.minuteWidth; width: timeReadout.secondWidth; height: parent.height
+                horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
+                text: Qt.formatTime(root.now, "ss")
+                color: config.Muted; font.family: config.Font; font.pixelSize: root.compact ? 18 : 20
+                font.features: { "tnum": 1 }
+            }
+        }
+        Column {
+            visible: !root.compact && root.width >= 1200
+            x: root.width * 0.73; y: root.height / 2 - height / 2; spacing: 9
+            Text { text: Qt.formatDate(root.now, "dd MMM yyyy").toUpperCase(); color: config.Muted; font.family: config.Font; font.pixelSize: 11; font.letterSpacing: 3 }
+            Text { text: Qt.formatDate(root.now, "dddd").toUpperCase(); color: config.Ink; font.family: config.Font; font.pixelSize: 15; font.bold: true; font.letterSpacing: 6 }
+        }
+    }
+
     component Card: Rectangle {
         property bool stacked: false
-        color: config.Surface; radius: 24; border.width: 3; border.color: config.Ink
+        color: config.Surface; radius: root.dialStyle ? 0 : 24; border.width: root.dialStyle ? 0 : 3; border.color: config.Ink
         Rectangle {
-            z: -1; visible: parent.stacked
+            z: -1; visible: parent.stacked && !root.dialStyle
             x: 10; y: 10; width: parent.width; height: parent.height
             radius: parent.radius; color: config.Lavender; border.width: 3; border.color: config.Ink
         }
-        Rectangle { anchors.fill: parent; anchors.margins: 6; radius: 18; color: "transparent"; border.width: 2; border.color: "white" }
+        Rectangle { visible: !root.dialStyle; anchors.fill: parent; anchors.margins: 6; radius: 18; color: "transparent"; border.width: 2; border.color: "white" }
     }
     component ClockGlyph: Item {
         id: digit
@@ -137,14 +299,14 @@ Rectangle {
             horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
         }
         background: Rectangle {
-            radius: button.primary ? 20 : 14
+            radius: root.dialStyle ? 8 : button.primary ? 20 : 14
             color: button.down ? config.Pink : button.primary ? config.Mint : config.Lavender
-            border.width: button.activeFocus ? 4 : 3; border.color: config.Ink
+            border.width: root.dialStyle ? (button.activeFocus ? 2 : 1) : button.activeFocus ? 4 : 3; border.color: config.Ink
             Rectangle {
-                z: -1; x: 0; y: button.down ? 0 : 4; width: parent.width; height: parent.height
+                z: -1; visible: !root.dialStyle; x: 0; y: button.down ? 0 : 4; width: parent.width; height: parent.height
                 radius: parent.radius; color: config.Ink
             }
-            Rectangle { anchors.fill: parent; anchors.margins: 5; radius: parent.radius - 5; color: "transparent"; border.width: 2; border.color: "white" }
+            Rectangle { visible: !root.dialStyle; anchors.fill: parent; anchors.margins: 5; radius: parent.radius - 5; color: "transparent"; border.width: 2; border.color: "white" }
         }
         opacity: enabled ? 1 : 0.65
     }
@@ -158,7 +320,7 @@ Rectangle {
         selectByMouse: true
         leftPadding: 14; rightPadding: 14
         background: Rectangle {
-            radius: 12; color: "white"; border.width: entry.activeFocus ? 4 : 2; border.color: config.Ink
+            radius: root.dialStyle ? 8 : 12; color: root.dialStyle ? config.Lavender : "white"; border.width: root.dialStyle ? (entry.activeFocus ? 2 : 1) : entry.activeFocus ? 4 : 2; border.color: config.Ink
         }
     }
     component Choice: ComboBox {
@@ -170,7 +332,7 @@ Rectangle {
         palette.base: config.Surface; palette.highlight: config.Mint
         palette.highlightedText: config.Ink
         background: Rectangle {
-            radius: 12; color: config.Lavender; border.width: choice.activeFocus ? 4 : 2; border.color: config.Ink
+            radius: root.dialStyle ? 8 : 12; color: config.Lavender; border.width: root.dialStyle ? (choice.activeFocus ? 2 : 1) : choice.activeFocus ? 4 : 2; border.color: config.Ink
         }
     }
 
@@ -178,6 +340,7 @@ Rectangle {
     Flickable {
         id: viewport
         anchors.fill: parent; anchors.margins: root.compact ? 24 : 56
+        anchors.topMargin: root.dialStyle && root.compact ? 100 : (root.compact ? 24 : 56)
         anchors.bottomMargin: (root.compact ? 24 : 56) + (virtualKeyboard.item && virtualKeyboard.item.active ? virtualKeyboard.height : 0)
         onHeightChanged: {
             if (password.activeFocus) root.reveal(password);
@@ -195,7 +358,7 @@ Rectangle {
                 id: decoration
                 width: Math.max(0, (parent.width - loginCard.width) / 2 - 48)
                 anchors.verticalCenter: parent.verticalCenter
-                visible: width >= 220
+                visible: !root.dialStyle && width >= 220
                 spacing: root.compact ? 12 : 22
                 Card {
                     implicitWidth: brand.implicitWidth + 40; implicitHeight: 40; radius: 14
@@ -245,17 +408,17 @@ Rectangle {
             Card {
                 id: loginCard
                 stacked: true
-                color: "#fcfdfb"
-                width: Math.min(420, parent.width)
+                color: root.dialStyle ? "transparent" : "#fcfdfb"
+                width: Math.min(root.dialStyle ? 360 : 420, parent.width)
                 x: (parent.width - width) / 2
                 implicitHeight: form.implicitHeight + 56
                 ColumnLayout {
                     id: form
                     anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top
                     anchors.margins: 28; spacing: 10
-                    Label { text: qsTr("Welcome back"); font.pixelSize: 30; font.bold: true; font.italic: true }
+                    Label { text: root.dialStyle ? config.HostName : qsTr("Welcome back"); font.pixelSize: root.dialStyle ? 15 : 30; font.letterSpacing: root.dialStyle ? 6 : 0; font.bold: true; font.italic: !root.dialStyle }
                     Row {
-                        Layout.fillWidth: true; height: 8
+                        Layout.fillWidth: true; height: 8; visible: !root.dialStyle
                         Rectangle { width: parent.width / 3; height: 8; color: config.Mint }
                         Rectangle { width: parent.width / 3; height: 8; color: config.Lavender }
                         Rectangle { width: parent.width / 3; height: 8; color: config.Pink }

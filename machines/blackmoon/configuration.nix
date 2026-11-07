@@ -68,7 +68,7 @@ in {
       spacenavd
     ]);
 
-  users.users.brandon.extraGroups = ["fuse"];
+  users.users.brandon.extraGroups = ["fuse" "dialout"];
   systemd.user.services = {
     gaia-earth-sshfs = mkGaiaSshfsService {
       remote = "gaia:/earth";

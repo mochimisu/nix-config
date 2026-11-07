@@ -18,17 +18,17 @@ let
   sources = {
     x86_64-linux = {
       arch = "amd64";
-      hash = "sha256-RITcK1T8CXi+sjuNjXF0lOTgtPvqsKh2c5EF5QtE3lo=";
+      hash = "sha256-GMEIgI6ixS+42/ktM2LSd0HjOCxYkb1K6QOptXgTZO8=";
     };
     aarch64-linux = {
       arch = "arm64";
-      hash = "sha256-50eNhPKTjdNz+mHFKw8gCwfWEOSJRwUr2K10dpt/0/s=";
+      hash = "sha256-mB/4FcyMnP0C6MSdds2aTmwVEgleSHwHU2wchtUqZgI=";
     };
   };
   source = sources.${stdenv.hostPlatform.system};
 in stdenv.mkDerivation rec {
   pname = "chatgpt";
-  version = "26.1023.51421";
+  version = "26.1103.32239";
 
   src = fetchurl {
     url = "https://persistent.oaistatic.com/codex-app-prod/linux/deb/pool/main/c/chatgpt/chatgpt_${version}_${source.arch}.deb";

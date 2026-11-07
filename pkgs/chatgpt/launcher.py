@@ -6,7 +6,6 @@ import sys
 
 OPTIONS = {
     'startMinimized': ('CHATGPT_START_MINIMIZED', '--start-minimized', '--show-window'),
-    'disableMini': ('CHATGPT_DISABLE_MINI', '--disable-mini', '--enable-mini'),
 }
 
 
@@ -17,11 +16,14 @@ def configure(args, env):
         settings = json.loads(config.read_text())
     except FileNotFoundError:
         settings = {}
-    if not isinstance(settings, dict) or settings.keys() - OPTIONS.keys():
-        raise ValueError(f'{config}: expected an object containing startMinimized and/or disableMini')
+    if not isinstance(settings, dict) or settings.keys() - (OPTIONS.keys() | {'disableMini'}):
+        raise ValueError(f'{config}: expected an object containing startMinimized')
     for key, value in settings.items():
         if type(value) is not bool:
             raise ValueError(f'{config}: {key} must be a boolean')
+    # Accept the retired setting during rolling Home Manager/package upgrades.
+    # Mini visibility belongs to the app; never pass the old suppression variable.
+    env.pop('CHATGPT_DISABLE_MINI', None)
     for key, (variable, _, _) in OPTIONS.items():
         if variable not in env:
             env[variable] = '1' if settings.get(key, False) else '0'
@@ -34,6 +36,8 @@ def configure(args, env):
         if arg == '--':
             forwarded.extend(args[index:])
             break
+        if arg in ('--disable-mini', '--enable-mini'):
+            continue  # Retired wrapper flags, accepted as no-ops for migration.
         if arg in flags:
             variable, value = flags[arg]
             env[variable] = value

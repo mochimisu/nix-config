@@ -12,24 +12,21 @@ import sys
 import tempfile
 
 
-# Anchors reviewed against ChatGPT 26.1023.50603.
-# Match this complete upstream helper, including its final .mcp.json write.
-# Never replace the similar cp calls used by other plugin installation paths.
-EXECUTOR_COPY = "await j.default.cp(n.cwd,e,{recursive:!0})"
-EXECUTOR_HELPER = (
-    "async function ese({executorPluginRoot:e,resourcesPath:t}){"
-    "let n=await Rc({useWsl:!1,resourcesPath:t});return n==null?null:("
-    + EXECUTOR_COPY +
-    ",process.platform!==`win32`&&(n.command=w.default.join(e,"
-    "w.default.relative(n.cwd,n.command))),n.cwd=e,n.enabled=!0,"
-    "n.env={...n.env,CODEX_APP_TOOLS_CALLER_HOST_ID:i.Ti},"
-    "await j.default.writeFile(w.default.join(e,`.mcp.json`),"
-    "`${JSON.stringify({mcpServers:{codex_app:n}},null,2)}\\n`,`utf8`),e)}"
-)
+# Exact chunk and inline helpers reviewed against ChatGPT 26.1103.32239.
+# The entry point now loads webpack chunks; patch only this reviewed runtime chunk.
+MAIN_MEMBER = ".vite/build/early-bootstrap-920-a204a41244c4b913.js"
+EXECUTOR_COPY = 'await ey().cp(r.cwd,e,{recursive:!0})'
+EXECUTOR_HELPER = 'async function({executorPluginRoot:e,resourcesPath:t}){let r=await sd({useWsl:!1,resourcesPath:t});return null==r?null:(await ey().cp(r.cwd,e,{recursive:!0}),"win32"!==process.platform&&(r.command=ee().join(e,ee().relative(r.cwd,r.command))),r.cwd=e,r.enabled=!0,r.env={...r.env,CODEX_APP_TOOLS_CALLER_HOST_ID:ei.iwv},await ey().writeFile(ee().join(e,".mcp.json"),`${JSON.stringify({mcpServers:{codex_app:r}},null,2)}\n`,"utf8"),e)}'
 EXECUTOR_REPLACEMENT = (
-    "await codexNixCopyExecutorPlugin({fs:j.default,path:w.default,"
-    "sourceRoot:n.cwd,pluginRoot:e})"
+    "await codexNixCopyExecutorPlugin({fs:ey(),path:ee(),"
+    "sourceRoot:r.cwd,pluginRoot:e})"
 )
+CUSTOMIZATION_START = "async function(e){let t,r=e.pluginName===rS.t_&&nb();"
+CUSTOMIZATION_END = "({liveVisualizationSkillVariant:e.liveVisualizationSkillVariant,pluginName:t.name,pluginRoot:i})"
+# Covers the full reviewed function: audio skill + manifest writes, and removal
+# of visualize/skills/live. The existing helper makes owned directories writable
+# for removal but only the same two non-executable manifest/skill files writable.
+CUSTOMIZATION_SHA256 = "9151e2737f44ddbc265c10e1f12f3b4a6e13208b9188cd49b6c0c407382deaf5"
 
 
 def entries(node, prefix=""):
@@ -78,17 +75,19 @@ def main(archive, helper, window_patch, window_test):
     if any(helper_text.count("async function " + name + "(") != 1 for name in (
             "codexNixPrepareBundledCopy", "codexNixCopyExecutorPlugin")):
         raise ValueError("Expected both permission helper definitions exactly once")
-    copy_call = "await vae(n,r),await Fie({"
-    replacement = ("await vae(n,r),await codexNixPrepareBundledCopy({"
-                   "fs:j.default,path:w,pluginRoot:r,pluginName:t.name,"
-                   "computerUseAudioEnabled:t.name===`computer-use`&&gs()}),await Fie({")
-    definition = "async function Fie(e){"
+    copy_call = "}(n,i),await " + CUSTOMIZATION_START
+    replacement = (
+        "}(n,i),await codexNixPrepareBundledCopy({"
+        "fs:ey(),path:$,pluginRoot:i,pluginName:t.name,"
+        'computerUseAudioEnabled:t.name==="computer-use"&&nb()}),await '
+        + CUSTOMIZATION_START
+    )
     with archive.open("rb") as src:
         index, body_start = header(src)
         candidates = [(p, e) for p, e in entries(index)
-                      if p.startswith(".vite/build/main-") and p.endswith(".js")]
+                      if p == MAIN_MEMBER]
         if len(candidates) != 1:
-            raise ValueError("Expected exactly one bundled main module")
+            raise ValueError("Expected the reviewed bundled runtime chunk: " + MAIN_MEMBER + "")
         member, entry = candidates[0]
         if entry.get("unpacked") or "link" in entry:
             raise ValueError("Main module must be packed and regular")
@@ -124,25 +123,20 @@ def main(archive, helper, window_patch, window_test):
         if any(name in text for name in (
                 "codexNixPrepareBundledCopy", "codexNixCopyExecutorPlugin")):
             raise ValueError("Archive already patched")
-        if text.count(copy_call) != 1 or text.count(definition) != 1:
+        if text.count(copy_call) != 1 or text.count(CUSTOMIZATION_END) != 1:
             raise ValueError("Upstream copy/customization code changed; review patch")
         if (text.count(EXECUTOR_HELPER) != 1 or
-                text.count("async function ese(") != 1):
+                text.count("async function({executorPluginRoot:e,resourcesPath:t})") != 1):
             raise ValueError("Upstream executor copy helper changed; review patch")
-        # Guard the narrow mutation paths that determine the writable-file list.
-        expected = [
-            'e.pluginName===`computer-use`&&gs()',
-            'e.pluginName===`visualize`',
-            '(e.pluginRoot,`skills`,`computer-use`,`SKILL.md`)',
-            '(e.pluginRoot,`.codex-plugin`,`plugin.json`)',
-        ]
-        customization = text.split(definition, 1)[1].split("var _s=", 1)[0]
-        if any(fragment not in customization for fragment in expected):
+        # Fail closed on any change to the complete customization function.
+        customization = text.split(CUSTOMIZATION_START, 1)[1].split(CUSTOMIZATION_END, 1)[0]
+        customization = CUSTOMIZATION_START + customization
+        if hashlib.sha256(customization.encode()).hexdigest() != CUSTOMIZATION_SHA256:
             raise ValueError("Upstream customization targets changed; review patch")
-        patched = text.replace(copy_call, replacement).replace(
+        patched = helper_text + "\n" + text.replace(copy_call, replacement).replace(
             EXECUTOR_HELPER,
             EXECUTOR_HELPER.replace(EXECUTOR_COPY, EXECUTOR_REPLACEMENT),
-        ).replace(definition, helper_text + "\n" + definition)
+        )
         patched = runpy.run_path(str(window_patch))["patch"](patched).encode("utf-8")
         subprocess.run(["node", str(window_test)], input=patched, check=True)
         subprocess.run(["node", "--check"], input=patched, check=True)

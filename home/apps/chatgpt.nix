@@ -6,7 +6,7 @@
 in {
   # Also applies to manual launches; inverse flags can override these defaults.
   xdg.configFile."chatgpt-nix/window-options.json" = lib.mkIf enabled {
-    text = builtins.toJSON {startMinimized = true; disableMini = true;};
+    text = builtins.toJSON {startMinimized = true;};
   };
 
   # UWSM owns the native graphical-session target and imports its environment.
