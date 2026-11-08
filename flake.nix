@@ -13,9 +13,9 @@
     };
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     hyprgrass = {
-      # Upstream hyprpm.toml's supported pairing for nixpkgs Hyprland 0.56.2.
+      # Upstream hyprpm.toml's supported pairing for nixpkgs Hyprland 0.57.1.
       # Revisit with Hyprland upgrades; master targets newer compositor APIs.
-      url = "github:horriblename/hyprgrass/8e605468cbf429791d61ddbfaeb14ff5e08fec3e";
+      url = "github:horriblename/hyprgrass/355ee6e6e95bdfdf051d8f23eba4973ae6a21bd7";
     };
     home-manager = {
       url = "github:nix-community/home-manager";

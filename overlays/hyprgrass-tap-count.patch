@@ -1,15 +1,11 @@
-diff --git a/src/gestures/Actions.cpp b/src/gestures/Actions.cpp
-index 62c1259..5e9b165 100644
 --- a/src/gestures/Actions.cpp
 +++ b/src/gestures/Actions.cpp
-@@ -1,4 +1,5 @@
+@@ -1,3 +1,4 @@
  #include "Actions.hpp"
 +#include <algorithm>
  #include <cmath>
  #include <glm/geometric.hpp>
- #include <glm/glm.hpp>
-@@ -56,13 +57,17 @@ MultiFingerTap::update_state(const wf::touch::gesture_state_t& state, const wf::
-     }
+@@ -57,5 +58,9 @@
  
      if (event.type == wf::touch::EVENT_TYPE_TOUCH_UP) {
 -        return wf::touch::ACTION_STATUS_COMPLETED;
@@ -20,20 +16,9 @@ index 62c1259..5e9b165 100644
 +        this->finger_count = std::max(this->finger_count, state.fingers.size());
      }
  
-     if (event.type == wf::touch::EVENT_TYPE_MOTION) {
-         for (const auto& finger : state.fingers) {
-             const auto delta = finger.second.delta();
--            if (delta.x * delta.x + delta.y + delta.y > this->base_threshold / *this->sensitivity) {
-+            if (delta.x * delta.x + delta.y * delta.y > this->base_threshold / *this->sensitivity) {
-                 return wf::touch::ACTION_STATUS_CANCELLED;
-             }
-         }
-diff --git a/src/gestures/Actions.hpp b/src/gestures/Actions.hpp
-index 9e2fc8b..0210514 100644
 --- a/src/gestures/Actions.hpp
 +++ b/src/gestures/Actions.hpp
-@@ -51,8 +51,15 @@ class MultiFingerTap : public wf::touch::gesture_action_t {
-     MultiFingerTap(double base_threshold, const float* sensitivity, const int64_t* timeout)
+@@ -52,6 +52,13 @@
          : base_threshold(base_threshold), sensitivity(sensitivity), timeout(timeout) {};
  
 +    size_t finger_count = 0;
@@ -47,13 +32,9 @@ index 9e2fc8b..0210514 100644
 +    };
  };
  
- class LongPress : public wf::touch::gesture_action_t {
-diff --git a/src/gestures/Gestures.cpp b/src/gestures/Gestures.cpp
-index 2851413..2c79fef 100644
 --- a/src/gestures/Gestures.cpp
 +++ b/src/gestures/Gestures.cpp
-@@ -221,15 +221,16 @@ void IGestureManager::addMultiFingerGesture(
- 
+@@ -229,13 +229,14 @@
  void IGestureManager::addMultiFingerTap(double base_finger_slip, const float* sensitivity, const int64_t* timeout) {
      auto tap = std::make_unique<MultiFingerTap>(base_finger_slip, sensitivity, timeout);
 +    auto* tap_ptr = tap.get();
@@ -69,14 +50,10 @@ index 2851413..2c79fef 100644
 -            .finger_count = static_cast<uint32_t>(this->m_sGestureState.fingers.size()),
 +            .finger_count = static_cast<uint32_t>(tap_ptr->finger_count),
          };
-         if (this->emitCompletedGesture(gesture)) {
-             this->cancelTouchEventsOnAllWindows();
-diff --git a/src/gestures/test/test.cpp b/src/gestures/test/test.cpp
-index 1d4abd0..58e1b97 100644
+         if (this->emitCompletedGesture(gesture) == FindGestureResult::FOUND) {
 --- a/src/gestures/test/test.cpp
 +++ b/src/gestures/test/test.cpp
-@@ -221,7 +221,11 @@ TEST_CASE("Multi-finger Tap") {
-         Ev{wf::touch::EVENT_TYPE_TOUCH_DOWN, 110, 2, {550, 290}},
+@@ -248,4 +248,8 @@
          ExpectResult{ExpectResultType::NOT_SENT_WINDOW_CANCEL},
          Ev{wf::touch::EVENT_TYPE_TOUCH_UP, 120, 2, {550, 290}},
 +        ExpectResult{ExpectResultType::NOT_SENT_WINDOW_CANCEL},
@@ -85,5 +62,12 @@ index 1d4abd0..58e1b97 100644
 +        Ev{wf::touch::EVENT_TYPE_TOUCH_UP, 130, 0, {450, 290}},
          ExpectResult{ExpectResultType::SENT_WINDOW_CANCEL},
      };
- 
-     ProcessEvents(gm, {.type = ExpectResultType::COMPLETED}, events);
+@@ -314,4 +318,8 @@
+         ExpectResult{ExpectResultType::NOT_SENT_WINDOW_CANCEL},
+         Ev{wf::touch::EVENT_TYPE_TOUCH_UP, 120, 2, {550, 290}},
++        ExpectResult{ExpectResultType::NOT_SENT_WINDOW_CANCEL},
++        Ev{wf::touch::EVENT_TYPE_TOUCH_UP, 125, 1, {500, 300}},
++        ExpectResult{ExpectResultType::NOT_SENT_WINDOW_CANCEL},
++        Ev{wf::touch::EVENT_TYPE_TOUCH_UP, 130, 0, {450, 290}},
+     };
+     ProcessEvents(gm, {.type = ExpectResultType::COMPLETED_NON_CONSUMING}, events);

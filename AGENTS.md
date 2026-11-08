@@ -56,7 +56,7 @@
 
 - Home Assistant Container compatibility alias must use `systemd.services.podman-home-assistant.aliases = [ "home-assistant.service" ];`; `unitConfig.Alias` is ignored by systemd and leaves `home-assistant.service` missing. Check `podman-home-assistant` directly when debugging older generations.
 
-- Hyprgrass is pinned to upstream-supported commit `8e605468cbf429791d61ddbfaeb14ff5e08fec3e` for nixpkgs Hyprland 0.56.2 (see upstream `hyprpm.toml`). Newer master requires `hyprland/src/keybinds/Manager.hpp`, absent in 0.56.2. Advance this compatibility pin together with Hyprland; retain the tap-count patch. The old `callLuaFnBind` substitution is no longer needed.
+- Hyprgrass is pinned to upstream-supported commit `355ee6e6e95bdfdf051d8f23eba4973ae6a21bd7` for nixpkgs Hyprland 0.57.1 (see upstream `hyprpm.toml`). The old 0.56.2 pairing fails on the moved KeybindManager header. Advance this compatibility pin together with Hyprland; retain the tap-count patch. The old `callLuaFnBind` substitution is no longer needed.
 
 - Gaia browser SSH is `https://ssh.bwang.dev/`, configured in Cloudflare on the existing remotely managed `home assistant` tunnel to `ssh://localhost:22`; `gaia.bwang.dev` remains the homepage. The `Gaia SSH` Access application uses SSH rendering, Google-only login, and an exact-email Allow policy for auraxiii@gmail.com. Routes and Access policy are Cloudflare-owned, not Nix ingress config. Browser SSH currently uses the `brandon` server password after Google authentication; no SSH certificate CA was installed.
 
@@ -110,3 +110,5 @@
 - Shared ChatGPT hidden startup is declared in `home/apps/chatgpt.nix` for graphical Linux clients. Native UWSM desktops use a graphical-session user service; SteamOS uses XDG autostart only, avoiding a second nested-Hyprland launch that reveals the existing app. The Nix-owned window-options JSON sets only `startMinimized=true`; Mini/pet visibility is app-owned. Headless Gaia and Darwin are excluded.
 
 - Blackmoon SDDM uses the 1815-inspired blue dial variant with white seconds-only railway notches, smoothly animated inner-to-outer 24-hour/minute/second wheels, a fixed-width time capsule and centered login selected by `DialStyle` in `system/desktop-style/greeter.nix`; other hosts keep the illustrated theme. Preserve the shared authentication form, touch gate and separate Hyprlock. Reference timestamp and safe next-boot rollout are in `docs/desktop-style.md`.
+
+- wvkbd 0.21 moved motion-key lookup ahead of the swipe branch; `overlays/wvkbd-nodrag.patch` must match that body while preserving disabled drag/popups and single-touch handling. Gaia Matter Layer `environmentFile` must remain a quoted runtime path, never a Nix path literal (pure evaluation rejects/imports the secret path).
