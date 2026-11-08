@@ -6,7 +6,10 @@ Qt 6 SDDM theme, for managed desktop greeters. Source QML lives in
 See `docs/desktop-style.md` for current enablement and rollout policy.
 The hostname label is configured per host; touchscreen hosts retain their existing
 Qt Virtual Keyboard with the login form scrolling above it.
-The following records the original Blackmoon implementation and validation.
+The current theme is the shared 1815-inspired blue dial. The illustrated QML
+and its style switch were removed on November 8, 2026.
+
+The following records the original, retired Blackmoon implementation and validation.
 The background is wallpaper-free: a cream surface, clipped/slanted pastel
 bands and an open lavender ring are drawn directly in QML. The clock uses
 individually tilted mint/lavender numerals with thick dark outlines, pale inset

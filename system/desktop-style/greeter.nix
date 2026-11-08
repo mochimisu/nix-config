@@ -1,13 +1,11 @@
 {config, lib, pkgs, ...}: let
-  dialStyle = config.networking.hostName == "blackmoon";
-  p = if dialStyle then {
+  p = {
     ink = "#f1f3f3"; muted = "#a9bac9"; surface = "#102038";
     mint = "#263f60"; lavender = "#0d1c31"; pink = "#355374"; urgent = "#f0aaaa";
-  } else lib.importJSON ../../home/theme/sekai-palette.json;
+  };
   settings = pkgs.writeText "sekai-sddm.conf" (lib.generators.toINI {} {
     General = {
       Font = "Montserrat";
-      DialStyle = if dialStyle then "true" else "false";
       HostName = lib.toUpper config.networking.hostName;
       VirtualKeyboardEnabled = if config.variables.touchscreen.sddmKeyboard then "true" else "false";
       Ink = p.ink; Muted = p.muted; Surface = p.surface;

@@ -8,7 +8,6 @@ Rectangle {
     id: root
     width: 1280; height: 800
     color: config.Surface
-    readonly property bool dialStyle: config.DialStyle === "true"
     property date now: new Date()
     readonly property bool virtualKeyboardEnabled: config.VirtualKeyboardEnabled === "true"
     property bool busy: false
@@ -59,12 +58,11 @@ Rectangle {
         message = "";
         sddm.login(loginUser, password.text, sessions.currentIndex);
     }
-    Timer { id: clockTimer; interval: 1000; running: !root.dialStyle; repeat: true; onTriggered: root.now = new Date() }
     // Sample wall time at the display cadence: no easing, tick pauses, cumulative
     // animation drift, or catch-up sweep after the greeter has been suspended.
     FrameAnimation {
         id: dialFrames
-        running: root.dialStyle && root.visible
+        running: root.visible
         onTriggered: root.now = new Date()
     }
     Connections {
@@ -79,7 +77,7 @@ Rectangle {
     // Broad, off-center light like the blue watch dial: a restrained steel-blue
     // highlight falls into deep navy, rather than a flat slate-colored surface.
     Shape {
-        anchors.fill: parent; visible: root.dialStyle
+        anchors.fill: parent
         ShapePath {
             strokeWidth: 0
             fillGradient: RadialGradient {
@@ -96,26 +94,6 @@ Rectangle {
             PathLine { x: root.width; y: root.height }
             PathLine { x: 0; y: root.height }
             PathLine { x: 0; y: 0 }
-        }
-    }
-
-    // Graphic motifs from the reference: slanted pastel bands and outlined modules.
-    Item {
-        anchors.fill: parent; clip: true; visible: !root.dialStyle
-        Rectangle {
-            width: root.width * 0.6; height: root.compact ? 70 : 130
-            x: -width * 0.22; y: root.height * 0.79; rotation: -14
-            color: config.Mint; border.width: 2; border.color: config.Ink; opacity: 0.45
-        }
-        Rectangle {
-            width: root.width * 0.5; height: 28
-            x: root.width * 0.73; y: root.height * 0.12; rotation: -14
-            color: config.Lavender; border.width: 2; border.color: config.Ink; opacity: 0.65
-        }
-        Rectangle {
-            width: root.compact ? 140 : 230; height: width; radius: width / 2
-            x: root.width - width * 0.55; y: -height * 0.52
-            color: "transparent"; border.width: 14; border.color: config.Lavender
         }
     }
 
@@ -139,7 +117,7 @@ Rectangle {
     // Three continuous wheels share the readout axis. Fractional hours/minutes/
     // seconds carry each wheel toward its next index at a constant angular speed.
     Item {
-        anchors.fill: parent; clip: true; visible: root.dialStyle
+        anchors.fill: parent; clip: true
         Item {
             id: dial
             readonly property real centerX: Math.min(root.height * 0.88, root.width * 0.66) * 0.02
@@ -249,38 +227,6 @@ Rectangle {
         }
     }
 
-    component Card: Rectangle {
-        property bool stacked: false
-        color: config.Surface; radius: root.dialStyle ? 0 : 24; border.width: root.dialStyle ? 0 : 3; border.color: config.Ink
-        Rectangle {
-            z: -1; visible: parent.stacked && !root.dialStyle
-            x: 10; y: 10; width: parent.width; height: parent.height
-            radius: parent.radius; color: config.Lavender; border.width: 3; border.color: config.Ink
-        }
-        Rectangle { visible: !root.dialStyle; anchors.fill: parent; anchors.margins: 6; radius: 18; color: "transparent"; border.width: 2; border.color: "white" }
-    }
-    component ClockGlyph: Item {
-        id: digit
-        property string glyph
-        property color tint
-        property real size: Math.min(118, decoration.width / 4.5)
-        implicitWidth: face.implicitWidth + 2
-        implicitHeight: face.implicitHeight + 8
-        Repeater {
-            model: [[-3,-3],[0,-3],[3,-3],[-3,0],[3,0],[-3,3],[0,3],[3,3],[4,6]]
-            Text {
-                required property var modelData
-                x: modelData[0]; y: modelData[1]
-                text: digit.glyph; font.family: config.Font; font.pixelSize: digit.size; font.weight: Font.Black
-                color: config.Ink; renderType: Text.CurveRendering
-            }
-        }
-        Text {
-            id: face; text: digit.glyph
-            font.family: config.Font; font.pixelSize: digit.size; font.weight: Font.Black
-            color: digit.tint; style: Text.Outline; styleColor: "white"; renderType: Text.CurveRendering
-        }
-    }
     component Label: Text {
         color: config.Ink; font.family: config.Font; font.pixelSize: 14
         renderType: Text.NativeRendering
@@ -299,14 +245,9 @@ Rectangle {
             horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
         }
         background: Rectangle {
-            radius: root.dialStyle ? 8 : button.primary ? 20 : 14
+            radius: 8
             color: button.down ? config.Pink : button.primary ? config.Mint : config.Lavender
-            border.width: root.dialStyle ? (button.activeFocus ? 2 : 1) : button.activeFocus ? 4 : 3; border.color: config.Ink
-            Rectangle {
-                z: -1; visible: !root.dialStyle; x: 0; y: button.down ? 0 : 4; width: parent.width; height: parent.height
-                radius: parent.radius; color: config.Ink
-            }
-            Rectangle { visible: !root.dialStyle; anchors.fill: parent; anchors.margins: 5; radius: parent.radius - 5; color: "transparent"; border.width: 2; border.color: "white" }
+            border.width: button.activeFocus ? 2 : 1; border.color: config.Ink
         }
         opacity: enabled ? 1 : 0.65
     }
@@ -320,7 +261,7 @@ Rectangle {
         selectByMouse: true
         leftPadding: 14; rightPadding: 14
         background: Rectangle {
-            radius: root.dialStyle ? 8 : 12; color: root.dialStyle ? config.Lavender : "white"; border.width: root.dialStyle ? (entry.activeFocus ? 2 : 1) : entry.activeFocus ? 4 : 2; border.color: config.Ink
+            radius: 8; color: config.Lavender; border.width: entry.activeFocus ? 2 : 1; border.color: config.Ink
         }
     }
     component Choice: ComboBox {
@@ -332,7 +273,7 @@ Rectangle {
         palette.base: config.Surface; palette.highlight: config.Mint
         palette.highlightedText: config.Ink
         background: Rectangle {
-            radius: root.dialStyle ? 8 : 12; color: config.Lavender; border.width: root.dialStyle ? (choice.activeFocus ? 2 : 1) : choice.activeFocus ? 4 : 2; border.color: config.Ink
+            radius: 8; color: config.Lavender; border.width: choice.activeFocus ? 2 : 1; border.color: config.Ink
         }
     }
 
@@ -340,7 +281,7 @@ Rectangle {
     Flickable {
         id: viewport
         anchors.fill: parent; anchors.margins: root.compact ? 24 : 56
-        anchors.topMargin: root.dialStyle && root.compact ? 100 : (root.compact ? 24 : 56)
+        anchors.topMargin: root.compact ? 100 : 56
         anchors.bottomMargin: (root.compact ? 24 : 56) + (virtualKeyboard.item && virtualKeyboard.item.active ? virtualKeyboard.height : 0)
         onHeightChanged: {
             if (password.activeFocus) root.reveal(password);
@@ -354,75 +295,17 @@ Rectangle {
             width: viewport.width
             implicitHeight: loginCard.implicitHeight
             y: Math.max(0, (viewport.height - implicitHeight) / 2)
-            ColumnLayout {
-                id: decoration
-                width: Math.max(0, (parent.width - loginCard.width) / 2 - 48)
-                anchors.verticalCenter: parent.verticalCenter
-                visible: !root.dialStyle && width >= 220
-                spacing: root.compact ? 12 : 22
-                Card {
-                    implicitWidth: brand.implicitWidth + 40; implicitHeight: 40; radius: 14
-                    color: config.Mint
-                    Label { id: brand; anchors.centerIn: parent; text: config.HostName; font.bold: true; font.letterSpacing: 4 }
-                }
-                Item {
-                    Layout.fillWidth: true
-                    implicitHeight: clockRow.implicitHeight + (root.compact ? 16 : 30)
-                    Rectangle {
-                        x: 12; y: parent.height * 0.63
-                        width: Math.min(parent.width - 24, clockRow.implicitWidth + 20); height: root.compact ? 22 : 36
-                        rotation: -5; radius: 8; color: config.Pink
-                        border.width: 2; border.color: config.Ink
-                    }
-                    Row {
-                        id: clockRow; x: 4; spacing: 2
-                        Repeater {
-                            model: Qt.formatTime(root.now, "hh:mm").split("")
-                            ClockGlyph {
-                                required property string modelData
-                                required property int index
-                                glyph: modelData
-                                tint: index % 2 ? config.Lavender : config.Mint
-                                rotation: index === 2 ? 0 : index % 2 ? 3 : -3
-                            }
-                        }
-                    }
-                }
-                Card {
-                    implicitWidth: dateLabel.implicitWidth + 36; implicitHeight: 42; radius: 15
-                    stacked: !root.compact
-                    Label { id: dateLabel; anchors.centerIn: parent; text: Qt.formatDate(root.now, "dddd, MMMM d"); font.bold: true }
-                }
-                Row {
-                    visible: !root.compact; spacing: 12; topPadding: 10
-                    Repeater {
-                        model: [config.Mint, config.Lavender, config.Pink]
-                        Rectangle {
-                            required property color modelData
-                            width: 14; height: 14; rotation: 45; radius: 3
-                            color: modelData; border.width: 2; border.color: config.Ink
-                        }
-                    }
-                }
-            }
-            Card {
+            Rectangle {
                 id: loginCard
-                stacked: true
-                color: root.dialStyle ? "transparent" : "#fcfdfb"
-                width: Math.min(root.dialStyle ? 360 : 420, parent.width)
+                color: "transparent"
+                width: Math.min(360, parent.width)
                 x: (parent.width - width) / 2
                 implicitHeight: form.implicitHeight + 56
                 ColumnLayout {
                     id: form
                     anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top
                     anchors.margins: 28; spacing: 10
-                    Label { text: root.dialStyle ? config.HostName : qsTr("Welcome back"); font.pixelSize: root.dialStyle ? 15 : 30; font.letterSpacing: root.dialStyle ? 6 : 0; font.bold: true; font.italic: !root.dialStyle }
-                    Row {
-                        Layout.fillWidth: true; height: 8; visible: !root.dialStyle
-                        Rectangle { width: parent.width / 3; height: 8; color: config.Mint }
-                        Rectangle { width: parent.width / 3; height: 8; color: config.Lavender }
-                        Rectangle { width: parent.width / 3; height: 8; color: config.Pink }
-                    }
+                    Label { text: config.HostName; font.pixelSize: 15; font.letterSpacing: 6; font.bold: true }
                     Label { text: qsTr("Account"); font.bold: true }
                     RowLayout {
                         Layout.fillWidth: true; visible: !root.choosingUser

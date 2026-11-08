@@ -102,9 +102,10 @@ experiments; current module files and this document define operational policy.
   greeter authentication, touch/plugin behavior and notification placement remain
   rollout checks on the target hardware.
 
-## Blackmoon dial greeter — updated 2026-11-07
+## Shared dial greeter — updated 2026-11-08
 
-Blackmoon alone uses a blue dial variant of the existing SDDM theme.
+All NixOS hosts with the shared SDDM styling enabled use the blue dial variant
+of the existing theme, including Oasis. This was Blackmoon-only until November 8.
 The original geometry reference was monochrome:
 Reference: https://www.reddit.com/r/QuickShell/comments/1tb88nq/made_some_pretty_lockscreen_themes_for_quickshell/
 The public video is 95.033 seconds long; the requested -0:22 frame is at
@@ -120,10 +121,11 @@ a quieter matching gradient in the time capsule. The login background is
 transparent so the dial lighting continues behind it. These colors and white seconds railway notches
 are an interpretation of the reference photograph, not a manufacturer color specification.
 
-`system/desktop-style/greeter.nix` selects `DialStyle=true` and the blue palette
-only for hostname `blackmoon`. `sddm/Main.qml` reuses the existing account,
-password, session, keyboard and power controls. Other hosts retain the illustrated
-palette. PAM, session launching, EDID rotation and Hyprlock are unchanged.
+`system/desktop-style/greeter.nix` configures the blue dial palette
+for every host with `desktopStyle.greeter.enable`. `sddm/Main.qml` reuses the
+existing account, password, session, keyboard and power controls, including each
+host’s touchscreen keyboard policy. PAM, session launching, EDID rotation and
+Hyprlock are unchanged.
 
 Deliberate approximation: the SDDM form stays expanded and readable, including
 session/layout selectors, instead of the reference's almost invisible idle prompt
@@ -164,3 +166,11 @@ Apply with the normal rebuild, or stage for next boot without switching the
 running desktop: `sudo nixos-rebuild boot --flake /home/brandon/stuff/nix-config#blackmoon`.
 This stages the whole current checkout, including any other pending changes;
 review those before deployment. Reboot only when convenient.
+
+November 8 cleanup: removed the retired illustrated QML branches and `DialStyle`
+switch. Touchscreen fixtures now exercise the same blue dial with the optional
+keyboard enabled. The shared shell palette and installed theme name remain in use.
+The cleaned theme built successfully; isolated QML checks passed at 3440×1440,
+1920×1080, 1280×800 and 800×600, including the real Qt Virtual Keyboard at the
+last two sizes. Mocked login, focus and dial timing checks passed. No activation
+or display-manager restart was performed.
