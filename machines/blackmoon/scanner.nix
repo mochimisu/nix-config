@@ -20,20 +20,22 @@
   };
 
   brscan5-ds640 = final: prev: prev.brscan5.overrideAttrs (old: rec {
-    version = "1.6.2-0";
+    version = "1.7.0-0";
     src = final.fetchurl {
       url = "https://download.brother.com/welcome/dlf104036/brscan5-${version}.x86_64.rpm";
-      hash = "sha256-oUuZHa/QJ5zJLJgRVJAReIJRdLisISOGgDezYUuPkF4=";
+      hash = "sha256-GX9jpS6JuHRPWjwthDq7O3bQA9XUgwvf5nXESEGmxys=";
     };
     unpackPhase = ''
       rpmextract $src
     '';
     nativeBuildInputs = old.nativeBuildInputs ++ [final.rpmextract];
-    postPatch =
-      old.postPatch
-      + ''
-        printf '/etc/opt/brother/scanner/models\x00' | dd of=opt/brother/scanner/brscan5/libsane-brother5.so.1.0.7 bs=1 seek=86720 conv=notrunc
-      '';
+    # 1.7.0 moves the models path to byte 86944. Replace the inherited
+    # 1.3.1 offset instead of writing to both offsets and corrupting other data.
+    postPatch = assert lib.hasInfix "seek=86592" old.postPatch;
+      ''
+        test "$(dd if=opt/brother/scanner/brscan5/libsane-brother5.so.1.0.7 bs=1 skip=86944 count=35 2>/dev/null)" = /opt/brother/scanner/brscan5/models
+      ''
+      + lib.replaceStrings ["seek=86592"] ["seek=86944"] old.postPatch;
     installPhase = ''
       runHook preInstall
 

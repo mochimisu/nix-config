@@ -15,7 +15,7 @@ in {
   config = lib.mkMerge [
     {
       # scx_lavd caused visible desktop microstutter on blackmoon.
-      services.scx.enable = false;
+      services.scx-loader.enable = false;
 
       # Prefer "none" for NVMe and "kyber" for non-rotational SATA/virt disks.
       services.udev.extraRules = ''
