@@ -34,6 +34,7 @@ in {
     matterWsUrl = "ws://127.0.0.1:${toString config.gaia.homeAssistant.matterjs.port}/ws";
     rulesModule = matterLayerRules + "/rules.ts";
     bindings = moduleCompatibleBindings;
+    # Runtime systemd path: a Nix path literal would import the secret during evaluation.
     environmentFile = config.sops.secrets."matter-env".path;
     environment = {
       MATTER_LAYER_BINDINGS_JSON = builtins.toJSON matterLayerBindings;
