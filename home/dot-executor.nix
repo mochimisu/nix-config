@@ -31,6 +31,8 @@ in {
       Unit = {
         Description = "Headless dot executor (${cfg.hostName})";
         ConditionPathExists = "${home}/.local/share/dot-executor/auth.json";
+        # A boot-time outage may outlast systemd's default retry window.
+        StartLimitIntervalSec = 0;
       };
       Service = {
         Type = "simple";
@@ -40,8 +42,11 @@ in {
           "PATH=${config.home.profileDirectory}/bin:/run/current-system/sw/bin:${home}/.local/bin:/usr/local/bin:/usr/bin:/bin"
         ];
         ExecStart = "${lib.getExe cfg.package} run --environment-id ${cfg.environmentId} --host ${cfg.hostName}";
-        # Native reconnects are allowed; service-level auth-denial retries are not.
-        Restart = "no";
+        # Retry native process failures, including early boot network failures.
+        # Invalid setup and explicit access denials still require intervention.
+        Restart = "on-failure";
+        RestartSec = 30;
+        RestartPreventExitStatus = [ 2 77 ];
         KillMode = "control-group";
         TimeoutStopSec = 20;
         UMask = "0077";

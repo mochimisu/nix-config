@@ -58,6 +58,38 @@ journalctl --user -u dot-executor.service -n 30 --no-pager
 command such as `hostname` through dot to confirm actual remote access.
 `status` may contain stale runtime state. Native Codex handles reconnection;
 recognized authentication denials stop the supervisor without service retries.
+Systemd restarts other failed exits after 30 seconds, without a retry-window
+limit, so a boot-time outage does not permanently strand the executor offline.
+Exit 2 (invalid setup) and exit 77 (access denied) suppress automatic restarts.
+An explicit service stop still stops the service normally.
+
+### Boot failure and readiness diagnostics — November 19, 2026
+
+On Gaia, the native child exited with code 1 five seconds after boot; with
+`Restart=no`, the enabled unit remained failed. Restarting restored registration
+and rendezvous connectivity. An authenticated read of the existing environment's
+registry status returned `connected`, and the user subsequently confirmed the
+green presence indicator. The original child error was discarded, so the cause
+of the boot exit remains unresolved; network timing is not established.
+
+Native tracing emitted ANSI colors despite piped output and `LOG_FORMAT=json`.
+The supervisor now strips ANSI control sequences before classifying diagnostics,
+so colored readiness and HTTP-denial messages are recognized. The regression
+test uses the observed colored field format. Process liveness and transport
+readiness still do not establish per-dot access.
+
+The parser fix and retry policy were built and deployed to Gaia through only
+the generated service and enablement links, retaining Home Manager ownership
+and a GC root. All 32 package tests passed. A live native-child SIGKILL test
+triggered one automatic restart after 30 seconds; the new process reported
+`transport_ready`, and the registry again returned HTTP 200 / `connected`.
+This verifies process-failure recovery, not a full reboot test. Authentication
+denials and setup errors remain excluded from retries. Temporary diagnostic
+service overrides were removed.
+Isolated systemd checks also confirmed exit codes 2 and 77 cause zero retries.
+Repository evaluation passed 15 of 16 targets. Comet's cache lookup was
+interrupted after a separate no-substitution evaluation confirmed its existing
+ARM Catppuccin build-hook dependency cannot build on this x86-64 host.
 
 ## Gaia service-name migration
 

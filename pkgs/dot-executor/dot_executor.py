@@ -114,6 +114,9 @@ def command(enrollment: dict, codex: Path = CODEX) -> list[str]:
 
 def classify_log(line: str) -> str | None:
     # Inspect only transport diagnostics, never forward their raw contents.
+    # Native tracing can emit ANSI styling even with piped output. Normalize it
+    # before matching fields so readiness and HTTP denials remain observable.
+    line = re.sub(r"\x1b\[[0-?]*[ -/]*[@-~]", "", line)
     try:
         record = json.loads(line)
     except (ValueError, TypeError):

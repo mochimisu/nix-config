@@ -146,6 +146,13 @@ class ExecutorTests(unittest.TestCase):
             self.assertEqual(g.classify_log(line), "access_denied")
         self.assertIsNone(g.classify_log("processed 403 requests"))
 
+    def test_colored_native_transport_diagnostics(self):
+        line = ('Noise executor connected to rendezvous '
+                '\x1b[3mnoise_event\x1b[0m\x1b[2m=\x1b[0m"rendezvous_connection" '
+                '\x1b[3mnoise_outcome\x1b[0m\x1b[2m=\x1b[0m"ok"')
+        self.assertEqual(g.classify_log(line), "transport_ready")
+        self.assertEqual(g.classify_log('HTTP \x1b[31m403\x1b[0m'), "access_denied")
+
     def test_status_permissions_and_no_connectivity_claim(self):
         g.write_status(self.state, "transport_ready", pid=123)
         path = self.state / "runtime-status.json"
