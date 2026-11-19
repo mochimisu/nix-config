@@ -19,6 +19,8 @@
 - Store secrets (tokens, passwords, API keys) in `.AGENTS.LOCAL.md` only and keep it out of git.
 
 ### Maintenance
+
+- Runtime secret paths passed to systemd must be quoted strings, not Nix path literals. In particular, keep Gaia's `services.matter-layer.environmentFile = "/etc/secret/matter-reconcile.env"`; an unquoted path fails pure evaluation and can copy secrets into the store under impure evaluation.
 - `python3 scripts/validate.py` evaluates every NixOS, Home Manager, Darwin and package output without lock updates or activation. ARM import-from-derivation dependencies require an ARM builder/native runner; failed targets are reported, never skipped.
 - `vars.nix` declares typed shared policy. Add options there rather than adding arbitrary `variables` keys.
 - `mkNixosHost` in `flake.nix` shares wiring; host role imports stay explicit. Keep the shared application catalog and NixOS/Home Manager desktop boundary.
@@ -110,3 +112,5 @@
 - Shared ChatGPT hidden startup is declared in `home/apps/chatgpt.nix` for graphical Linux clients. Native UWSM desktops use a graphical-session user service; SteamOS uses XDG autostart only, avoiding a second nested-Hyprland launch that reveals the existing app. The Nix-owned window-options JSON sets only `startMinimized=true`; Mini/pet visibility is app-owned. Headless Gaia and Darwin are excluded.
 
 - Blackmoon SDDM uses the 1815-inspired blue dial variant with white seconds-only railway notches, smoothly animated inner-to-outer 24-hour/minute/second wheels, a fixed-width time capsule and centered login selected by `DialStyle` in `system/desktop-style/greeter.nix`; other hosts keep the illustrated theme. Preserve the shared authentication form, touch gate and separate Hyprlock. Reference timestamp and safe next-boot rollout are in `docs/desktop-style.md`.
+
+- Shared headless dot execution is declared by `home/dot-executor.nix` (`services.dot-executor`) and packaged in `pkgs/dot-executor/` for x86-64 and ARM Linux. Gaia opts in through `machines/gaia/home/dot-executor.nix`; other hosts require their own approved identity and private login. Preserve the existing granted environment ID and keep writable login state outside Git/store. Do not run the GUI and headless service against the same ID concurrently. Use only scoped user-unit activation when the host checkout has unrelated changes; retain `home-manager-files` ownership links and GC roots. See `docs/dot-executor.md` for setup and service-name migration; `docs/gaia-dot-executor.md` retains historical verification and rollback.

@@ -17,6 +17,7 @@ in {
   ];
 
   imports = [
+    ./dot-executor.nix
     ./wikimem.nix
     ../vars.nix
     ./theme

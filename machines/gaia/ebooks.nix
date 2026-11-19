@@ -80,8 +80,9 @@ in {
   services.kavita = {
     enable = true;
     dataDir = kavitaData;
-    tokenKeyFile = kavitaTokenKey;
+    credentials.token_key = kavitaTokenKey;
     settings = {
+      TokenKey = "@token_key@";
       Port = 8083;
       IpAddresses = "0.0.0.0,::";
     };

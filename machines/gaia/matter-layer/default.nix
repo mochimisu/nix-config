@@ -34,7 +34,8 @@ in {
     matterWsUrl = "ws://127.0.0.1:${toString config.gaia.homeAssistant.matterjs.port}/ws";
     rulesModule = matterLayerRules + "/rules.ts";
     bindings = moduleCompatibleBindings;
-    environmentFile = /etc/secret/matter-reconcile.env;
+    # Keep secrets as a runtime path; a Nix path literal is copied to the store.
+    environmentFile = "/etc/secret/matter-reconcile.env";
     environment = {
       MATTER_LAYER_BINDINGS_JSON = builtins.toJSON matterLayerBindings;
       MATTER_LAYER_DB_PATH = "/var/lib/matter-layer/matter-layer.sqlite";

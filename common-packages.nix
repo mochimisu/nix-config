@@ -96,6 +96,8 @@
     };
   classified = map classify (baseEntries ++ guiEntries);
 in {
+  # Reuse the same locked, zlib-wrapped CLI for host-specific services.
+  inherit codexCli;
   base = map (entry: entry.package) baseEntries;
   gui = map (entry: entry.package) guiEntries;
   fonts = with pkgs; [

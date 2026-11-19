@@ -97,17 +97,24 @@ in {
     recommendedGzipSettings = true;
     recommendedOptimisation = true;
 
-    # Approved house model: LAN sources on the LAN destination only.
+    # House model: existing LAN/phone access plus the Cloudflare-protected hostname.
     appendHttpConfig = ''
+      # Cloudflare Access remains at the edge; only its local origin route is added.
+      map $host $house_cloudflare_host {
+        default 0;
+        gaia.bwang.dev 1;
+      }
       geo $house_lan_client {
         default 0;
         192.168.1.0/24 1;
       }
-      # Exact destination/source pairs: existing LAN plus the approved Z Flip7.
+      # Exact destination/source pairs: existing LAN, approved Z Flip7 and localhost.
       map "$server_addr:$house_lan_client:$remote_addr" $house_route_allowed {
         default 0;
         ~^192[.]168[.]1[.]35:1: 1;
         "100.120.132.40:0:100.106.218.115" 1;
+        "127.0.0.1:0:127.0.0.1" $house_cloudflare_host;
+        "::1:0:::1" $house_cloudflare_host;
       }
     '';
 

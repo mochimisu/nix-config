@@ -5,6 +5,7 @@
 
   imports = [
     ./fastfetch.nix
+    ./dot-executor.nix
   ];
 
   home.shellAliases = {

@@ -94,6 +94,9 @@
     packages.x86_64-linux = {
       default = self.nixosConfigurations.oasis.config.system.build.toplevel;
       chatgpt = pkgsX86Linux.callPackage ./pkgs/chatgpt/package.nix {};
+      dot-executor = pkgsX86Linux.callPackage ./pkgs/dot-executor/package.nix {
+        codex = (import ./common-packages.nix {pkgs = pkgsX86Linux; inherit inputs;}).codexCli;
+      };
       skwd-wall = inputs.skwd-wall.packages.x86_64-linux.default;
       update-chatgpt = pkgsX86Linux.callPackage ./pkgs/chatgpt/update.nix {};
 
@@ -133,6 +136,12 @@
         };
       in
         isoSystem.config.system.build.isoImage;
+    };
+
+    packages.aarch64-linux.dot-executor = let
+      pkgs = import nixpkgs { system = "aarch64-linux"; };
+    in pkgs.callPackage ./pkgs/dot-executor/package.nix {
+      codex = (import ./common-packages.nix { inherit pkgs inputs; }).codexCli;
     };
 
     homeModules.home = {
