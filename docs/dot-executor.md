@@ -24,9 +24,9 @@ services.dot-executor = {
 ```
 
 Comet's configuration is `machines/comet/home.nix` (`steamos@comet`);
-Cove's is `machines/cove/home.nix` (`deck@cove`). Both already import the module.
-They remain disabled until their own identity and login are available. Never
-reuse Gaia's ID or login to set up another host. Gaia's existing ID remains in
+Cove's is `machines/cove/home.nix` (`deck@cove`). Both are enabled with their own
+locally enrolled and approved identities as of November 19, 2026. Never
+reuse another host's ID or login. Gaia's existing ID remains in
 `machines/gaia/home/dot-executor.nix`.
 
 Each user's state is `~/.local/share/dot-executor` (mode 700), with their existing
@@ -41,6 +41,35 @@ Manager profile and native OS command paths, including SteamOS paths. Normal
 Home Manager activation installs the service and `dot-executor` command. SteamOS
 owns its user manager and login lifecycle; this module does not enable linger
 or change sleep/battery policy. Gaia already has linger configured separately.
+Comet and Cove had `loginctl enable-linger USER` applied during their authorized
+setup so the enabled user service starts at boot without an interactive login.
+
+## Comet and Cove enrollment — November 19, 2026
+
+Each host's genuine ChatGPT app registered its own identity. Comet used its
+existing host-local ChatGPT login in the dedicated executor home; Cove completed
+a fresh native device-code login. The enabled local **Allow access** confirmation
+granted doot access on each computer. Concurrent approvals initially conflicted;
+Comet's approval succeeded after retrying sequentially. Both showed **Access
+allowed** before the headless handoff. No cross-host credential copying occurred.
+
+The temporary app and authenticated virtual display were stopped before starting
+the headless service with the same identity. Both native architectures built.
+Only the declared executor unit and its enablement link were installed, through
+a scoped `home-manager-files` derivation rooted at
+`~/.local/state/dot-executor-setup/service-files`; generated Home Manager collision
+checks and systemd verification passed. Future normal Home Manager switches own
+the same links and also install the CLI in the profile. Native SteamOS linger
+is configured separately from Home Manager.
+
+Both services reported `transport_ready`; authenticated registry status reads
+returned HTTP 200 and `connected`. A native-child SIGKILL test on each host
+produced exactly one automatic restart after 30 seconds and restored that same
+connected status. Both have `Linger=yes`, an enabled service, and no failed
+user units. The local supervisor's `dot_access` field
+remains `not_verified` because it does not query per-dot grants; the app's normal
+grant UI supplied that verification. Full reboot and fresh dot command execution
+are separate checks, not established merely by registry connectivity.
 
 ## Inspect and verify
 

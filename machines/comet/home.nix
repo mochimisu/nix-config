@@ -19,6 +19,11 @@
 in {
   imports = [./nested-desktop.nix ./media-apps.nix ./mpv-browser.nix ./obsidian.nix ./wikimem-secret.nix inputs.gaia-file-dispatch.homeManagerModules.comet];
   services.gaiaMediaClient.enable = true;
+  services.dot-executor = {
+    enable = true;
+    hostName = "comet";
+    environmentId = "ccarenv_b64_Y2NhcmVudl82YWZlYjliNWQ4MmM4MTkxYTY2Y2NhNjg0YTNlYjM3OA";
+  };
   variables.gitIdentity = false;
   programs.wikimem.enable = lib.mkForce false;
   # Preserve/back up an existing SteamOS-side Obsidian registration normally.

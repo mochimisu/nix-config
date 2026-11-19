@@ -18,6 +18,11 @@ in {
     mediaFeedback.enable = false;
   };
   home.username = "deck";
+  services.dot-executor = {
+    enable = true;
+    hostName = "cove";
+    environmentId = "ccarenv_b64_Y2NhcmVudl82YWZlYjliMDhjMDQ4MTkxODlkODgxZWNiZjA2Yjk2Ng";
+  };
   home.homeDirectory = "/home/deck";
   home.stateVersion = lib.mkForce "26.05";
   variables.gitIdentity = false;
