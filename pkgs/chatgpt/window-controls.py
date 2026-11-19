@@ -3,14 +3,14 @@
 
 def patch(text):
     changes = [
-        # Reviewed 26.1103.32239: two background creation sites, two explicit
+        # Reviewed 26.1111.71704: two background creation sites, two explicit
         # initial reveals, and three primary/progress-window visibility predicates.
-        ('background:Z.isBackgroundLaunch}',
-         'background:Z.isBackgroundLaunch||codexNixStartHidden}', 2),
-        ('||Z.isBackgroundLaunch||',
-         '||Z.isBackgroundLaunch||codexNixStartHidden||', 2),
-        ('!Z.isBackgroundLaunch',
-         '!Z.isBackgroundLaunch&&!codexNixStartHidden', 3),
+        ('background:B.isBackgroundLaunch}',
+         'background:B.isBackgroundLaunch||codexNixStartHidden}', 2),
+        ('||B.isBackgroundLaunch||',
+         '||B.isBackgroundLaunch||codexNixStartHidden||', 2),
+        ('!B.isBackgroundLaunch',
+         '!B.isBackgroundLaunch&&!codexNixStartHidden', 3),
     ]
     if 'codexNixStartHidden' in text or 'codexNixDisableMini' in text:
         raise ValueError('Window controls already patched')

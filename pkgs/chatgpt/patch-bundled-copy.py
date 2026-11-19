@@ -12,21 +12,21 @@ import sys
 import tempfile
 
 
-# Exact chunk and inline helpers reviewed against ChatGPT 26.1103.32239.
+# Exact chunk and inline helpers reviewed against ChatGPT 26.1111.71704.
 # The entry point now loads webpack chunks; patch only this reviewed runtime chunk.
-MAIN_MEMBER = ".vite/build/early-bootstrap-920-a204a41244c4b913.js"
-EXECUTOR_COPY = 'await ey().cp(r.cwd,e,{recursive:!0})'
-EXECUTOR_HELPER = 'async function({executorPluginRoot:e,resourcesPath:t}){let r=await sd({useWsl:!1,resourcesPath:t});return null==r?null:(await ey().cp(r.cwd,e,{recursive:!0}),"win32"!==process.platform&&(r.command=ee().join(e,ee().relative(r.cwd,r.command))),r.cwd=e,r.enabled=!0,r.env={...r.env,CODEX_APP_TOOLS_CALLER_HOST_ID:ei.iwv},await ey().writeFile(ee().join(e,".mcp.json"),`${JSON.stringify({mcpServers:{codex_app:r}},null,2)}\n`,"utf8"),e)}'
+MAIN_MEMBER = ".vite/build/early-bootstrap-100-449e39ca9c7eadbd.js"
+EXECUTOR_COPY = 'await tr().cp(r.cwd,e,{recursive:!0})'
+EXECUTOR_HELPER = 'async function({executorPluginRoot:e,resourcesPath:t}){let r=await aM({useWsl:!1,resourcesPath:t});return null==r?null:(await tr().cp(r.cwd,e,{recursive:!0}),"win32"!==process.platform&&(r.command=eQ().join(e,eQ().relative(r.cwd,r.command))),r.cwd=e,r.enabled=!0,r.env={...r.env,CODEX_APP_TOOLS_CALLER_HOST_ID:e0.iwv},await tr().writeFile(eQ().join(e,".mcp.json"),`${JSON.stringify({mcpServers:{codex_app:r}},null,2)}\n`,"utf8"),e)}'
 EXECUTOR_REPLACEMENT = (
-    "await codexNixCopyExecutorPlugin({fs:ey(),path:ee(),"
+    "await codexNixCopyExecutorPlugin({fs:tr(),path:eQ(),"
     "sourceRoot:r.cwd,pluginRoot:e})"
 )
-CUSTOMIZATION_START = "async function(e){let t,r=e.pluginName===rS.t_&&nb();"
+CUSTOMIZATION_START = "async function(e){let t,r=e.pluginName===nR.t_&&iW();"
 CUSTOMIZATION_END = "({liveVisualizationSkillVariant:e.liveVisualizationSkillVariant,pluginName:t.name,pluginRoot:i})"
 # Covers the full reviewed function: audio skill + manifest writes, and removal
 # of visualize/skills/live. The existing helper makes owned directories writable
 # for removal but only the same two non-executable manifest/skill files writable.
-CUSTOMIZATION_SHA256 = "9151e2737f44ddbc265c10e1f12f3b4a6e13208b9188cd49b6c0c407382deaf5"
+CUSTOMIZATION_SHA256 = "dccd40f102ef9067554efaf90f5c0a21a8484dfeac859ac0a21df35ea9ca35cf"
 
 
 def entries(node, prefix=""):
@@ -78,8 +78,8 @@ def main(archive, helper, window_patch, window_test):
     copy_call = "}(n,i),await " + CUSTOMIZATION_START
     replacement = (
         "}(n,i),await codexNixPrepareBundledCopy({"
-        "fs:ey(),path:$,pluginRoot:i,pluginName:t.name,"
-        'computerUseAudioEnabled:t.name==="computer-use"&&nb()}),await '
+        "fs:tr(),path:eJ,pluginRoot:i,pluginName:t.name,"
+        'computerUseAudioEnabled:t.name==="computer-use"&&iW()}),await '
         + CUSTOMIZATION_START
     )
     with archive.open("rb") as src:

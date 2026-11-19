@@ -5,6 +5,15 @@
     ###########################################################################
     plugins.avante = {
       enable = true;
+      # The Rust setup hook now requires system AWS-LC and Oniguruma;
+      # avante's native library uses both but upstream only declares OpenSSL.
+      package = pkgs.vimPlugins.avante-nvim.override {
+        rustPlatform = pkgs.rustPlatform // {
+          buildRustPackage = args: pkgs.rustPlatform.buildRustPackage (args // {
+            buildInputs = (args.buildInputs or []) ++ [pkgs.aws-lc pkgs.oniguruma];
+          });
+        };
+      };
 
       # Core behaviour -------------------------------------------------------
       settings = {
