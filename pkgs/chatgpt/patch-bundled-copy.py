@@ -12,9 +12,9 @@ import sys
 import tempfile
 
 
-# Exact chunk and inline helpers reviewed against ChatGPT 26.1111.21308.
+# Exact chunk and inline helpers reviewed against ChatGPT 26.1111.71704.
 # The entry point now loads webpack chunks; patch only this reviewed runtime chunk.
-MAIN_MEMBER = ".vite/build/early-bootstrap-226-2f6bd181558008cf.js"
+MAIN_MEMBER = ".vite/build/early-bootstrap-100-449e39ca9c7eadbd.js"
 EXECUTOR_COPY = 'await tr().cp(r.cwd,e,{recursive:!0})'
 EXECUTOR_HELPER = 'async function({executorPluginRoot:e,resourcesPath:t}){let r=await aM({useWsl:!1,resourcesPath:t});return null==r?null:(await tr().cp(r.cwd,e,{recursive:!0}),"win32"!==process.platform&&(r.command=eQ().join(e,eQ().relative(r.cwd,r.command))),r.cwd=e,r.enabled=!0,r.env={...r.env,CODEX_APP_TOOLS_CALLER_HOST_ID:e0.iwv},await tr().writeFile(eQ().join(e,".mcp.json"),`${JSON.stringify({mcpServers:{codex_app:r}},null,2)}\n`,"utf8"),e)}'
 EXECUTOR_REPLACEMENT = (

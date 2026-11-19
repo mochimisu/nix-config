@@ -3,7 +3,7 @@
 
 def patch(text):
     changes = [
-        # Reviewed 26.1111.21308: two background creation sites, two explicit
+        # Reviewed 26.1111.71704: two background creation sites, two explicit
         # initial reveals, and three primary/progress-window visibility predicates.
         ('background:B.isBackgroundLaunch}',
          'background:B.isBackgroundLaunch||codexNixStartHidden}', 2),

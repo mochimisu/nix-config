@@ -31,7 +31,7 @@ Mini and pet visibility now use the app's native Show pet / Hide pet controls
 and saved preference. The Nix patch no longer blocks overlay creation, prewarming,
 or presentation. This preserves native Mini, quick-chat and voice functionality.
 The removal and new bootstrap-chunk compatibility were build-validated against
-26.1111.21308, including native overlay visibility, hidden startup, permission
+26.1111.71704, including native overlay visibility, hidden startup, permission
 tests and the shipped Node install check. No live app restart was performed.
 
 For desktop-menu launches and persistent defaults, create
@@ -74,17 +74,17 @@ Manager activation and a new shell); use the direct command until then.
 
 On 2026-11-07, 26.1103.32239 moved the application entry point to
 `.vite/build/early-bootstrap.js` and split its code into webpack chunks. The
-runtime reviewed on 2026-11-14 for 26.1111.21308 lives in
-`early-bootstrap-226-2f6bd181558008cf.js`. The patcher
+runtime reviewed on 2026-11-18 for 26.1111.71704 lives in
+`early-bootstrap-100-449e39ca9c7eadbd.js`. The patcher
 requires that exact member, the complete executor helper, a SHA256 of the full
 inline customization function, and exact startup anchor counts. Changed upstream
 code must be reviewed again rather than widening these matches. The new visualize
 customizer can remove `skills/live`; existing directory permission preparation
 covers this without making additional files writable.
 
-The 26.1111.21308 x64 package build passed with no unresolved ELF dependencies
+The 26.1111.71704 x64 package build passed with no unresolved ELF dependencies
 and a successful bundled-Node check. The patched runtime integrity was verified;
-all 20,219 other member metadata entries were preserved apart from shifted offsets.
+all 20,220 other member metadata entries were preserved apart from shifted offsets.
 ARM64 and live GUI behavior have not been tested.
 
 `window-controls.py` patches only exact, count-checked lifecycle anchors in the
