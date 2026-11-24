@@ -29,6 +29,111 @@
           fi
         }
 
+# Optional early soft recovery for a confirmed Thread RCP hang.
+# Uses only current-boot/current-OTBR journal provenance and the healthy
+# snapshot's shared OMR prefix. All marker state is volatile and root-owned.
+thread_fast_common_routes() {
+  ip -j -6 route show 2>/dev/null | jq -er '
+    [ .[] | select(.dev == "wpan0" and (.dst // "" | test("^fd[0-9a-f:]+/64$"))) | .dst ] as $local
+    | [ .[] | select(.dev == "enp5s0" and .protocol == "ra"
+        and (.gateway // "" | startswith("fe80:"))
+        and (.dst as $dst | $local | index($dst))) | .dst ] | unique
+    | if length == 1 then .[0] else empty end'
+}
+
+thread_fast_alternate_exists() {
+  ip -j -6 route show 2>/dev/null | jq -e --arg prefix "$1" '
+    any(.[]; .dst == $prefix and .dev == "enp5s0" and .protocol == "ra"
+      and (.gateway // "" | startswith("fe80:")) and (.expires // 0) >= 60)' >/dev/null
+}
+
+thread_fast_alternate_live() {
+  local prefix="$1" gateway gateways
+  gateways="$(ip -j -6 route show 2>/dev/null | jq -er --arg prefix "$prefix" '
+    [ .[] | select(.dst == $prefix and .dev == "enp5s0" and .protocol == "ra"
+      and (.gateway // "" | startswith("fe80:")) and (.expires // 0) >= 60)
+      | .gateway ] | unique | .[:3][]')" || return 1
+  while IFS= read -r gateway; do
+    [[ "$gateway" =~ ^fe80:[0-9a-f:]+$ ]] || continue
+    timeout 2s ping -6 -n -c 1 -W 1 -I enp5s0 "$gateway" >/dev/null 2>&1 && return 0
+  done <<<"$gateways"
+  return 1
+}
+
+thread_fast_ctl_response() {
+  # Any successful control reply, including detached/disabled, excludes a hard hang.
+  local response
+  response="$(timeout --kill-after=1s 3s podman exec "$otbr_container" ot-ctl state 2>/dev/null)" || return 1
+  grep -qx 'Done' <<<"${response//$'\r'/}"
+}
+
+thread_fast_recover() (
+  local run_dir="${RUNTIME_DIRECTORY:-/run/matter-thread-watchdog-fast}"
+  local prefix event now invocation token previous last age
+  [ -d "$run_dir" ] || return 1
+  exec 9>"$run_dir/gate.lock"
+  flock -n 9 || return 1
+
+  # Prime a same-prefix alternate-route witness while local Thread is healthy;
+  # wpan0 typically vanishes after an RCP abort. Avoid redundant state writes.
+  case "$ot_state" in
+    child|router|leader)
+      if ! prefix="$(thread_fast_common_routes)"; then
+        # A healthy controller with no unambiguous shared prefix invalidates
+        # the old witness; never reuse a prefix after a topology change.
+        [ ! -e "$run_dir/verified-omr" ] || rm -f "$run_dir/verified-omr"
+        return 1
+      fi
+      previous="$(cat "$run_dir/verified-omr" 2>/dev/null || true)"
+      [ "$prefix" = "$previous" ] || printf '%s\n' "$prefix" >"$run_dir/verified-omr"
+      return 1 ;;
+    "") ;;
+    *) return 1 ;;
+  esac
+  [ -n "$otbr_container" ] || return 1
+  [ -n "$otbr_age_sec" ] && [ "$otbr_age_sec" -ge "$settle_sec" ] || return 1
+  prefix="$(cat "$run_dir/verified-omr" 2>/dev/null)" || return 1
+  [[ "$prefix" =~ ^fd[0-9a-f:]+/64$ ]] || return 1
+  thread_fast_alternate_exists "$prefix" || return 1
+
+  invocation="$(systemctl show -P InvocationID podman-otbr.service 2>/dev/null)" || return 1
+  [[ "$invocation" =~ ^[0-9a-f]{32}$ && "$invocation" != 00000000000000000000000000000000 ]] || return 1
+  event="$(journalctl -b _SYSTEMD_INVOCATION_ID="$invocation" CONTAINER_NAME="$otbr_container" SYSLOG_IDENTIFIER=otbr \
+      --grep='HandleRcpTimeout.*RadioSpinelNoResponse' --since '135 seconds ago' -n 1 --no-pager -o json 2>/dev/null \
+    | jq -er '.__MONOTONIC_TIMESTAMP | tonumber | floor')" || return 1
+  now="$(awk '{printf "%.0f", $1*1000000}' /proc/uptime)" || return 1
+  [[ "$event" =~ ^[0-9]+$ && "$now" =~ ^[0-9]+$ ]] || return 1
+  age=$((now - event))
+  [ "$age" -ge 0 ] && [ "$age" -le 135000000 ] && [ "$event" -ge "$active_usec" ] || return 1
+
+  token="$invocation:$event"
+  if [ -r "$run_dir/last-attempt" ]; then
+    read -r previous last <"$run_dir/last-attempt" || true
+  fi
+  [ "$token" != "${previous:-}" ] || return 1
+  [[ "${last:-}" =~ ^[0-9]+$ ]] || last=0
+  [ "$last" -eq 0 ] || [ "$((now - last))" -ge 900000000 ] || return 1
+
+  # Two bounded control failures inside one timer tick. A responsive REST
+  # endpoint also vetoes recovery (any HTTP reply means the server is alive).
+  thread_fast_ctl_response && return 1
+  sleep 2
+  thread_fast_ctl_response && return 1
+  if curl --silent --noproxy "*" --max-time 2 --output /dev/null http://127.0.0.1:8081/node; then return 1; fi
+  thread_fast_alternate_live "$prefix" || return 1
+  [ "$(systemctl show -P InvocationID podman-otbr.service 2>/dev/null)" = "$invocation" ] || return 1
+
+  printf '%s %s\n' "$token" "$now" >"$run_dir/last-attempt" || return 1
+  echo "matter-thread-watchdog: early targeted ZBT-2 recovery: fresh RCP hang, two failed control probes, REST down, alternate OMR route present"
+  if recover_zbt2; then
+    echo "$now_epoch" >"$last_restart_file"
+    rm -f "$bad_checks_file"
+    return 0
+  fi
+  echo "matter-thread-watchdog: early targeted recovery did not complete; leaving existing recovery thresholds"
+  return 0
+)
+
         find_otbr_container() {
           podman ps \
             --filter ancestor=@otbrImage@ \
@@ -43,7 +148,7 @@
         fi
 
         if [ -n "$otbr_container" ]; then
-          ot_state="$(podman exec "$otbr_container" ot-ctl state 2>/dev/null | head -n1 | tr -d '\r' || true)"
+          ot_state="$(timeout --kill-after=1s 5s podman exec "$otbr_container" ot-ctl state 2>/dev/null | head -n1 | tr -d '\r' || true)"
         fi
         if [ -z "$ot_state" ]; then
           if [ -n "$bad_reason" ]; then
@@ -66,6 +171,22 @@
           else
             bad_reason="rcp-timeout"
           fi
+        fi
+
+        now_epoch="$(date +%s)"
+        last_restart=0
+        if [ -f "$last_restart_file" ]; then
+          last_restart="$(cat "$last_restart_file" 2>/dev/null || echo 0)"
+        fi
+        elapsed="$((now_epoch - last_restart))"
+        otbr_age_sec=""
+        active_usec="$(systemctl show -P ActiveEnterTimestampMonotonic podman-otbr.service 2>/dev/null || echo 0)"
+        uptime_usec="$(awk '{ printf "%d", $1 * 1000000 }' /proc/uptime 2>/dev/null || echo 0)"
+        if [ -n "$active_usec" ] && [ "$active_usec" -gt 0 ] && [ "$uptime_usec" -gt "$active_usec" ]; then
+          otbr_age_sec="$(( (uptime_usec - active_usec) / 1000000 ))"
+        fi
+        if thread_fast_recover; then
+          exit 0
         fi
 
         offline_thread_nodes=0
@@ -102,18 +223,6 @@
         bad_checks="$((bad_checks + 1))"
         echo "$bad_checks" > "$bad_checks_file"
 
-        now_epoch="$(date +%s)"
-        last_restart=0
-        if [ -f "$last_restart_file" ]; then
-          last_restart="$(cat "$last_restart_file" 2>/dev/null || echo 0)"
-        fi
-        elapsed="$((now_epoch - last_restart))"
-        otbr_age_sec=""
-        active_usec="$(systemctl show -P ActiveEnterTimestampMonotonic podman-otbr.service 2>/dev/null || echo 0)"
-        uptime_usec="$(awk '{ printf "%d", $1 * 1000000 }' /proc/uptime 2>/dev/null || echo 0)"
-        if [ -n "$active_usec" ] && [ "$active_usec" -gt 0 ] && [ "$uptime_usec" -gt "$active_usec" ]; then
-          otbr_age_sec="$(( (uptime_usec - active_usec) / 1000000 ))"
-        fi
         force_recover=0
         # Only bypass cooldown when RCP timeout is happening right now *and*
         # ot-ctl is currently unreachable for several checks in a row. This

@@ -443,6 +443,11 @@ in {
       name = "matter-thread-watchdog";
       runtimeInputs = [
         pkgs.coreutils
+        pkgs.curl
+        pkgs.iproute2
+        pkgs.iputils
+        pkgs.jq
+        pkgs.util-linux
         pkgs.gawk
         pkgs.gnugrep
         pkgs.hostname
@@ -468,6 +473,9 @@ in {
     ];
     serviceConfig = {
       Type = "oneshot";
+      RuntimeDirectory = "matter-thread-watchdog-fast";
+      RuntimeDirectoryMode = "0700";
+      RuntimeDirectoryPreserve = "yes";
       EnvironmentFile = config.sops.secrets."matter-env".path;
       ExecStart = "${threadWatchdog}/bin/matter-thread-watchdog";
       # Avoid false failures caused by lingering podman exec cleanup helpers.

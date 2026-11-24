@@ -239,6 +239,7 @@
 in {
   options.virtualisation.win11Vfio = {
     enable = lib.mkEnableOption "Windows 11 VFIO VM (libvirt + GPU passthrough)";
+    retainLibvirtHost = lib.mkEnableOption "existing libvirt host infrastructure without the Windows guest";
 
     name = lib.mkOption {
       type = lib.types.str;
@@ -361,35 +362,35 @@ in {
     };
   };
 
-  config = lib.mkIf cfg.enable {
-    assertions = [
+  config = lib.mkIf (cfg.enable || cfg.retainLibvirtHost) {
+    assertions = lib.optionals cfg.enable [
       {
         assertion = builtins.pathExists ovmfCode && builtins.pathExists ovmfVars;
         message = "Could not find OVMF firmware images at ${ovmfCode} / ${ovmfVars}.";
       }
     ];
 
-    warnings =
+    warnings = lib.optionals cfg.enable (
       (lib.optionals (cfg.gpuDeviceIds == []) [
         "virtualisation.win11Vfio: gpuDeviceIds is empty; vfio-pci binding will be skipped."
       ])
       ++ (lib.optionals (cfg.gpuDevices == []) [
         "virtualisation.win11Vfio: gpuDevices is empty; the VM will be defined without GPU passthrough (SPICE/QXL only)."
-      ]);
+      ]));
 
     boot.kernelParams =
       (lib.optionals (cfg.iommu == "intel" || cfg.iommu == "both") ["intel_iommu=on"])
       ++ (lib.optionals (cfg.iommu == "amd" || cfg.iommu == "both") ["amd_iommu=on"])
       ++ ["iommu=pt"]
-      ++ (lib.optionals (cfg.gpuDeviceIds != []) ["vfio-pci.ids=${lib.concatStringsSep "," cfg.gpuDeviceIds}"]);
+      ++ (lib.optionals (cfg.enable && cfg.gpuDeviceIds != []) ["vfio-pci.ids=${lib.concatStringsSep "," cfg.gpuDeviceIds}"]);
 
-    boot.initrd.kernelModules = lib.optionals (cfg.gpuDeviceIds != []) [
+    boot.initrd.kernelModules = lib.optionals (cfg.enable && cfg.gpuDeviceIds != []) [
       "vfio"
       "vfio_pci"
       "vfio_iommu_type1"
     ];
 
-    boot.blacklistedKernelModules = lib.optionals (cfg.gpuDeviceIds != []) [
+    boot.blacklistedKernelModules = lib.optionals (cfg.enable && cfg.gpuDeviceIds != []) [
       "nouveau"
       "nvidia"
       "nvidia_drm"
@@ -397,7 +398,7 @@ in {
       "nvidia_uvm"
     ];
 
-    boot.extraModprobeConfig = lib.mkAfter (lib.optionalString (cfg.gpuDeviceIds != []) ''
+    boot.extraModprobeConfig = lib.mkAfter (lib.optionalString (cfg.enable && cfg.gpuDeviceIds != []) ''
       options vfio-pci ids=${lib.concatStringsSep "," cfg.gpuDeviceIds} disable_vga=1
     '');
 
@@ -462,7 +463,7 @@ in {
       };
     };
 
-    systemd.services."win11-${cfg.name}-disk" = {
+    systemd.services."win11-${cfg.name}-disk" = lib.mkIf cfg.enable {
       description = "Create libvirt disk for ${cfg.name}";
       wantedBy = ["multi-user.target"];
       after = ["local-fs.target"];
@@ -474,7 +475,7 @@ in {
       };
     };
 
-    systemd.services."win11-${cfg.name}-define" = {
+    systemd.services."win11-${cfg.name}-define" = lib.mkIf cfg.enable {
       description = "Define libvirt domain for ${cfg.name}";
       wantedBy = ["multi-user.target"];
       after =

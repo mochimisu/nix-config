@@ -150,7 +150,7 @@ in {
     pkgs.gocryptfs
     mountDocs
     umountDocs
-    win11Restart
+    # win11Restart # Restore along with the VM below.
   ];
 
   services.immich = {
@@ -162,8 +162,16 @@ in {
     accelerationDevices = null;
   };
 
+  # Headless host graphics for GTX 1070 (Pascal); keep X/desktop disabled.
+  # To restore passthrough, remove this graphics block and uncomment VM enable
+  # and win11Restart below, remove the render group, then build and reboot.
+  hardware.graphics.enable = true;
+  hardware.enableRedistributableFirmware = true;
+  boot.kernelModules = ["nouveau"];
+
   virtualisation.win11Vfio = {
-    enable = true;
+    # enable = true; # Keep the Windows guest definition and disk for later.
+    retainLibvirtHost = true;
     iommu = "amd";
     attachInstallMedia = false;
     network = {
@@ -198,7 +206,7 @@ in {
   };
 
   users.users.brandon = {
-    extraGroups = ["fuse"];
+    extraGroups = ["fuse" "render"];
     # Keep the user manager and Codex Remote alive after the final SSH logout.
     linger = true;
   };
